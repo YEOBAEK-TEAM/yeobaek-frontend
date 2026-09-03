@@ -10,7 +10,7 @@ const navigationItems = [
 
 export default function FooterNavigation() {
   return (
-    <nav className="fixed bottom-0 left-0 flex w-full justify-around border-t bg-white">
+    <nav className="fixed bottom-0 left-1/2 flex w-full max-w-97.5 -translate-x-1/2 justify-around border-t bg-white">
       {navigationItems.map((item) => (
         <NavLink
           key={item.path}

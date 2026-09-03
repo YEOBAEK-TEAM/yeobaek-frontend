@@ -4,11 +4,9 @@ import FooterNavigation from "@/components/common/footerNavigation/FooterNavigat
 
 export default function RootLayout() {
   return (
-    <>
+    <div className="mx-auto min-h-screen w-full max-w-97.5 px-5 py-5 bg-white">
       <Outlet />
-
-      {/* 하단 네비게이션 */}
       <FooterNavigation />
-    </>
+    </div>
   );
 }
