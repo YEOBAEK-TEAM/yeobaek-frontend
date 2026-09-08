@@ -9,6 +9,11 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
+// PDF 이미지 렌더링에 필요한 WASM 경로
+const pdfOptions = {
+  wasmUrl: "/wasm/",
+};
+
 type ReaderPage = {
   pdfPageNumber: number;
   side: "single" | "left" | "right";
@@ -101,7 +106,11 @@ export default function BookReadPage() {
 
       {/* PDF 영역 */}
       <div ref={containerRef} className="w-full overflow-hidden">
-        <Document file="/books/little-prince.pdf" onLoadSuccess={handleDocumentLoad}>
+        <Document
+          file="/books/little-prince.pdf"
+          options={pdfOptions}
+          onLoadSuccess={handleDocumentLoad}
+        >
           {page && containerWidth > 0 && (
             <>
               {page.side === "single" ? (
