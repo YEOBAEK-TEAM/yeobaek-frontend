@@ -9,7 +9,7 @@ type HeaderProps = {
 
 export default function Header({ title, action }: HeaderProps) {
   return (
-    <div className="h-17 mt-10 flex gap-1 ">
+    <div className="h-17 mt-10 flex gap-2">
       <img src={LityIcon} alt="리티짱" className="h-11 w-11" />
       <p className="font-extrabold pt-2 text-3xl text-[#4F4D4E]">{title}</p>
       <div className="absolute right-5 mt-1">
@@ -20,7 +20,7 @@ export default function Header({ title, action }: HeaderProps) {
         )}
         {action == "search" && (
           <button type="button">
-            <img src={SearchIcon} className="h-10 w-10 cursor-pointer"></img>
+            <img src={SearchIcon} className="h-9 w-9 cursor-pointer"></img>
           </button>
         )}
       </div>
