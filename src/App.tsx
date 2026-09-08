@@ -6,11 +6,13 @@ import LibraryPage from "@/pages/library/LibraryPage";
 import MyPage from "@/pages/my/MyPage";
 import TrainingPage from "@/pages/training/TrainingPage";
 import VocabularyPage from "@/pages/vocabulary/VocabularyPage";
+import BookReadPage from "@/pages/library/BookReadPage";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/library/read" element={<BookReadPage />} />
         <Route element={<RootLayout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/vocabulary" element={<VocabularyPage />} />
