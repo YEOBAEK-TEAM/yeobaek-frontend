@@ -1,146 +1,335 @@
-import { useEffect, useRef, useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
-
-import "react-pdf/dist/Page/AnnotationLayer.css";
-import "react-pdf/dist/Page/TextLayer.css";
+﻿import { useEffect, useRef, useState } from "react";
+import { Document, pdfjs } from "react-pdf";
+import type { PDFDocumentProxy } from "pdfjs-dist";
+import { Link } from "react-router-dom";
+import BookTextReader from "./components/BookTextReader";
+import { useReaderData } from "./utils/useReaderData";
+import ReaderPageDeck from "./components/ReaderPageDeck";
+import { useReaderPagination } from "./utils/useReaderPagination";
+import "./BookReadPage.css";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url,
 ).toString();
+const pdfOptions = { wasmUrl: "/wasm/" };
 
-// PDF 이미지 렌더링에 필요한 WASM 경로
-const pdfOptions = {
-  wasmUrl: "/wasm/",
-};
-
-type ReaderPage = {
-  pdfPageNumber: number;
-  side: "single" | "left" | "right";
-};
+function Icon({
+  name,
+  filled = false,
+}: {
+  name: "heart" | "comment" | "bookmark";
+  filled?: boolean;
+}) {
+  const paths = {
+    heart: "M12 20S3 14.5 3 8.5C3 3.5 9 2.5 12 7c3-4.5 9-3.5 9 1.5C21 14.5 12 20 12 20Z",
+    comment:
+      "M5 3.5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-3v4l-5-4H5a2 2 0 0 1-2-2v-10a2 2 0 0 1 2-2Z",
+    bookmark: "M6 3h12v18l-6-4-6 4V3Z",
+  };
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill={filled ? "currentColor" : "none"}
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d={paths[name]} />
+    </svg>
+  );
+}
 
 export default function BookReadPage() {
-  const [readerPages, setReaderPages] = useState<ReaderPage[]>([]);
-  const [currentPage, setCurrentPage] = useState(0);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [containerWidth, setContainerWidth] = useState(0);
-
-  // 화면 크기에 따라 PDF 크기 조절
+  const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const {
+    readerPages,
+    pageIndex,
+    loading,
+    error,
+    prepared,
+    goToPage: navigate,
+  } = useReaderPagination(pdf, bodyRef);
+  const pageNumber = pageIndex + 1;
+  const currentPage = readerPages[pageIndex];
+  const pdfPage = currentPage?.pdfPage ?? 1;
+  const ready = !!currentPage && !loading && !error;
+  const { data, setData, storageError } = useReaderData();
+  const [commentOpen, setCommentOpen] = useState(false);
+  const [quote, setQuote] = useState("");
+  const [draft, setDraft] = useState("");
+  const [notice, setNotice] = useState("");
   useEffect(() => {
-    if (!containerRef.current) return;
-
-    const observer = new ResizeObserver(([entry]) => {
-      setContainerWidth(entry.contentRect.width);
+    const elements = [document.documentElement, document.body];
+    const previous = elements.map((element) => element.style.overflow);
+    elements.forEach((element) => {
+      element.style.overflow = "hidden";
     });
-
-    observer.observe(containerRef.current);
-
-    return () => observer.disconnect();
+    return () =>
+      elements.forEach((element, index) => {
+        element.style.overflow = previous[index];
+      });
   }, []);
-
-  const handleDocumentLoad = async (pdf: {
-    numPages: number;
-    getPage: (pageNumber: number) => Promise<{
-      getViewport: (options: { scale: number }) => {
-        width: number;
-        height: number;
-      };
-    }>;
-  }) => {
-    const pages: ReaderPage[] = [];
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const viewport = page.getViewport({ scale: 1 });
-
-      const isSpread = viewport.width > viewport.height;
-
-      if (isSpread) {
-        // 가로형 PDF → 왼쪽 / 오른쪽으로 분리
-        pages.push({
-          pdfPageNumber: i,
-          side: "left",
-        });
-
-        pages.push({
-          pdfPageNumber: i,
-          side: "right",
-        });
-      } else {
-        // 세로형 PDF → 한 페이지 그대로
-        pages.push({
-          pdfPageNumber: i,
-          side: "single",
-        });
-      }
-    }
-
-    setReaderPages(pages);
+  useEffect(() => {
+    if (!notice) return;
+    const timeout = window.setTimeout(() => setNotice(""), 2500);
+    return () => window.clearTimeout(timeout);
+  }, [notice]);
+  const goToPage = (nextPage: number) => {
+    if (!ready) return;
+    navigate(nextPage - 1);
+    setCommentOpen(false);
+    setNotice("");
+    window.getSelection()?.removeAllRanges();
   };
-
-  const handlePrev = () => {
-    setCurrentPage((prev) => Math.max(prev - 1, 0));
+  const comments = data.comments.filter((comment) => comment.page === pdfPage);
+  const bookmarks =
+    data.readerBookmarks ?? data.bookmarks.map((page) => ({ pdfPage: page, start: 0 }));
+  const bookmarked =
+    !!currentPage &&
+    bookmarks.some(
+      (bookmark) =>
+        bookmark.pdfPage === pdfPage &&
+        bookmark.start >= currentPage.start &&
+        (bookmark.start < currentPage.end || bookmark.start === currentPage.start),
+    );
+  const openComments = (text = "") => {
+    setQuote(text);
+    setDraft("");
+    setCommentOpen(true);
   };
-
-  const handleNext = () => {
-    setCurrentPage((prev) => Math.min(prev + 1, readerPages.length - 1));
-  };
-
-  const page = readerPages[currentPage];
-
   return (
-    <main className="flex min-h-screen flex-col">
-      {/* 페이지 컨트롤 */}
-      <div className="flex items-center justify-between px-5 py-4">
-        <button type="button" onClick={handlePrev} disabled={currentPage === 0}>
-          이전
-        </button>
-
-        <span>{readerPages.length > 0 ? `${currentPage + 1} / ${readerPages.length}` : ""}</span>
-
-        <button type="button" onClick={handleNext} disabled={currentPage >= readerPages.length - 1}>
-          다음
-        </button>
-      </div>
-
-      {/* PDF 영역 */}
-      <div ref={containerRef} className="w-full overflow-hidden">
+    <main className="book-reader">
+      <header className="book-reader__header">
+        <Link to="/library" aria-label="서재로 돌아가기" className="book-reader__back">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path
+              d="m15 5-7 7 7 7"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </Link>
+        <h1>어린 왕자</h1>
+      </header>
+      <div className="book-reader__body" ref={bodyRef}>
         <Document
+          className="book-reader__document"
           file="/books/little-prince.pdf"
           options={pdfOptions}
-          onLoadSuccess={handleDocumentLoad}
+          onLoadSuccess={setPdf}
+          loading={
+            <p role="status" className="book-reader__message">
+              책을 불러오고 있습니다.
+            </p>
+          }
+          error={
+            <p role="alert" className="book-reader__message">
+              PDF를 불러오지 못했습니다. 새로고침해 주세요.
+            </p>
+          }
         >
-          {page && containerWidth > 0 && (
-            <>
-              {page.side === "single" ? (
-                // 일반 한 페이지 PDF
-                <Page pageNumber={page.pdfPageNumber} width={containerWidth} />
-              ) : (
-                // 두 페이지가 붙어있는 PDF
-                <div
-                  style={{
-                    width: containerWidth,
-                    overflow: "hidden",
+          {pdf && loading && (
+            <p role="status" className="book-reader__message">
+              독서 페이지를 준비하고 있습니다. ({prepared}/{pdf.numPages})
+            </p>
+          )}
+          {error && (
+            <p role="alert" className="book-reader__message">
+              {error}
+            </p>
+          )}
+          {ready && (
+            <ReaderPageDeck
+              key={currentPage.id}
+              pages={readerPages}
+              index={pageIndex}
+              onNavigate={(index) => goToPage(index + 1)}
+              renderPage={(page, active) => (
+                <BookTextReader
+                  key={page.id}
+                  page={page}
+                  active={active}
+                  highlights={data.highlights.filter(
+                    (highlight) => highlight.page === page.pdfPage,
+                  )}
+                  onHighlight={(selection, color) => {
+                    setData((current) => ({
+                      ...current,
+                      highlights: [
+                        ...current.highlights,
+                        { ...selection, color, page: page.pdfPage, id: crypto.randomUUID() },
+                      ],
+                    }));
+                    setNotice("문장을 수집했습니다.");
                   }}
-                >
-                  <div
-                    style={{
-                      width: containerWidth * 2,
-                      transform:
-                        page.side === "right"
-                          ? `translateX(-${containerWidth}px)`
-                          : "translateX(0)",
-                    }}
-                  >
-                    <Page pageNumber={page.pdfPageNumber} width={containerWidth * 2} />
-                  </div>
-                </div>
+                  onWord={(word) => {
+                    setData((current) => ({
+                      ...current,
+                      words: [...new Set([...current.words, word])],
+                    }));
+                    setNotice("선택한 텍스트를 이 기기의 단어장에 저장했습니다.");
+                  }}
+                  onComment={openComments}
+                />
               )}
-            </>
+            />
           )}
         </Document>
       </div>
+      {(notice || storageError) && (
+        <p role="status" className="book-reader__notice">
+          {storageError ? "기기에 저장할 수 없어 이번 방문 동안만 유지됩니다." : notice}
+        </p>
+      )}
+      <footer className="book-reader__footer">
+        <div className="book-reader__progress">
+          <input
+            type="range"
+            aria-label="독서 페이지 선택"
+            aria-valuetext={
+              ready ? `${readerPages.length}페이지 중 ${pageNumber}페이지` : "독서 페이지 준비 중"
+            }
+            min={1}
+            max={readerPages.length || 1}
+            value={pageNumber}
+            disabled={!ready || readerPages.length <= 1}
+            style={{
+              background: `linear-gradient(to right, #595854 ${ready && readerPages.length > 1 ? (pageIndex / (readerPages.length - 1)) * 100 : 0}%, #eeeede 0)`,
+            }}
+            onChange={(event) => goToPage(Number(event.target.value))}
+          />
+          <span aria-live="polite">{ready ? `${pageNumber}/${readerPages.length}` : "—/—"}</span>
+        </div>
+        <div className="book-reader__actions">
+          <button
+            type="button"
+            aria-label="좋아요"
+            aria-pressed={data.liked}
+            onClick={() => setData((current) => ({ ...current, liked: !current.liked }))}
+          >
+            <Icon name="heart" filled={data.liked} />
+            <span>{data.liked ? 1 : 0}</span>
+          </button>
+          <button
+            type="button"
+            aria-label={`이 페이지 댓글 ${comments.length}개`}
+            disabled={!ready}
+            onClick={() => openComments()}
+          >
+            <Icon name="comment" />
+            <span>{comments.length}</span>
+          </button>
+          <button
+            type="button"
+            className="book-reader__bookmark"
+            aria-label={`${pageNumber}페이지 북마크`}
+            aria-pressed={bookmarked}
+            disabled={!ready}
+            onClick={() =>
+              setData((current) => ({
+                ...current,
+                readerBookmarks: bookmarked
+                  ? bookmarks.filter(
+                      (bookmark) =>
+                        !(
+                          bookmark.pdfPage === pdfPage &&
+                          bookmark.start >= currentPage.start &&
+                          (bookmark.start < currentPage.end || bookmark.start === currentPage.start)
+                        ),
+                    )
+                  : [...bookmarks, { pdfPage, start: currentPage.start }],
+              }))
+            }
+          >
+            <Icon name="bookmark" filled={bookmarked} />
+          </button>
+        </div>
+      </footer>
+      {commentOpen && (
+        <div className="book-reader__sheet-backdrop" onClick={() => setCommentOpen(false)}>
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reader-comments-title"
+            className="book-reader__sheet"
+            onClick={(event) => event.stopPropagation()}
+            onKeyDown={(event) => {
+              if (event.key === "Escape") setCommentOpen(false);
+              if (event.key === "Tab") {
+                const controls = Array.from(
+                  event.currentTarget.querySelectorAll<HTMLElement>(
+                    "button:not(:disabled), textarea",
+                  ),
+                );
+                const first = controls[0];
+                const last = controls[controls.length - 1];
+                if (event.shiftKey && document.activeElement === first) {
+                  event.preventDefault();
+                  last.focus();
+                } else if (!event.shiftKey && document.activeElement === last) {
+                  event.preventDefault();
+                  first.focus();
+                }
+              }
+            }}
+          >
+            <div className="book-reader__sheet-heading">
+              <h2 id="reader-comments-title">PDF {pdfPage}페이지 댓글</h2>
+              <button type="button" onClick={() => setCommentOpen(false)} aria-label="댓글 닫기">
+                닫기
+              </button>
+            </div>
+            <p className="book-reader__storage-note">댓글과 수집 기록은 이 기기에 저장됩니다.</p>
+            <div className="book-reader__comments">
+              {comments.length ? (
+                comments.map((comment) => (
+                  <div key={comment.id}>
+                    {comment.quote && <blockquote>{comment.quote}</blockquote>}
+                    <p>{comment.text}</p>
+                  </div>
+                ))
+              ) : (
+                <p>이 페이지에 첫 의견을 남겨보세요.</p>
+              )}
+            </div>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (!draft.trim()) return;
+                setData((current) => ({
+                  ...current,
+                  comments: [
+                    ...current.comments,
+                    { id: crypto.randomUUID(), page: pdfPage, quote, text: draft.trim() },
+                  ],
+                }));
+                setDraft("");
+                setQuote("");
+              }}
+            >
+              {quote && <blockquote>{quote}</blockquote>}
+              <textarea
+                autoFocus
+                aria-label="댓글 내용"
+                placeholder="읽으며 떠오른 생각을 남겨주세요."
+                value={draft}
+                onChange={(event) => setDraft(event.target.value)}
+                maxLength={2000}
+              />
+              <button type="submit" disabled={!draft.trim()} className="book-reader__submit">
+                댓글 남기기
+              </button>
+            </form>
+          </section>
+        </div>
+      )}
     </main>
   );
 }
