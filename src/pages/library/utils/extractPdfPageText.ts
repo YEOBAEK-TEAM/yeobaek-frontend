@@ -2,9 +2,14 @@
 import type { TextItem } from "pdfjs-dist/types/src/display/api";
 
 type Line = { text: string; x: number; y: number; end: number; height: number };
+export type PdfTextParagraph = {
+  text: string;
+  column: number;
+  lines: { text: string; x: number; y: number }[];
+};
 
 // Use PDF line boundaries to detect paragraphs; HTML wraps the prose itself.
-function toParagraphs(items: TextItem[]): string[] {
+function toParagraphs(items: TextItem[], column: number): PdfTextParagraph[] {
   const lines: Line[] = [];
   let line: Line | undefined;
   const flush = () => {
@@ -30,7 +35,7 @@ function toParagraphs(items: TextItem[]): string[] {
   }
   flush();
   lines.sort((a, b) => b.y - a.y || a.x - b.x);
-  const paragraphs: string[] = [];
+  const paragraphs: PdfTextParagraph[] = [];
   let previous: Line | undefined;
   for (const current of lines) {
     const newParagraph =
@@ -39,17 +44,27 @@ function toParagraphs(items: TextItem[]): string[] {
       current.x - previous.x > current.height * 0.7 ||
       Math.abs(previous.height - current.height) > current.height * 0.2 ||
       /^[“「『]/u.test(current.text);
-    if (newParagraph) paragraphs.push(current.text);
-    else paragraphs[paragraphs.length - 1] += ` ${current.text}`;
+    if (newParagraph)
+      paragraphs.push({
+        text: current.text,
+        column,
+        lines: [{ text: current.text, x: current.x, y: current.y }],
+      });
+    else {
+      const paragraph = paragraphs[paragraphs.length - 1];
+      const text = ` ${current.text}`;
+      paragraph.text += text;
+      paragraph.lines.push({ text, x: current.x, y: current.y });
+    }
     previous = current;
   }
   return paragraphs;
 }
 
-export async function extractPdfPageText(
+export async function extractPdfPageTextLayout(
   pdf: PDFDocumentProxy,
   pageNumber: number,
-): Promise<string[]> {
+): Promise<PdfTextParagraph[]> {
   const page = await pdf.getPage(pageNumber);
   const content = await page.getTextContent();
   const [left, bottom, right, top] = page.view;
@@ -65,9 +80,23 @@ export async function extractPdfPageText(
   if (width > height) {
     const middle = left + width / 2;
     return [
-      ...toParagraphs(body.filter((item) => item.transform[4] < middle)),
-      ...toParagraphs(body.filter((item) => item.transform[4] >= middle)),
+      ...toParagraphs(
+        body.filter((item) => item.transform[4] < middle),
+        0,
+      ),
+      ...toParagraphs(
+        body.filter((item) => item.transform[4] >= middle),
+        1,
+      ),
     ];
   }
-  return toParagraphs(body);
+  return toParagraphs(body, 0);
+}
+
+// Preserve the existing text API and exact character offsets used by highlights.
+export async function extractPdfPageText(
+  pdf: PDFDocumentProxy,
+  pageNumber: number,
+): Promise<string[]> {
+  return (await extractPdfPageTextLayout(pdf, pageNumber)).map((paragraph) => paragraph.text);
 }

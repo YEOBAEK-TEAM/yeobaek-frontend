@@ -6,6 +6,7 @@ import BookTextReader from "./components/BookTextReader";
 import { useReaderData } from "./utils/useReaderData";
 import ReaderPageDeck from "./components/ReaderPageDeck";
 import { useReaderPagination } from "./utils/useReaderPagination";
+import { readerPageContainsAnchor } from "./utils/paginateReaderText";
 import "./BookReadPage.css";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -90,13 +91,7 @@ export default function BookReadPage() {
   const bookmarks =
     data.readerBookmarks ?? data.bookmarks.map((page) => ({ pdfPage: page, start: 0 }));
   const bookmarked =
-    !!currentPage &&
-    bookmarks.some(
-      (bookmark) =>
-        bookmark.pdfPage === pdfPage &&
-        bookmark.start >= currentPage.start &&
-        (bookmark.start < currentPage.end || bookmark.start === currentPage.start),
-    );
+    !!currentPage && bookmarks.some((bookmark) => readerPageContainsAnchor(currentPage, bookmark));
   const openComments = (text = "") => {
     setQuote(text);
     setDraft("");
@@ -236,15 +231,11 @@ export default function BookReadPage() {
               setData((current) => ({
                 ...current,
                 readerBookmarks: bookmarked
-                  ? bookmarks.filter(
-                      (bookmark) =>
-                        !(
-                          bookmark.pdfPage === pdfPage &&
-                          bookmark.start >= currentPage.start &&
-                          (bookmark.start < currentPage.end || bookmark.start === currentPage.start)
-                        ),
-                    )
-                  : [...bookmarks, { pdfPage, start: currentPage.start }],
+                  ? bookmarks.filter((bookmark) => !readerPageContainsAnchor(currentPage, bookmark))
+                  : [
+                      ...bookmarks,
+                      { pdfPage, start: currentPage.start, imageId: currentPage.imageId },
+                    ],
               }))
             }
           >

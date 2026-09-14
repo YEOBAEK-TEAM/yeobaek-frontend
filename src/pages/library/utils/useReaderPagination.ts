@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import type { RefObject } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import { extractPdfPageText } from "./extractPdfPageText";
-import { findReaderPage, paginateReaderText } from "./paginateReaderText";
+import { extractPdfPageContent } from "./extractPdfPageContent";
+import { PdfImageResources } from "./extractPdfPageImages";
+import type { ReaderBlock } from "./readerBlocks";
+import { findReaderPage, paginateReaderBlocks } from "./paginateReaderText";
 import type { ReaderPage } from "./paginateReaderText";
 
 export function useReaderPagination(
@@ -19,7 +21,8 @@ export function useReaderPagination(
   useEffect(() => {
     const body = bodyRef.current;
     if (!pdf || !body) return;
-    const cache = new Map<number, Promise<string[]>>();
+    const cache = new Map<number, Promise<ReaderBlock[]>>();
+    const resources = new PdfImageResources();
     let generation = 0;
     let disposed = false;
     let timer: number;
@@ -42,13 +45,13 @@ export function useReaderPagination(
           if (disposed || run !== generation) return;
           let text = cache.get(pdfPage);
           if (!text) {
-            text = extractPdfPageText(pdf, pdfPage);
+            text = extractPdfPageContent(pdf, pdfPage, resources);
             cache.set(pdfPage, text);
             void text.catch(() => cache.delete(pdfPage));
           }
-          const paragraphs = await text;
+          const blocks = await text;
           if (disposed || run !== generation) return;
-          pages.push(...paginateReaderText(paragraphs, pdfPage, measure, height));
+          pages.push(...paginateReaderBlocks(blocks, pdfPage, measure, height));
           setState((current) => ({ ...current, prepared: pdfPage }));
           // Give input, resize and paint a turn during initial book preparation.
           await new Promise((resolve) => window.setTimeout(resolve, 0));
@@ -88,6 +91,7 @@ export function useReaderPagination(
     document.fonts.addEventListener("loadingdone", schedule);
     return () => {
       disposed = true;
+      resources.dispose();
       generation++;
       window.clearTimeout(timer);
       observer.disconnect();

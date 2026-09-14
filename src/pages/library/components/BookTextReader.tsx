@@ -78,7 +78,7 @@ export default function BookTextReader({
   if (!page.fragments.length)
     return (
       <p role="status" className="book-reader__message">
-        이 페이지에는 추출할 수 있는 텍스트가 없습니다. 그림이나 스캔된 페이지일 수 있습니다.
+        이 페이지에는 표시할 수 있는 텍스트나 이미지가 없습니다.
       </p>
     );
 
@@ -94,6 +94,20 @@ export default function BookTextReader({
         onTouchEnd={active ? captureSelection : undefined}
       >
         {page.fragments.map((fragment) => {
+          if (fragment.type === "image")
+            return (
+              <img
+                key={fragment.id}
+                src={fragment.src}
+                alt={`PDF ${pageNumber}페이지 삽화`}
+                className="book-reader__image"
+                data-image-id={fragment.id}
+                width={fragment.width}
+                height={fragment.height}
+                style={{ width: fragment.displayWidth, height: fragment.displayHeight }}
+                draggable={false}
+              />
+            );
           const { text: paragraph, start, paragraph: index } = fragment;
 
           const end = start + paragraph.length;
@@ -111,7 +125,7 @@ export default function BookTextReader({
             ]),
           ].sort((a, b) => a - b);
           return (
-            <p key={index} dir="auto" data-paragraph-id={`${pageNumber}-${index}`}>
+            <p key={fragment.id} dir="auto" data-paragraph-id={`${pageNumber}-${index}`}>
               {boundaries.slice(0, -1).map((position, part) => {
                 const next = boundaries[part + 1];
                 const highlight = relevant.findLast(

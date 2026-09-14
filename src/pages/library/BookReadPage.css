@@ -104,6 +104,7 @@
   contain: layout style;
 }
 .book-reader__text {
+  display: flow-root;
   font-family: "Batang", "바탕", "Noto Serif CJK KR", Georgia, serif;
   font-size: 16px;
   line-height: 1.95;
@@ -114,6 +115,14 @@
 }
 .book-reader__text p {
   margin: 0;
+}
+.book-reader__image {
+  display: block;
+  max-width: 100%;
+  object-fit: contain;
+  margin: 24px auto;
+  user-select: none;
+  -webkit-user-drag: none;
 }
 .book-reader__text p + p {
   margin-top: 0.45em;

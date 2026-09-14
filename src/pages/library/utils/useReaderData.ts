@@ -13,7 +13,7 @@ export type ReaderComment = { id: string; page: number; quote: string; text: str
 type ReaderData = {
   liked: boolean;
   bookmarks: number[];
-  readerBookmarks?: { pdfPage: number; start: number }[];
+  readerBookmarks?: { pdfPage: number; start: number; imageId?: string }[];
   highlights: ReaderHighlight[];
   words: string[];
   comments: ReaderComment[];
