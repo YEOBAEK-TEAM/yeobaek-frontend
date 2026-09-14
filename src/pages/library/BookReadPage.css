@@ -10,7 +10,7 @@
   flex-direction: column;
   padding: max(20px, env(safe-area-inset-top)) 20px 0;
   overflow: hidden;
-  background: inherit;
+  background: #f7f6f1;
   color: #595854;
 }
 .book-reader button,
@@ -128,7 +128,7 @@
   margin-top: 0.45em;
 }
 .book-reader__text ::selection {
-  background: #c6d8d4;
+  background: #d1d1d1;
   color: inherit;
 }
 .book-reader__text mark {
@@ -202,6 +202,9 @@
   left: 0;
   z-index: 10;
   max-width: 100%;
+  width: 100%;
+  background: #f7f6f1;
+  overflow-y: auto;
   font:
     13px system-ui,
     sans-serif;
@@ -212,9 +215,9 @@
   padding: 4px 0;
 }
 .book-reader__selection-actions button {
-  min-height: 34px;
-  padding: 4px 11px;
-  border: 1px solid #888680;
+  min-height: 36px;
+  padding: 5px 13px;
+  border: 1px solid #595854;
   background: #f7f6f1;
   white-space: nowrap;
 }
@@ -225,7 +228,7 @@
 .book-reader__palette {
   display: flex;
   gap: 9px;
-  padding: 10px 3px;
+  padding: 14px 5px;
 }
 .book-reader__palette button {
   width: 36px;
@@ -236,6 +239,53 @@
 .book-reader__palette button:hover {
   outline: 1px solid #595854;
   outline-offset: 3px;
+}
+.book-reader__palette button[aria-pressed="true"] {
+  outline: 2px solid #595854;
+  outline-offset: 3px;
+}
+.book-reader__word {
+  background-image: radial-gradient(circle, #d56064 1.6px, transparent 1.8px);
+  background-size: 8px 5px;
+  background-repeat: repeat-x;
+  background-position: left bottom;
+  padding-bottom: 3px;
+  box-decoration-break: clone;
+}
+.book-reader__inline-comment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 1px solid #888680;
+  border-radius: 4px;
+  padding: 5px 8px;
+}
+.book-reader__inline-comment > svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.book-reader__inline-comment input {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+}
+.book-reader__inline-comment input::placeholder {
+  color: #b4b4b4;
+}
+.book-reader__inline-comment button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #abb0b3;
 }
 .book-reader__message {
   padding: 28px 0;

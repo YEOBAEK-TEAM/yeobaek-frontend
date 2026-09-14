@@ -1,3 +1,12 @@
+import aquarium from "@/assets/images/books/aquarium.jpg";
+import contradiction from "@/assets/images/books/contradiction.jpg";
+import lightSpeed from "@/assets/images/books/light-speed.jpg";
+import orbit from "@/assets/images/books/orbit.jpg";
+import rapidCurrent from "@/assets/images/books/rapid-current.jpg";
+import shell from "@/assets/images/books/shell.jpg";
+import transparentSpiral from "@/assets/images/books/transparent-spiral.jpg";
+import unbearableLightness from "@/assets/images/books/unbearable-lightness.jpg";
+
 export type Book = {
   id: number;
   title: string;
@@ -30,7 +39,7 @@ export const books: Book[] = [
     author: "유혜영",
     publisher: "R",
     publishedAt: "2024.01.10",
-    coverUrl: "/books/covers/aquarium.jpg",
+    coverUrl: aquarium,
     currentPage: 142,
     totalPages: 316,
     isInLibrary: true,
@@ -41,7 +50,7 @@ export const books: Book[] = [
     author: "박소영",
     publisher: "이지북",
     publishedAt: "2024.03.20",
-    coverUrl: "/books/covers/orbit.jpg",
+    coverUrl: orbit,
     isInLibrary: true,
   },
   {
@@ -50,7 +59,7 @@ export const books: Book[] = [
     author: "밀란 쿤데라",
     publisher: "민음사",
     publishedAt: "2018.06.20",
-    coverUrl: "/books/covers/unbearable-lightness.jpg",
+    coverUrl: unbearableLightness,
     isInLibrary: true,
   },
   {
@@ -59,7 +68,7 @@ export const books: Book[] = [
     author: "양귀자",
     publisher: "쓰다",
     publishedAt: "2013.04.01",
-    coverUrl: "/books/covers/contradiction.jpg",
+    coverUrl: contradiction,
     isInLibrary: true,
   },
   {
@@ -68,7 +77,7 @@ export const books: Book[] = [
     author: "김초엽",
     publisher: "허블",
     publishedAt: "2019.06.24",
-    coverUrl: "/books/covers/light-speed.jpg",
+    coverUrl: lightSpeed,
     isInLibrary: true,
   },
   {
@@ -77,7 +86,7 @@ export const books: Book[] = [
     author: "히가시노 게이고",
     publisher: "북다",
     publishedAt: "2026.07.13",
-    coverUrl: "/books/covers/transparent-spiral.jpg",
+    coverUrl: transparentSpiral,
     isInLibrary: false,
   },
   {
@@ -86,7 +95,7 @@ export const books: Book[] = [
     author: "정대건",
     publisher: "민음사",
     publishedAt: "2022.12.22",
-    coverUrl: "/books/covers/rapid-current.jpg",
+    coverUrl: rapidCurrent,
     isInLibrary: false,
   },
   {
@@ -95,7 +104,7 @@ export const books: Book[] = [
     author: "김초엽",
     publisher: "래빗홀",
     publishedAt: "2025.08.27",
-    coverUrl: "/books/covers/shell.jpg",
+    coverUrl: shell,
     isInLibrary: false,
   },
 ];

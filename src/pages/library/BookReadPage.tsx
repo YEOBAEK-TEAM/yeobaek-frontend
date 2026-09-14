@@ -106,7 +106,7 @@ export default function BookReadPage() {
     setCommentOpen(true);
   };
   return (
-    <main className="book-reader">
+    <main className="book-reader bg-[#8C8149]">
       <header className="book-reader__header">
         <Link to="/library" aria-label="서재로 돌아가기" className="book-reader__back">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -160,6 +160,8 @@ export default function BookReadPage() {
                   page={page}
                   active={active}
                   highlights={data.highlights}
+                  words={data.words}
+                  comments={data.comments}
                   onHighlight={(selection, color) => {
                     setData((current) => ({
                       ...current,
@@ -178,11 +180,32 @@ export default function BookReadPage() {
                   onWord={(word) => {
                     setData((current) => ({
                       ...current,
-                      words: [...new Set([...current.words, word])],
+                      words: current.words.some(
+                        (entry) => JSON.stringify(entry.ranges) === JSON.stringify(word.ranges),
+                      )
+                        ? current.words
+                        : [...current.words, { ...word, id: crypto.randomUUID() }],
                     }));
                     setNotice("선택한 텍스트를 이 기기의 단어장에 저장했습니다.");
                   }}
-                  onComment={openComments}
+                  onComment={(selection, text) => {
+                    if (!text.trim()) return;
+                    setData((current) => ({
+                      ...current,
+                      comments: [
+                        ...current.comments,
+                        {
+                          id: crypto.randomUUID(),
+                          page: selection.ranges[0].pdfPage,
+                          pages: [...new Set(selection.ranges.map((range) => range.pdfPage))],
+                          ranges: selection.ranges,
+                          quote: selection.text,
+                          text: text.trim(),
+                        },
+                      ],
+                    }));
+                    setNotice("댓글을 저장했습니다.");
+                  }}
                 />
               )}
             />

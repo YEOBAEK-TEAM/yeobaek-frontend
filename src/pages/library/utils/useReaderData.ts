@@ -1,5 +1,6 @@
 ﻿import { useState } from "react";
 import type { SetStateAction } from "react";
+import type { ReaderSelection, ReaderSelectionRange } from "./readerSelection";
 
 export type ReaderHighlight = {
   id: string;
@@ -15,13 +16,15 @@ export type ReaderComment = {
   pages?: number[];
   quote: string;
   text: string;
+  ranges?: ReaderSelectionRange[];
 };
+export type ReaderWord = ReaderSelection & { id: string };
 type ReaderData = {
   liked: boolean;
   bookmarks: number[];
   readerBookmarks?: { pdfPage: number; start: number; imageId?: string }[];
   highlights: ReaderHighlight[];
-  words: string[];
+  words: ReaderWord[];
   comments: ReaderComment[];
 };
 const empty: ReaderData = { liked: false, bookmarks: [], highlights: [], words: [], comments: [] };
@@ -38,6 +41,13 @@ export function useReaderData() {
       )
         return {
           ...saved,
+          // Legacy entries have no source location. Keep them in the collection
+          // without guessing which occurrence in the book should be marked.
+          words: saved.words.map((word: string | ReaderWord, index: number) =>
+            typeof word === "string"
+              ? { id: `legacy-word:${index}`, text: word, ranges: [] }
+              : word,
+          ),
           readerBookmarks: Array.isArray(saved.readerBookmarks) ? saved.readerBookmarks : undefined,
         };
     } catch {
