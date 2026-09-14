@@ -1,4 +1,4 @@
-﻿import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { ReaderPage } from "../utils/paginateReaderText";
 import type { ReaderComment, ReaderHighlight, ReaderWord } from "../utils/useReaderData";
 import type { ReaderSelection } from "../utils/readerSelection";
@@ -9,6 +9,7 @@ import TextSelectionMenu from "./TextSelectionMenu";
 type Props = {
   page: ReaderPage;
   active: boolean;
+  onSwipeDisabledChange: (disabled: boolean) => void;
   highlights: ReaderHighlight[];
   words: ReaderWord[];
   comments: ReaderComment[];
@@ -20,6 +21,7 @@ type Props = {
 export default function BookTextReader({
   page,
   active,
+  onSwipeDisabledChange,
   highlights,
   words,
   comments,
@@ -30,12 +32,22 @@ export default function BookTextReader({
   const articleRef = useRef<HTMLElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { selection, mode, anchor, capture, activate, finish } = useTextSelection(
-    page,
-    active,
-    articleRef,
-    menuRef,
-  );
+  const {
+    selection,
+    mode,
+    anchor,
+    capture,
+    activate,
+    finish,
+    isSelecting,
+    selectionMenuOpen,
+    pointerDown,
+    pointerMove,
+    pointerUp,
+  } = useTextSelection(page, active, articleRef, menuRef);
+  useEffect(() => {
+    if (active) onSwipeDisabledChange(isSelecting || selectionMenuOpen);
+  }, [active, isSelecting, selectionMenuOpen, onSwipeDisabledChange]);
   const selectedColor = highlights.at(-1)?.color ?? "#c6d8d4";
   const preview =
     selection && (mode === "highlight" || mode === "comment")
@@ -49,7 +61,10 @@ export default function BookTextReader({
         aria-label={`PDF ${page.pdfPages.join(", ")}페이지 본문`}
         data-page-number={page.pdfPage}
         className="book-reader__text"
-        onPointerUp={active ? capture : undefined}
+        onPointerDown={pointerDown}
+        onPointerMove={pointerMove}
+        onPointerUp={active ? pointerUp : undefined}
+        onPointerCancel={active ? pointerUp : undefined}
         onKeyUp={active ? capture : undefined}
         onTouchEnd={active ? capture : undefined}
       >

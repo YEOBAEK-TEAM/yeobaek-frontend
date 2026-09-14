@@ -1,12 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useCallback, useEffect, useRef, useState } from "react";
 import type { PointerEvent, ReactNode } from "react";
+import { flushSync } from "react-dom";
 import type { ReaderPage } from "../utils/paginateReaderText";
 
 type Props = {
   pages: ReaderPage[];
   index: number;
   onNavigate: (index: number) => void;
-  renderPage: (page: ReaderPage, active: boolean) => ReactNode;
+  renderPage: (
+    page: ReaderPage,
+    active: boolean,
+    onSwipeDisabledChange: (disabled: boolean) => void,
+  ) => ReactNode;
 };
 type Gesture = { id: number; x: number; y: number; time: number; width: number; dragging: boolean };
 const hasSelection = () => Boolean(window.getSelection()?.toString());
@@ -16,15 +21,28 @@ export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }:
   const gesture = useRef<Gesture | null>(null);
   const timer = useRef<number | undefined>(undefined);
   const [motion, setMotion] = useState({ delta: 0, settling: false, dragging: false });
+  const swipeDisabled = useRef(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const onSwipeDisabledChange = useCallback((disabled: boolean) => {
+    swipeDisabled.current = disabled;
+    setSelectionMode(disabled);
+    if (disabled) {
+      gesture.current = null;
+      window.clearTimeout(timer.current);
+      setMotion({ delta: 0, settling: false, dragging: false });
+    }
+  }, []);
   useEffect(() => () => window.clearTimeout(timer.current), []);
   const blocked = () =>
-    hasSelection() || Boolean(viewport.current?.querySelector(".book-reader__selection"));
+    swipeDisabled.current ||
+    hasSelection() ||
+    Boolean(viewport.current?.querySelector(".book-reader__selection"));
   const settle = (direction: number, width: number) => {
     gesture.current = null;
     setMotion({ delta: -direction * width, settling: true, dragging: false });
     window.clearTimeout(timer.current);
     timer.current = window.setTimeout(() => {
-      if (direction) onNavigate(index + direction);
+      if (direction && !blocked()) onNavigate(index + direction);
       setMotion({ delta: 0, settling: false, dragging: false });
     }, 260);
   };
@@ -39,11 +57,6 @@ export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }:
     if (event.button !== 0 || motion.settling || blocked()) return;
     const target = event.target as HTMLElement;
     if (target.closest("button, input, a, textarea, .book-reader__selection")) return;
-    // Native mouse selection owns text. Page dragging starts in the page margins.
-    if (event.pointerType === "mouse" && target.closest(".book-reader__text")) return;
-    // A margin drag must not create a transient native text selection while
-    // crossing into the article before React paints the dragging class.
-    if (event.pointerType === "mouse") event.preventDefault();
     gesture.current = {
       id: event.pointerId,
       x: event.clientX,
@@ -65,7 +78,7 @@ export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }:
     if (!current.dragging) {
       // Leave stationary/long presses and vertical gestures to native selection.
       if (
-        (event.pointerType !== "mouse" && performance.now() - current.time > 250) ||
+        (event.pointerType !== "mouse" && performance.now() - current.time >= 400) ||
         Math.abs(dy) > Math.abs(dx) + 8
       ) {
         gesture.current = null;
@@ -88,7 +101,7 @@ export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }:
       return;
     }
     const dx = event.clientX - current.x;
-    const threshold = Math.min(90, current.width * 0.22);
+    const threshold = 90;
     let direction = !blocked() && Math.abs(dx) >= threshold ? (dx < 0 ? 1 : -1) : 0;
     if (index + direction < 0 || index + direction >= pages.length) direction = 0;
     settle(direction, current.width);
@@ -98,11 +111,32 @@ export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }:
   return (
     <div
       ref={viewport}
-      className={`book-reader__viewport${motion.dragging ? " is-dragging" : ""}`}
+      className={`book-reader__viewport${selectionMode ? " is-selection-mode" : ""}${motion.dragging ? " is-dragging" : ""}`}
       role="region"
-      aria-label="전자책 본문. 좌우 여백을 드래그하거나 방향키로 페이지 이동"
+      aria-label="전자책 본문. 좌우 드래그로 페이지 이동, 더블클릭으로 텍스트 선택"
       tabIndex={0}
       onPointerDownCapture={down}
+      onMouseDownCapture={(event) => {
+        if (
+          event.button !== 0 ||
+          (event.target as Element).closest("button, input, a, textarea, .book-reader__selection")
+        )
+          return;
+        if (event.detail >= 2) {
+          // Apply selectable CSS before the second mousedown's native default
+          // action. The browser can then select the word at the click position.
+          gesture.current = null;
+          if ((event.target as Element).closest(".book-reader__text p")) {
+            flushSync(() => onSwipeDisabledChange(true));
+          }
+          return;
+        }
+        // Suppress native text dragging only in the default page-navigation mode.
+        if (!blocked()) event.preventDefault();
+      }}
+      onDoubleClick={() => {
+        if (!hasSelection()) onSwipeDisabledChange(false);
+      }}
       onPointerMove={move}
       onPointerUp={up}
       onPointerCancel={cancel}
@@ -127,6 +161,8 @@ export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }:
           transition: motion.settling ? "transform 260ms cubic-bezier(.22,.61,.36,1)" : "none",
         }}
       >
+        {/* The callback is passed to the reader and invoked by its effect, never during render. */}
+        {/* eslint-disable react-hooks/refs */}
         {[-1, 0, 1].map((offset) => {
           const page = pages[index + offset];
           return (
@@ -139,10 +175,11 @@ export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }:
               data-pdf-page={page?.pdfPage}
               data-source-start={page?.start}
             >
-              {page && renderPage(page, offset === 0)}
+              {page && renderPage(page, offset === 0, onSwipeDisabledChange)}
             </section>
           );
         })}
+        {/* eslint-enable react-hooks/refs */}
       </div>
     </div>
   );

@@ -116,6 +116,23 @@
 .book-reader__text p {
   margin: 0;
 }
+@media (pointer: fine) {
+  .book-reader__viewport .book-reader__text {
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: grab;
+  }
+  .book-reader__viewport.is-selection-mode .book-reader__text {
+    -webkit-user-select: text;
+    user-select: text;
+    cursor: text;
+  }
+  .book-reader__viewport.is-dragging .book-reader__text {
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: grabbing;
+  }
+}
 .book-reader__image {
   display: block;
   max-width: 100%;

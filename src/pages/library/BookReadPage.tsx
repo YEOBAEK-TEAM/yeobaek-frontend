@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Document, pdfjs } from "react-pdf";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { Link } from "react-router-dom";
@@ -154,11 +154,12 @@ export default function BookReadPage() {
               pages={readerPages}
               index={pageIndex}
               onNavigate={(index) => goToPage(index + 1)}
-              renderPage={(page, active) => (
+              renderPage={(page, active, onSwipeDisabledChange) => (
                 <BookTextReader
                   key={page.id}
                   page={page}
                   active={active}
+                  onSwipeDisabledChange={onSwipeDisabledChange}
                   highlights={data.highlights}
                   words={data.words}
                   comments={data.comments}
