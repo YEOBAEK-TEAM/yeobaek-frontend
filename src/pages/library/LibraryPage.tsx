@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
+import type { PointerEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
@@ -10,6 +11,17 @@ export default function LibraryPage() {
   const libraryBooks = books.filter((book) => book.isInLibrary);
 
   const [selectedBookId, setSelectedBookId] = useState(libraryBooks[0]?.id ?? 1);
+  const [isDragging, setIsDragging] = useState(false);
+  const drag = useRef<{ pointerId: number; startX: number; scrollLeft: number } | null>(null);
+  const moved = useRef(false);
+  const endDrag = (event: PointerEvent<HTMLDivElement>) => {
+    if (drag.current?.pointerId !== event.pointerId) return;
+    drag.current = null;
+    setIsDragging(false);
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+  };
 
   const selectedBook = libraryBooks.find((book) => book.id === selectedBookId) ?? libraryBooks[0];
 
@@ -30,7 +42,45 @@ export default function LibraryPage() {
 
       {/* 상단 도서 목록 */}
       <section className="mt-6">
-        <div className="flex gap-3 overflow-x-auto px-3 pb-2 [scrollbar] [&::-webkit-scrollbar]:hidden">
+        <div
+          className={`flex gap-3 overflow-x-auto px-3 pb-2 [scrollbar] [&::-webkit-scrollbar]:hidden [@media(pointer:fine)]:select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+          onPointerDown={(event) => {
+            moved.current = false;
+            if (event.pointerType !== "mouse" || event.button !== 0 || !event.isPrimary) return;
+            drag.current = {
+              pointerId: event.pointerId,
+              startX: event.clientX,
+              scrollLeft: event.currentTarget.scrollLeft,
+            };
+            setIsDragging(true);
+          }}
+          onPointerMove={(event) => {
+            const current = drag.current;
+            if (!current || current.pointerId !== event.pointerId) return;
+            const distance = event.clientX - current.startX;
+            if (!moved.current && Math.abs(distance) < 5) return;
+            moved.current = true;
+            // Capture only a confirmed drag so a simple click still targets its book.
+            if (!event.currentTarget.hasPointerCapture(event.pointerId)) {
+              event.currentTarget.setPointerCapture(event.pointerId);
+            }
+            event.preventDefault();
+            event.currentTarget.scrollLeft = current.scrollLeft - distance;
+          }}
+          onPointerUp={endDrag}
+          onPointerCancel={endDrag}
+          onLostPointerCapture={endDrag}
+          onPointerLeave={(event) => {
+            if (!event.currentTarget.hasPointerCapture(event.pointerId)) endDrag(event);
+          }}
+          onClickCapture={(event) => {
+            if (moved.current && event.detail !== 0) {
+              event.preventDefault();
+              event.stopPropagation();
+              moved.current = false;
+            }
+          }}
+        >
           {libraryBooks.map((book) => {
             const isSelected = book.id === selectedBookId;
 
@@ -39,7 +89,7 @@ export default function LibraryPage() {
                 key={book.id}
                 type="button"
                 onClick={() => setSelectedBookId(book.id)}
-                className="w-21.5 shrink-0 cursor-pointer"
+                className="w-21.5 shrink-0 cursor-inherit"
               >
                 {/* 책 표지 */}
                 <div
@@ -50,6 +100,7 @@ export default function LibraryPage() {
                   <img
                     src={book.coverUrl}
                     alt={`${book.title} 표지`}
+                    draggable={false}
                     className="h-full w-full object-cover"
                   />
                 </div>
