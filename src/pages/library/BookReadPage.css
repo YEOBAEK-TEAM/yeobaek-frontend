@@ -231,6 +231,48 @@
   gap: 7px;
   padding: 4px 0;
 }
+.book-reader__text-container.has-inline-menu {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.book-reader__selection--inline {
+  position: static;
+  margin: 8px 0 18px;
+  user-select: none;
+  cursor: default;
+}
+.book-reader__collected {
+  width: max-content;
+  max-width: 100%;
+  transform: translateX(-50%);
+  border: 1px solid #ffffff65;
+  border-radius: 22px;
+  background: #676767b3;
+  color: white;
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  box-shadow:
+    0 5px 18px #0003,
+    inset 0 1px 0 #ffffff40;
+  overflow: visible;
+  user-select: none;
+}
+.book-reader__collected-actions {
+  display: flex;
+  align-items: center;
+  padding: 8px 6px;
+}
+.book-reader__collected-actions button {
+  padding: 3px 10px;
+  white-space: nowrap;
+}
+.book-reader__collected-actions button + button {
+  border-left: 1px solid #ffffff60;
+}
+.book-reader__collected .book-reader__palette {
+  padding: 10px 14px 14px;
+}
 .book-reader__selection-actions button {
   min-height: 36px;
   padding: 5px 13px;

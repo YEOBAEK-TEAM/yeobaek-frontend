@@ -161,6 +161,17 @@ export default function BookReadPage() {
                   active={active}
                   onSwipeDisabledChange={onSwipeDisabledChange}
                   highlights={data.highlights}
+                  onUpdateHighlight={(id, color) => {
+                    setData((current) => ({
+                      ...current,
+                      highlights: color
+                        ? current.highlights.map((entry) =>
+                            entry.id === id ? { ...entry, color } : entry,
+                          )
+                        : current.highlights.filter((entry) => entry.id !== id),
+                    }));
+                    setNotice("변경사항이 저장됐습니다");
+                  }}
                   words={data.words}
                   comments={data.comments}
                   onHighlight={(selection, color) => {

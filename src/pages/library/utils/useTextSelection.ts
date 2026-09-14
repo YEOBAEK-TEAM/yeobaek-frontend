@@ -64,6 +64,13 @@ export function useTextSelection(
     // The saved source ranges now own the preview, independent of input focus.
     window.getSelection()?.removeAllRanges();
   };
+  const openSelection = (next: ReaderSelection, nextMode: SelectionMode = "default") => {
+    frozen.current = true;
+    setSelection(next);
+    setIsSelecting(true);
+    setMode(nextMode);
+    window.getSelection()?.removeAllRanges();
+  };
   const capture = useCallback(() => {
     if (!active || frozen.current) return;
     const selected = window.getSelection();
@@ -82,7 +89,9 @@ export function useTextSelection(
     const result = getReaderSelection(article, range, page.fragments);
     if (!result.text.trim() || !result.ranges.length) return;
     setIsSelecting(true);
-    setSelection(result);
+    setSelection((previous) =>
+      JSON.stringify(previous) === JSON.stringify(result) ? previous : result,
+    );
     setMode("default");
     const rect = range.getBoundingClientRect();
     const origin = article.parentElement?.getBoundingClientRect().top ?? 0;
@@ -128,6 +137,7 @@ export function useTextSelection(
     anchor,
     capture,
     activate,
+    openSelection,
     finish,
     isSelecting,
     selectionMenuOpen: !!selection,
