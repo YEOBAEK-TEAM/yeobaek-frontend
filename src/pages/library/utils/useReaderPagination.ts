@@ -40,7 +40,7 @@ export function useReaderPagination(
       body.append(measure);
       try {
         await document.fonts.ready;
-        const pages: ReaderPage[] = [];
+        const stream: ReaderBlock[] = [];
         for (let pdfPage = 1; pdfPage <= pdf.numPages; pdfPage++) {
           if (disposed || run !== generation) return;
           let text = cache.get(pdfPage);
@@ -51,12 +51,14 @@ export function useReaderPagination(
           }
           const blocks = await text;
           if (disposed || run !== generation) return;
-          pages.push(...paginateReaderBlocks(blocks, pdfPage, measure, height));
+          stream.push(...blocks);
           setState((current) => ({ ...current, prepared: pdfPage }));
           // Give input, resize and paint a turn during initial book preparation.
           await new Promise((resolve) => window.setTimeout(resolve, 0));
         }
         if (!disposed && run === generation) {
+          // Only the viewport height ends a reader page, never a source PDF boundary.
+          const pages = paginateReaderBlocks(stream, 1, measure, height);
           setState((current) => ({
             pages,
             index: findReaderPage(pages, current.pages[current.index]),

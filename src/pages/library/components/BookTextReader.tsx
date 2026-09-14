@@ -1,15 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReaderPage } from "../utils/paginateReaderText";
 import type { ReaderHighlight } from "../utils/useReaderData";
+import { getReaderSelection } from "../utils/readerSelection";
+import type { ReaderSelection } from "../utils/readerSelection";
 
-type Selection = { text: string; start: number; end: number };
 type Props = {
   page: ReaderPage;
   active: boolean;
   highlights: ReaderHighlight[];
-  onHighlight: (selection: Selection, color: string) => void;
+  onHighlight: (selection: ReaderSelection, color: string) => void;
   onWord: (text: string) => void;
-  onComment: (text: string) => void;
+  onComment: (text: string, pdfPages: number[]) => void;
 };
 const colors = ["#c6d8d4", "#c7cfe7", "#d6cadb", "#e9e59c", "#d1d1d1"];
 const colorNames = ["민트", "파랑", "보라", "노랑", "회색"];
@@ -24,7 +25,7 @@ export default function BookTextReader({
 }: Props) {
   const pageNumber = page.pdfPage;
 
-  const [selection, setSelection] = useState<Selection | null>(null);
+  const [selection, setSelection] = useState<ReaderSelection | null>(null);
   const [menuTop, setMenuTop] = useState(0);
   const [paletteOpen, setPaletteOpen] = useState(false);
   const articleRef = useRef<HTMLElement>(null);
@@ -45,13 +46,9 @@ export default function BookTextReader({
     if (!active || !article || !selected || selected.isCollapsed || !selected.rangeCount) return;
     const range = selected.getRangeAt(0);
     if (!article.contains(range.startContainer) || !article.contains(range.endContainer)) return;
-    const prefix = range.cloneRange();
-    prefix.selectNodeContents(article);
-    prefix.setEnd(range.startContainer, range.startOffset);
-    const start = page.start + prefix.toString().length;
-    const text = range.toString();
-    if (!text.trim()) return;
-    setSelection({ text, start, end: start + text.length });
+    const result = getReaderSelection(article, range, page.fragments);
+    if (!result.text.trim() || !result.ranges.length) return;
+    setSelection(result);
     const rect = range.getBoundingClientRect();
     setMenuTop(
       Math.max(
@@ -63,7 +60,7 @@ export default function BookTextReader({
       ),
     );
     setPaletteOpen(false);
-  }, [active, page.start]);
+  }, [active, page.fragments]);
   useEffect(() => {
     if (!active) return;
     // Mobile selection handles can change the range after pointerup/touchend.
@@ -86,7 +83,7 @@ export default function BookTextReader({
     <div className="book-reader__text-container">
       <article
         ref={articleRef}
-        aria-label={`PDF ${pageNumber}페이지 본문`}
+        aria-label={`PDF ${page.pdfPages.join(", ")}페이지 본문`}
         data-page-number={pageNumber}
         className="book-reader__text"
         onPointerUp={active ? captureSelection : undefined}
@@ -99,7 +96,8 @@ export default function BookTextReader({
               <img
                 key={fragment.id}
                 src={fragment.src}
-                alt={`PDF ${pageNumber}페이지 삽화`}
+                alt={`PDF ${fragment.pdfPage}페이지 삽화`}
+                data-pdf-page={fragment.pdfPage}
                 className="book-reader__image"
                 data-image-id={fragment.id}
                 width={fragment.width}
@@ -108,30 +106,39 @@ export default function BookTextReader({
                 draggable={false}
               />
             );
-          const { text: paragraph, start, paragraph: index } = fragment;
+          const { text: paragraph, start, end, paragraph: index } = fragment;
 
-          const end = start + paragraph.length;
           const relevant = highlights.filter(
-            (highlight) => highlight.start < end && highlight.end > start,
+            (highlight) =>
+              highlight.page === fragment.pdfPage && highlight.start < end && highlight.end > start,
           );
+          const sourceAt = (offset: number) => fragment.sourceOffsets?.[offset] ?? start + offset;
+          const displayRange = (highlight: ReaderHighlight) => {
+            let from = 0;
+            while (from < paragraph.length && sourceAt(from + 1) <= highlight.start) from++;
+            let to = from;
+            while (to < paragraph.length && sourceAt(to) < highlight.end) to++;
+            return [from, to];
+          };
           const boundaries = [
-            ...new Set([
-              start,
-              end,
-              ...relevant.flatMap((highlight) => [
-                Math.max(start, highlight.start),
-                Math.min(end, highlight.end),
-              ]),
-            ]),
+            ...new Set([0, paragraph.length, ...relevant.flatMap(displayRange)]),
           ].sort((a, b) => a - b);
           return (
-            <p key={fragment.id} dir="auto" data-paragraph-id={`${pageNumber}-${index}`}>
+            <p
+              key={fragment.id}
+              dir="auto"
+              data-paragraph-id={`${fragment.pdfPage}-${index}`}
+              data-fragment-id={fragment.id}
+              data-pdf-page={fragment.pdfPage}
+              data-source-start={start}
+              data-source-end={end}
+            >
               {boundaries.slice(0, -1).map((position, part) => {
                 const next = boundaries[part + 1];
                 const highlight = relevant.findLast(
-                  (entry) => entry.start <= position && entry.end >= next,
+                  (entry) => entry.start < sourceAt(next) && entry.end > sourceAt(position),
                 );
-                const text = paragraph.slice(position - start, next - start);
+                const text = paragraph.slice(position, next);
                 return highlight ? (
                   <mark
                     key={position}
@@ -183,7 +190,9 @@ export default function BookTextReader({
             <button
               type="button"
               onClick={() => {
-                onComment(selection.text);
+                onComment(selection.text, [
+                  ...new Set(selection.ranges.map((range) => range.pdfPage)),
+                ]);
                 finish();
               }}
             >

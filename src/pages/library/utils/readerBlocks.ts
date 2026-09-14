@@ -5,6 +5,7 @@ export type ReaderTextBlock = {
   pdfPage: number;
   start: number;
   paragraph: number;
+  sourceOffsets?: number[];
 };
 export type ReaderImageBlock = {
   type: "image";

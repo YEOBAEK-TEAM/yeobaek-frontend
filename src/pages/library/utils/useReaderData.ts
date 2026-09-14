@@ -9,7 +9,13 @@ export type ReaderHighlight = {
   text: string;
   color: string;
 };
-export type ReaderComment = { id: string; page: number; quote: string; text: string };
+export type ReaderComment = {
+  id: string;
+  page: number;
+  pages?: number[];
+  quote: string;
+  text: string;
+};
 type ReaderData = {
   liked: boolean;
   bookmarks: number[];

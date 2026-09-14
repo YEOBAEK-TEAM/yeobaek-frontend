@@ -1,5 +1,5 @@
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import { extractPdfPageTextLayout } from "./extractPdfPageText";
+import { extractPdfPageTextLayout, mapSourceOffsets } from "./extractPdfPageText";
 import { extractPdfPageImages, PdfImageResources } from "./extractPdfPageImages";
 import type { ReaderBlock } from "./readerBlocks";
 
@@ -42,9 +42,12 @@ export async function extractPdfPageContent(
       if (paragraph.column !== column) return;
       paragraph.lines.forEach((line) => {
         insertPictures(line.y);
+        const sourceOffsets = mapSourceOffsets(line.sourceText, line.text, offset);
         const last = blocks[blocks.length - 1];
-        if (last?.type === "text" && last.paragraph === index) last.content += line.text;
-        else
+        if (last?.type === "text" && last.paragraph === index) {
+          last.content += line.text;
+          last.sourceOffsets?.push(...sourceOffsets.slice(1));
+        } else
           blocks.push({
             type: "text",
             id: `text:${pdfPage}:${offset}`,
@@ -52,8 +55,9 @@ export async function extractPdfPageContent(
             pdfPage,
             start: offset,
             paragraph: index,
+            sourceOffsets,
           });
-        offset += line.text.length;
+        offset += line.sourceText.length;
       });
     });
     insertPictures(-Infinity);

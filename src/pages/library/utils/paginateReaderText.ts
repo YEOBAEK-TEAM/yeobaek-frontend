@@ -1,12 +1,22 @@
 ﻿import type { ReaderBlock, ReaderImageBlock } from "./readerBlocks";
 
 export type ReaderFragment =
-  | { type: "text"; id: string; text: string; start: number; paragraph: number }
+  | {
+      type: "text";
+      id: string;
+      text: string;
+      pdfPage: number;
+      start: number;
+      end: number;
+      sourceOffsets?: number[];
+      paragraph: number;
+    }
   | (ReaderImageBlock & { displayWidth: number; displayHeight: number });
 export type ReaderAnchor = { pdfPage: number; start: number; imageId?: string };
 export type ReaderPage = ReaderAnchor & {
   id: string;
   end: number;
+  pdfPages: number[];
   fragments: ReaderFragment[];
 };
 
@@ -27,11 +37,12 @@ export function paginateReaderBlocks(
     const first = fragments[0];
     const last = fragments[fragments.length - 1];
     pages.push({
-      id: `${pdfPage}:${first.type === "image" ? first.id : first.start}`,
-      pdfPage,
+      id: `${first.pdfPage}:${first.type === "image" ? first.id : first.start}`,
+      pdfPage: first.pdfPage,
+      pdfPages: [...new Set(fragments.map((fragment) => fragment.pdfPage))],
       start: first.start,
       imageId: first.type === "image" ? first.id : undefined,
-      end: last.start + (last.type === "text" ? last.text.length : 0),
+      end: last.type === "text" ? last.end : last.start,
       fragments,
     });
     fragments = [];
@@ -91,7 +102,10 @@ export function paginateReaderBlocks(
         type: "text",
         id: `${block.id}:${start}`,
         text: value,
-        start: block.start + start,
+        pdfPage: block.pdfPage,
+        start: block.sourceOffsets?.[start] ?? block.start + start,
+        end: block.sourceOffsets?.[boundaries[low]] ?? block.start + boundaries[low],
+        sourceOffsets: block.sourceOffsets?.slice(start, boundaries[low] + 1),
         paragraph: block.paragraph,
       });
       consumed = low;
@@ -99,7 +113,15 @@ export function paginateReaderBlocks(
     }
   }
   flush();
-  if (!pages.length) pages.push({ id: `${pdfPage}:0`, pdfPage, start: 0, end: 0, fragments: [] });
+  if (!pages.length)
+    pages.push({
+      id: `${pdfPage}:0`,
+      pdfPage,
+      pdfPages: [pdfPage],
+      start: 0,
+      end: 0,
+      fragments: [],
+    });
   return pages;
 }
 
@@ -127,14 +149,22 @@ export function paginateReaderText(
 }
 
 export function readerPageContainsAnchor(page: ReaderPage, anchor: ReaderAnchor) {
-  if (page.pdfPage !== anchor.pdfPage) return false;
   if (anchor.imageId)
     return page.fragments.some(
-      (fragment) => fragment.type === "image" && fragment.id === anchor.imageId,
+      (fragment) =>
+        fragment.pdfPage === anchor.pdfPage &&
+        fragment.type === "image" &&
+        fragment.id === anchor.imageId,
     );
   return (
-    page.start <= anchor.start &&
-    (page.end > anchor.start || (!page.fragments.length && page.start === anchor.start))
+    page.fragments.some(
+      (fragment) =>
+        fragment.pdfPage === anchor.pdfPage &&
+        fragment.type === "text" &&
+        fragment.start <= anchor.start &&
+        anchor.start < fragment.end,
+    ) ||
+    (!page.fragments.length && page.pdfPage === anchor.pdfPage && page.start === anchor.start)
   );
 }
 
@@ -144,7 +174,7 @@ export function findReaderPage(pages: ReaderPage[], anchor?: ReaderAnchor) {
   return index < 0
     ? Math.max(
         0,
-        pages.findIndex((page) => page.pdfPage === anchor.pdfPage),
+        pages.findIndex((page) => page.pdfPages.includes(anchor.pdfPage)),
       )
     : index;
 }

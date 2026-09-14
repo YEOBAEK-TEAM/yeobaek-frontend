@@ -62,6 +62,7 @@ export default function BookReadPage() {
   const { data, setData, storageError } = useReaderData();
   const [commentOpen, setCommentOpen] = useState(false);
   const [quote, setQuote] = useState("");
+  const [commentPages, setCommentPages] = useState<number[]>([]);
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState("");
   useEffect(() => {
@@ -87,13 +88,20 @@ export default function BookReadPage() {
     setNotice("");
     window.getSelection()?.removeAllRanges();
   };
-  const comments = data.comments.filter((comment) => comment.page === pdfPage);
+  const visiblePdfPages = currentPage?.pdfPages ?? [pdfPage];
+  const comments = data.comments.filter((comment) =>
+    (comment.pages ?? [comment.page]).some((page) => visiblePdfPages.includes(page)),
+  );
+  const shownComments = comments.filter((comment) =>
+    (comment.pages ?? [comment.page]).some((page) => commentPages.includes(page)),
+  );
   const bookmarks =
     data.readerBookmarks ?? data.bookmarks.map((page) => ({ pdfPage: page, start: 0 }));
   const bookmarked =
     !!currentPage && bookmarks.some((bookmark) => readerPageContainsAnchor(currentPage, bookmark));
-  const openComments = (text = "") => {
+  const openComments = (text = "", pages = visiblePdfPages) => {
     setQuote(text);
+    setCommentPages(pages);
     setDraft("");
     setCommentOpen(true);
   };
@@ -151,15 +159,18 @@ export default function BookReadPage() {
                   key={page.id}
                   page={page}
                   active={active}
-                  highlights={data.highlights.filter(
-                    (highlight) => highlight.page === page.pdfPage,
-                  )}
+                  highlights={data.highlights}
                   onHighlight={(selection, color) => {
                     setData((current) => ({
                       ...current,
                       highlights: [
                         ...current.highlights,
-                        { ...selection, color, page: page.pdfPage, id: crypto.randomUUID() },
+                        ...selection.ranges.map(({ pdfPage, ...range }) => ({
+                          ...range,
+                          color,
+                          page: pdfPage,
+                          id: crypto.randomUUID(),
+                        })),
                       ],
                     }));
                     setNotice("문장을 수집했습니다.");
@@ -272,15 +283,15 @@ export default function BookReadPage() {
             }}
           >
             <div className="book-reader__sheet-heading">
-              <h2 id="reader-comments-title">PDF {pdfPage}페이지 댓글</h2>
+              <h2 id="reader-comments-title">PDF {commentPages.join(", ")}페이지 댓글</h2>
               <button type="button" onClick={() => setCommentOpen(false)} aria-label="댓글 닫기">
                 닫기
               </button>
             </div>
             <p className="book-reader__storage-note">댓글과 수집 기록은 이 기기에 저장됩니다.</p>
             <div className="book-reader__comments">
-              {comments.length ? (
-                comments.map((comment) => (
+              {shownComments.length ? (
+                shownComments.map((comment) => (
                   <div key={comment.id}>
                     {comment.quote && <blockquote>{comment.quote}</blockquote>}
                     <p>{comment.text}</p>
@@ -298,7 +309,13 @@ export default function BookReadPage() {
                   ...current,
                   comments: [
                     ...current.comments,
-                    { id: crypto.randomUUID(), page: pdfPage, quote, text: draft.trim() },
+                    {
+                      id: crypto.randomUUID(),
+                      page: commentPages[0] ?? pdfPage,
+                      pages: commentPages,
+                      quote,
+                      text: draft.trim(),
+                    },
                   ],
                 }));
                 setDraft("");
