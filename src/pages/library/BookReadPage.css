@@ -1,3 +1,23 @@
+.reader-settings__slider {
+  appearance: none;
+  height: 4px;
+  border-radius: 0;
+  cursor: pointer;
+}
+.reader-settings__slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #595854;
+}
+.reader-settings__slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: #595854;
+}
 .book-reader {
   position: fixed;
   top: 0;
@@ -10,8 +30,8 @@
   flex-direction: column;
   padding: max(20px, env(safe-area-inset-top)) 20px 0;
   overflow: hidden;
-  background: #f7f6f1;
-  color: #595854;
+  background: var(--reader-background, #f7f6f1);
+  color: var(--reader-foreground, #595854);
 }
 .book-reader button,
 .book-reader input,
@@ -105,9 +125,9 @@
 }
 .book-reader__text {
   display: flow-root;
-  font-family: "Batang", "바탕", "Noto Serif CJK KR", Georgia, serif;
-  font-size: 16px;
-  line-height: 1.95;
+  font-family: var(--reader-font-family, "Batang", "바탕", "Noto Serif CJK KR", Georgia, serif);
+  font-size: var(--reader-font-size, 16px);
+  line-height: var(--reader-line-height, 1.95);
   font-weight: 400;
   overflow-wrap: anywhere;
   user-select: text;
@@ -146,11 +166,11 @@
 }
 .book-reader__text ::selection {
   background: #d1d1d1;
-  color: inherit;
+  color: #595854;
 }
 .book-reader__text mark {
   --reader-mark-padding: 5px;
-  color: inherit;
+  color: #595854;
   padding: var(--reader-mark-padding) 0;
   box-decoration-break: clone;
 }
@@ -185,6 +205,7 @@
   bottom: calc(-1 * var(--reader-mark-padding) - 4px);
 }
 .book-reader__footer {
+  color: #595854;
   position: relative;
   flex-shrink: 0;
   margin-inline: -20px;
@@ -246,6 +267,7 @@
   justify-content: flex-end;
 }
 .book-reader__selection {
+  color: #595854;
   position: absolute;
   left: 0;
   z-index: 10;

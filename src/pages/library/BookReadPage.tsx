@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
+import ReaderSettingsPanel from "./components/ReaderSettingsPanel";
+import { READER_FONTS, useReaderSettings } from "./utils/useReaderSettings";
 import { Document, pdfjs } from "react-pdf";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { Link } from "react-router-dom";
@@ -56,6 +59,8 @@ function Icon({
 export default function BookReadPage() {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const { settings, updateSettings, storageError: settingsStorageError } = useReaderSettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const {
     readerPages,
@@ -64,7 +69,11 @@ export default function BookReadPage() {
     error,
     prepared,
     goToPage: navigate,
-  } = useReaderPagination(pdf, bodyRef);
+  } = useReaderPagination(
+    pdf,
+    bodyRef,
+    `${settings.fontSize}:${settings.lineHeight}:${settings.fontFamily}`,
+  );
 
   const pageNumber = pageIndex + 1;
   const currentPage = readerPages[pageIndex];
@@ -134,7 +143,18 @@ export default function BookReadPage() {
   };
 
   return (
-    <main className="book-reader bg-[#8C8149]">
+    <main
+      className="book-reader"
+      style={
+        {
+          "--reader-font-size": `${settings.fontSize}px`,
+          "--reader-line-height": settings.lineHeight,
+          "--reader-font-family": READER_FONTS[settings.fontFamily],
+          "--reader-background": settings.backgroundColor,
+          "--reader-foreground": settings.backgroundColor === "#000000" ? "#e7e5dd" : "#595854",
+        } as CSSProperties
+      }
+    >
       {/* Header */}
       <header className="book-reader__header">
         <Link to="/library" aria-label="서재로 돌아가기" className="book-reader__back">
@@ -150,6 +170,16 @@ export default function BookReadPage() {
         </Link>
 
         <h1>어린 왕자</h1>
+        <button
+          type="button"
+          aria-label="읽기 설정"
+          aria-haspopup="dialog"
+          aria-expanded={settingsOpen}
+          className="absolute -right-1 flex h-11 w-11 items-center justify-center !text-base !font-semibold"
+          onClick={() => setSettingsOpen(true)}
+        >
+          Aa
+        </button>
       </header>
 
       {/* Reader */}
@@ -277,7 +307,7 @@ export default function BookReadPage() {
       </div>
 
       {/* Reader Notice */}
-      {(notice || storageError) && (
+      {(notice || storageError || settingsStorageError) && (
         <p
           role="status"
           className={`book-reader__notice${
@@ -297,7 +327,9 @@ export default function BookReadPage() {
             </svg>
           )}
 
-          {storageError ? "기기에 저장할 수 없어 이번 방문 동안만 유지됩니다." : notice}
+          {storageError || settingsStorageError
+            ? "기기에 저장할 수 없어 이번 방문 동안만 유지됩니다."
+            : notice}
         </p>
       )}
 
@@ -516,6 +548,13 @@ export default function BookReadPage() {
               };
             })
           }
+        />
+      )}
+      {settingsOpen && (
+        <ReaderSettingsPanel
+          settings={settings}
+          onChange={updateSettings}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
     </main>
