@@ -37,6 +37,10 @@ export function useTextSelection(
   }, []);
   useEffect(() => clearPress, [clearPress]);
   const pointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (mode === "comment") {
+      if (!menuRef.current?.contains(event.target as Node)) event.preventDefault();
+      return;
+    }
     lastPointerType.current = event.pointerType;
     if (
       !active ||
@@ -131,6 +135,10 @@ export function useTextSelection(
     if (!active) return;
     const outside = (event: PointerEvent) => {
       if (menuRef.current?.contains(event.target as Node)) return;
+      if (mode === "comment") {
+        finish();
+        return;
+      }
       if (event.pointerType === "mouse") {
         cancelClick();
         const article = articleRef.current;
@@ -168,11 +176,12 @@ export function useTextSelection(
       document.removeEventListener("selectionchange", capture);
       document.removeEventListener("keydown", escape);
     };
-  }, [active, capture, finish, menuRef, articleRef, cancelClick]);
+  }, [active, capture, finish, menuRef, articleRef, cancelClick, mode]);
   const pointerUp = (
     event?: ReactPointerEvent<HTMLElement>,
     onSingle?: (next: ReaderSelection) => void,
   ) => {
+    if (mode === "comment") return;
     if (event?.pointerType === "mouse") {
       const current = mousePress.current;
       mousePress.current = null;
@@ -202,6 +211,7 @@ export function useTextSelection(
     if (!window.getSelection()?.toString() && !frozen.current) setIsSelecting(false);
   };
   const doubleClick = (event: React.MouseEvent<HTMLElement>) => {
+    if (mode === "comment") return;
     // Touch compatibility mouse events must retain the long-press policy.
     if (lastPointerType.current !== "mouse" || !lastMouseClick.current) return;
     cancelClick();

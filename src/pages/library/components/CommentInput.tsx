@@ -1,8 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { readerUser } from "../../../mocks/readerUser";
 
 export default function CommentInput({ onSubmit }: { onSubmit: (text: string) => void }) {
   const [text, setText] = useState("");
   const input = useRef<HTMLInputElement>(null);
+  const composing = useRef(false);
   useEffect(() => {
     input.current?.focus({ preventScroll: true });
   }, []);
@@ -12,14 +14,16 @@ export default function CommentInput({ onSubmit }: { onSubmit: (text: string) =>
       aria-label="선택한 문장에 댓글쓰기"
       onSubmit={(event) => {
         event.preventDefault();
-        if (text.trim()) onSubmit(text.trim());
+        if (!text.trim() || composing.current) return;
+        onSubmit(text.trim());
+        setText("");
       }}
     >
-      <svg className="book-reader__avatar" viewBox="0 0 28 28" role="img" aria-label="기본 프로필">
-        <circle cx="14" cy="14" r="14" fill="#dedad0" />
-        <circle cx="14" cy="10" r="5" fill="#8c8580" />
-        <path d="M4 25c0-6 4-9 10-9s10 3 10 9" fill="#8c8580" />
-      </svg>
+      <img
+        className="h-6 w-6 shrink-0 rounded-full object-cover"
+        src={readerUser.profileImage}
+        alt={`${readerUser.nickname} 프로필`}
+      />
       <input
         ref={input}
         value={text}
@@ -27,8 +31,20 @@ export default function CommentInput({ onSubmit }: { onSubmit: (text: string) =>
         placeholder="댓글 추가"
         aria-label="댓글 추가"
         maxLength={2000}
+        onCompositionStart={() => {
+          composing.current = true;
+        }}
+        onCompositionEnd={() => {
+          composing.current = false;
+        }}
         onKeyDown={(event) => {
-          if (event.key === "Enter" && event.nativeEvent.isComposing) event.preventDefault();
+          if (
+            event.key === "Enter" &&
+            (composing.current ||
+              event.nativeEvent.isComposing ||
+              event.nativeEvent.keyCode === 229)
+          )
+            event.preventDefault();
         }}
       />
       <button type="submit" disabled={!text.trim()} aria-label="댓글 전송">

@@ -514,7 +514,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 42px;
+  min-height: 36px;
   border: 1px solid #888680;
   border-radius: 4px;
   padding: 5px 8px;
@@ -536,6 +536,16 @@
 .book-reader__inline-comment input::placeholder {
   color: #b4b4b4;
 }
+.book-reader__inline-comment:focus-within {
+  border-color: #595854;
+}
+.book-reader__inline-comment input:focus-visible {
+  outline: none;
+}
+.book-reader__viewport .book-reader__text[data-comment-editing] [data-fragment-id] {
+  -webkit-user-select: none;
+  user-select: none;
+}
 .book-reader__inline-comment button {
   display: grid;
   place-items: center;
@@ -543,7 +553,13 @@
   height: 28px;
   flex-shrink: 0;
   border-radius: 50%;
-  background: #abb0b3;
+  background: #7e856b;
+  color: #fff;
+}
+.book-reader__inline-comment button:disabled {
+  background: #b8be9f;
+  color: #737861;
+  opacity: 1;
 }
 .book-reader__message {
   padding: 28px 0;
@@ -566,6 +582,16 @@
   font:
     13px/1.6 system-ui,
     sans-serif;
+}
+.book-reader__notice--comment {
+  top: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  background: #60605fe6;
 }
 .book-reader__sheet-backdrop {
   position: fixed;

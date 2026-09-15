@@ -12,16 +12,25 @@ export type ReaderHighlight = {
   color: string;
 };
 export type ReaderComment = {
+  type?: "sentence" | "page" | "reply";
+  parentCommentId?: string;
+  user?: { id: number | string; nickname: string; profileImage?: string; isFan?: boolean };
+  likes?: number;
+  dislikes?: number;
+  myVote?: "like" | "dislike";
+  replyTo?: string;
+  createdAt?: string;
   readerAnchor?: ReaderAnchor;
   id: string;
   page: number;
   pages?: number[];
-  quote: string;
+  quote?: string;
   text: string;
   ranges?: ReaderSelectionRange[];
 };
 export type ReaderWord = ReaderSelection & { id: string };
 type ReaderData = {
+  reportedCommentIds?: string[];
   liked: boolean;
   bookmarks: number[];
   readerBookmarks?: { pdfPage: number; start: number; imageId?: string }[];
@@ -43,6 +52,16 @@ export function useReaderData() {
       )
         return {
           ...saved,
+          comments: saved.comments.map((comment: ReaderComment) => ({
+            ...comment,
+            ...(comment.parentCommentId || comment.replyTo
+              ? { parentCommentId: comment.parentCommentId ?? comment.replyTo }
+              : {}),
+            type:
+              comment.parentCommentId || comment.replyTo
+                ? "reply"
+                : (comment.type ?? (comment.ranges?.length || comment.quote ? "sentence" : "page")),
+          })),
           // Legacy entries have no source location. Keep them in the collection
           // without guessing which occurrence in the book should be marked.
           words: saved.words.map((word: string | ReaderWord, index: number) =>

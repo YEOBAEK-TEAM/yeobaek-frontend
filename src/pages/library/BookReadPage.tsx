@@ -2,18 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import { Document, pdfjs } from "react-pdf";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { Link } from "react-router-dom";
+
 import BookTextReader from "./components/BookTextReader";
-import { useReaderData } from "./utils/useReaderData";
+import ReaderCommentsSheet from "./components/ReaderCommentsSheet";
 import ReaderPageDeck from "./components/ReaderPageDeck";
+
+import { useReaderData } from "./utils/useReaderData";
 import { useReaderPagination } from "./utils/useReaderPagination";
 import { readerPageContainsAnchor } from "./utils/paginateReaderText";
 import { getCommentReaderPageIndex } from "./utils/readerComments";
+
+import { readerUser } from "../../mocks/readerUser";
+
 import "./BookReadPage.css";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   "pdfjs-dist/build/pdf.worker.min.mjs",
   import.meta.url,
 ).toString();
+
 const pdfOptions = { wasmUrl: "/wasm/" };
 
 function Icon({
@@ -29,6 +36,7 @@ function Icon({
       "M5 3.5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-3v4l-5-4H5a2 2 0 0 1-2-2v-10a2 2 0 0 1 2-2Z",
     bookmark: "M6 3h12v18l-6-4-6 4V3Z",
   };
+
   return (
     <svg
       width="24"
@@ -48,6 +56,7 @@ function Icon({
 export default function BookReadPage() {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+
   const {
     readerPages,
     pageIndex,
@@ -56,52 +65,77 @@ export default function BookReadPage() {
     prepared,
     goToPage: navigate,
   } = useReaderPagination(pdf, bodyRef);
+
   const pageNumber = pageIndex + 1;
   const currentPage = readerPages[pageIndex];
   const pdfPage = currentPage?.pdfPage ?? 1;
+
   const ready = !!currentPage && !loading && !error;
+
   const { data, setData, storageError } = useReaderData();
+
   const [commentOpen, setCommentOpen] = useState(false);
-  const [quote, setQuote] = useState("");
-  const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState("");
+
   useEffect(() => {
     const elements = [document.documentElement, document.body];
+
     const previous = elements.map((element) => element.style.overflow);
+
     elements.forEach((element) => {
       element.style.overflow = "hidden";
     });
+
     return () =>
       elements.forEach((element, index) => {
         element.style.overflow = previous[index];
       });
   }, []);
+
   useEffect(() => {
     if (!notice) return;
+
     const timeout = window.setTimeout(() => setNotice(""), 2500);
+
     return () => window.clearTimeout(timeout);
   }, [notice]);
+
   const goToPage = (nextPage: number) => {
     if (!ready) return;
+
     navigate(nextPage - 1);
     setCommentOpen(false);
     setNotice("");
+
     window.getSelection()?.removeAllRanges();
   };
+
+  // 현재 reader page의 원댓글만 가져오기
   const comments = data.comments.filter(
-    (comment) => getCommentReaderPageIndex(comment, readerPages) === pageIndex,
+    (comment) =>
+      !comment.parentCommentId &&
+      !comment.replyTo &&
+      comment.type !== "reply" &&
+      getCommentReaderPageIndex(comment, readerPages) === pageIndex,
   );
+
   const bookmarks =
-    data.readerBookmarks ?? data.bookmarks.map((page) => ({ pdfPage: page, start: 0 }));
+    data.readerBookmarks ??
+    data.bookmarks.map((page) => ({
+      pdfPage: page,
+      start: 0,
+    }));
+
   const bookmarked =
     !!currentPage && bookmarks.some((bookmark) => readerPageContainsAnchor(currentPage, bookmark));
+
   const openComments = () => {
-    setQuote("");
-    setDraft("");
     setCommentOpen(true);
   };
+
   return (
     <main className="book-reader bg-[#8C8149]">
+      {/* Header */}
       <header className="book-reader__header">
         <Link to="/library" aria-label="서재로 돌아가기" className="book-reader__back">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -114,8 +148,11 @@ export default function BookReadPage() {
             />
           </svg>
         </Link>
+
         <h1>어린 왕자</h1>
       </header>
+
+      {/* Reader */}
       <div className="book-reader__body" ref={bodyRef}>
         <Document
           className="book-reader__document"
@@ -138,11 +175,13 @@ export default function BookReadPage() {
               독서 페이지를 준비하고 있습니다. ({prepared}/{pdf.numPages})
             </p>
           )}
+
           {error && (
             <p role="alert" className="book-reader__message">
               {error}
             </p>
           )}
+
           {ready && (
             <ReaderPageDeck
               key={currentPage.id}
@@ -156,19 +195,25 @@ export default function BookReadPage() {
                   active={active}
                   onSwipeDisabledChange={onSwipeDisabledChange}
                   highlights={data.highlights}
+                  words={data.words}
+                  comments={data.comments}
                   onUpdateHighlight={(id, color) => {
                     setData((current) => ({
                       ...current,
                       highlights: color
                         ? current.highlights.map((entry) =>
-                            entry.id === id ? { ...entry, color } : entry,
+                            entry.id === id
+                              ? {
+                                  ...entry,
+                                  color,
+                                }
+                              : entry,
                           )
                         : current.highlights.filter((entry) => entry.id !== id),
                     }));
+
                     setNotice("변경사항이 저장됐습니다");
                   }}
-                  words={data.words}
-                  comments={data.comments}
                   onHighlight={(selection, color) => {
                     setData((current) => ({
                       ...current,
@@ -182,6 +227,7 @@ export default function BookReadPage() {
                         })),
                       ],
                     }));
+
                     setNotice("문장을 수집했습니다.");
                   }}
                   onWord={(word) => {
@@ -191,17 +237,27 @@ export default function BookReadPage() {
                         (entry) => JSON.stringify(entry.ranges) === JSON.stringify(word.ranges),
                       )
                         ? current.words
-                        : [...current.words, { ...word, id: crypto.randomUUID() }],
+                        : [
+                            ...current.words,
+                            {
+                              ...word,
+                              id: crypto.randomUUID(),
+                            },
+                          ],
                     }));
                   }}
                   onComment={(selection, text) => {
                     if (!text.trim()) return;
+
                     setData((current) => ({
                       ...current,
                       comments: [
                         ...current.comments,
                         {
                           id: crypto.randomUUID(),
+                          type: "sentence",
+                          user: readerUser,
+                          createdAt: new Date().toISOString(),
                           page: selection.ranges[0].pdfPage,
                           pages: [...new Set(selection.ranges.map((range) => range.pdfPage))],
                           ranges: selection.ranges,
@@ -210,7 +266,8 @@ export default function BookReadPage() {
                         },
                       ],
                     }));
-                    setNotice("댓글을 저장했습니다.");
+
+                    setNotice("댓글 작성 완료!");
                   }}
                 />
               )}
@@ -218,11 +275,33 @@ export default function BookReadPage() {
           )}
         </Document>
       </div>
+
+      {/* Reader Notice */}
       {(notice || storageError) && (
-        <p role="status" className="book-reader__notice">
+        <p
+          role="status"
+          className={`book-reader__notice${
+            notice === "댓글 작성 완료!" && !storageError ? " book-reader__notice--comment" : ""
+          }`}
+        >
+          {notice === "댓글 작성 완료!" && !storageError && (
+            <svg
+              className="h-5 w-5 shrink-0"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              aria-hidden="true"
+            >
+              <path d="m4 12 5 5L20 6" />
+            </svg>
+          )}
+
           {storageError ? "기기에 저장할 수 없어 이번 방문 동안만 유지됩니다." : notice}
         </p>
       )}
+
+      {/* Footer */}
       <footer className="book-reader__footer">
         <div className="book-reader__progress">
           <input
@@ -236,31 +315,46 @@ export default function BookReadPage() {
             value={pageNumber}
             disabled={!ready || readerPages.length <= 1}
             style={{
-              background: `linear-gradient(to right, #595854 ${ready && readerPages.length > 1 ? (pageIndex / (readerPages.length - 1)) * 100 : 0}%, #eeeede 0)`,
+              background: `linear-gradient(to right, #595854 ${
+                ready && readerPages.length > 1 ? (pageIndex / (readerPages.length - 1)) * 100 : 0
+              }%, #eeeede 0)`,
             }}
             onChange={(event) => goToPage(Number(event.target.value))}
           />
+
           <span aria-live="polite">{ready ? `${pageNumber}/${readerPages.length}` : "—/—"}</span>
         </div>
+
         <div className="book-reader__actions">
+          {/* 좋아요 */}
           <button
             type="button"
             aria-label="좋아요"
             aria-pressed={data.liked}
-            onClick={() => setData((current) => ({ ...current, liked: !current.liked }))}
+            onClick={() =>
+              setData((current) => ({
+                ...current,
+                liked: !current.liked,
+              }))
+            }
           >
             <Icon name="heart" filled={data.liked} />
+
             <span>{data.liked ? 1 : 0}</span>
           </button>
+
+          {/* 댓글 */}
           <button
             type="button"
             aria-label={`이 페이지 댓글 ${comments.length}개`}
             disabled={!ready}
-            onClick={() => openComments()}
+            onClick={openComments}
           >
             <Icon name="comment" />
             <span>{comments.length}</span>
           </button>
+
+          {/* 북마크 */}
           <button
             type="button"
             className="book-reader__bookmark"
@@ -274,7 +368,11 @@ export default function BookReadPage() {
                   ? bookmarks.filter((bookmark) => !readerPageContainsAnchor(currentPage, bookmark))
                   : [
                       ...bookmarks,
-                      { pdfPage, start: currentPage.start, imageId: currentPage.imageId },
+                      {
+                        pdfPage,
+                        start: currentPage.start,
+                        imageId: currentPage.imageId,
+                      },
                     ],
               }))
             }
@@ -283,93 +381,142 @@ export default function BookReadPage() {
           </button>
         </div>
       </footer>
-      {commentOpen && (
-        <div className="book-reader__sheet-backdrop" onClick={() => setCommentOpen(false)}>
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="reader-comments-title"
-            className="book-reader__sheet"
-            onClick={(event) => event.stopPropagation()}
-            onKeyDown={(event) => {
-              if (event.key === "Escape") setCommentOpen(false);
-              if (event.key === "Tab") {
-                const controls = Array.from(
-                  event.currentTarget.querySelectorAll<HTMLElement>(
-                    "button:not(:disabled), textarea",
-                  ),
-                );
-                const first = controls[0];
-                const last = controls[controls.length - 1];
-                if (event.shiftKey && document.activeElement === first) {
-                  event.preventDefault();
-                  last.focus();
-                } else if (!event.shiftKey && document.activeElement === last) {
-                  event.preventDefault();
-                  first.focus();
-                }
-              }
-            }}
-          >
-            <div className="book-reader__sheet-heading">
-              <h2 id="reader-comments-title">{pageNumber}페이지 댓글</h2>
-              <button type="button" onClick={() => setCommentOpen(false)} aria-label="댓글 닫기">
-                닫기
-              </button>
-            </div>
-            <p className="book-reader__storage-note">댓글과 수집 기록은 이 기기에 저장됩니다.</p>
-            <div className="book-reader__comments">
-              {comments.length ? (
-                comments.map((comment) => (
-                  <div key={comment.id}>
-                    {comment.quote && <blockquote>{comment.quote}</blockquote>}
-                    <p>{comment.text}</p>
-                  </div>
-                ))
-              ) : (
-                <p>이 페이지에 첫 의견을 남겨보세요.</p>
-              )}
-            </div>
-            <form
-              onSubmit={(event) => {
-                event.preventDefault();
-                if (!draft.trim() || !ready) return;
-                setData((current) => ({
-                  ...current,
-                  comments: [
-                    ...current.comments,
-                    {
-                      id: crypto.randomUUID(),
-                      page: pdfPage,
-                      readerAnchor: {
-                        pdfPage,
-                        start: currentPage.start,
-                        imageId: currentPage.imageId,
-                      },
-                      quote,
-                      text: draft.trim(),
+
+      {/* Comments */}
+      {commentOpen && ready && (
+        <ReaderCommentsSheet
+          replies={data.comments.filter(
+            (comment) => !!(comment.parentCommentId || comment.replyTo),
+          )}
+          comments={comments}
+          pageNumber={pageNumber}
+          reportedCommentIds={data.reportedCommentIds ?? []}
+          onEdit={(id, text) => {
+            if (!text.trim() || text.length > 200) {
+              return;
+            }
+
+            setData((current) => ({
+              ...current,
+              comments: current.comments.map((comment) =>
+                comment.id === id
+                  ? {
+                      ...comment,
+                      text: text.trim(),
+                    }
+                  : comment,
+              ),
+            }));
+          }}
+          onReport={(id) =>
+            setData((current) => ({
+              ...current,
+              reportedCommentIds: [...new Set([...(current.reportedCommentIds ?? []), id])],
+            }))
+          }
+          onClose={() => setCommentOpen(false)}
+          onSubmit={(text, replyTo) => {
+            if (!text.trim() || (replyTo && text.length > 200)) {
+              return;
+            }
+
+            const parent = replyTo ? comments.find((comment) => comment.id === replyTo) : undefined;
+
+            if (replyTo && !parent) return;
+
+            setData((current) => ({
+              ...current,
+              comments: [
+                ...current.comments,
+                {
+                  id: crypto.randomUUID(),
+
+                  type: parent ? "reply" : "page",
+
+                  user: readerUser,
+
+                  createdAt: new Date().toISOString(),
+
+                  page: parent?.page ?? pdfPage,
+
+                  readerAnchor: parent?.readerAnchor ??
+                    parent?.ranges?.[0] ?? {
+                      pdfPage,
+                      start: currentPage.start,
+                      imageId: currentPage.imageId,
                     },
-                  ],
-                }));
-                setDraft("");
-                setQuote("");
-              }}
-            >
-              {quote && <blockquote>{quote}</blockquote>}
-              <textarea
-                autoFocus
-                aria-label="댓글 내용"
-                placeholder="읽으며 떠오른 생각을 남겨주세요."
-                value={draft}
-                onChange={(event) => setDraft(event.target.value)}
-                maxLength={2000}
-              />
-              <button type="submit" disabled={!draft.trim()} className="book-reader__submit">
-                댓글 남기기
-              </button>
-            </form>
-          </section>
-        </div>
+
+                  text: text.trim(),
+
+                  ...(parent
+                    ? {
+                        parentCommentId: parent.id,
+                      }
+                    : {}),
+                },
+              ],
+            }));
+          }}
+          onVote={(id, vote) =>
+            setData((current) => ({
+              ...current,
+
+              comments: current.comments.map((comment) => {
+                if (comment.id !== id) {
+                  return comment;
+                }
+
+                const myVote = comment.myVote === vote ? undefined : vote;
+
+                return {
+                  ...comment,
+
+                  myVote,
+
+                  likes: Math.max(
+                    0,
+                    (comment.likes ?? 0) -
+                      Number(comment.myVote === "like") +
+                      Number(myVote === "like"),
+                  ),
+
+                  dislikes: Math.max(
+                    0,
+                    (comment.dislikes ?? 0) -
+                      Number(comment.myVote === "dislike") +
+                      Number(myVote === "dislike"),
+                  ),
+                };
+              }),
+            }))
+          }
+
+          // 댓글/답글 삭제
+          onDelete={(id) =>
+            setData((current) => {
+              const target = current.comments.find((comment) => comment.id === id);
+
+              const isReply = Boolean(target?.parentCommentId || target?.replyTo);
+
+              return {
+                ...current,
+
+                comments: current.comments.filter((comment) => {
+                  // 답글이면 해당 답글만 삭제
+                  if (isReply) {
+                    return comment.id !== id;
+                  }
+
+                  // 원댓글이면
+                  // 원댓글 + 연결된 답글 삭제
+                  return (
+                    comment.id !== id && comment.parentCommentId !== id && comment.replyTo !== id
+                  );
+                }),
+              };
+            })
+          }
+        />
       )}
     </main>
   );
