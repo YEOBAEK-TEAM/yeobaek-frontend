@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { extractPdfPageContent } from "./extractPdfPageContent";
-import { PdfImageResources } from "./extractPdfPageImages";
 import type { ReaderBlock } from "./readerBlocks";
 import { findReaderPage, paginateReaderBlocks } from "./paginateReaderText";
 import type { ReaderAnchor, ReaderPage } from "./paginateReaderText";
@@ -25,7 +24,6 @@ export function useReaderPagination(
     const body = bodyRef.current;
     if (!pdf || !body) return;
     const cache = new Map<number, Promise<ReaderBlock[]>>();
-    const resources = new PdfImageResources();
     let generation = 0;
     let disposed = false;
     let timer: number;
@@ -48,7 +46,7 @@ export function useReaderPagination(
           if (disposed || run !== generation) return;
           let text = cache.get(pdfPage);
           if (!text) {
-            text = extractPdfPageContent(pdf, pdfPage, resources);
+            text = extractPdfPageContent(pdf, pdfPage);
             cache.set(pdfPage, text);
             void text.catch(() => cache.delete(pdfPage));
           }
@@ -98,7 +96,6 @@ export function useReaderPagination(
     return () => {
       scheduleRef.current = null;
       disposed = true;
-      resources.dispose();
       generation++;
       window.clearTimeout(timer);
       observer.disconnect();
@@ -106,15 +103,14 @@ export function useReaderPagination(
     };
   }, [pdf, bodyRef]);
   // Re-measure with the inherited reader typography without re-extracting PDF
-  // content or disposing image resources. build restores the current anchor.
+  // content. build restores the current anchor.
   useEffect(() => {
     scheduleRef.current?.();
   }, [typographyKey]);
   const goToPage = (index: number) => {
     const nextIndex = Math.max(0, Math.min(index, state.pages.length - 1));
     const page = state.pages[nextIndex];
-    if (page)
-      readingAnchor.current = { pdfPage: page.pdfPage, start: page.start, imageId: page.imageId };
+    if (page) readingAnchor.current = { pdfPage: page.pdfPage, start: page.start };
     setState((current) => ({ ...current, index: nextIndex }));
   };
   return {

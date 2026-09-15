@@ -153,14 +153,6 @@
     cursor: grabbing;
   }
 }
-.book-reader__image {
-  display: block;
-  max-width: 100%;
-  object-fit: contain;
-  margin: 24px auto;
-  user-select: none;
-  -webkit-user-drag: none;
-}
 .book-reader__text p + p {
   margin-top: 0.45em;
 }

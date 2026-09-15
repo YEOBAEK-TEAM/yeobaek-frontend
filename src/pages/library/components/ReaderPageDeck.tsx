@@ -2,12 +2,14 @@
 import type { PointerEvent, ReactNode } from "react";
 import type { ReaderPage } from "../utils/paginateReaderText";
 
+export type DeckPage = ReaderPage | { id: "cover"; pdfPage?: undefined; start?: undefined };
+
 type Props = {
-  pages: ReaderPage[];
+  pages: DeckPage[];
   index: number;
   onNavigate: (index: number) => void;
   renderPage: (
-    page: ReaderPage,
+    page: DeckPage,
     active: boolean,
     onSwipeDisabledChange: (disabled: boolean) => void,
   ) => ReactNode;
