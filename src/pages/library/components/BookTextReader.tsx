@@ -91,11 +91,7 @@ export default function BookTextReader({
     ? {
         selection,
         color:
-          mode === "default" || mode === "word"
-            ? "#d1d1d1"
-            : mode === "comment"
-              ? "#c6d8d4"
-              : selectedColor,
+          mode === "default" || mode === "word" || mode === "comment" ? "#d1d1d1" : selectedColor,
       }
     : undefined;
 
@@ -295,6 +291,7 @@ export default function BookTextReader({
         aria-label={`PDF ${page.pdfPages.join(", ")}페이지 본문`}
         data-page-number={page.pdfPage}
         className="book-reader__text"
+        data-comment-editing={mode === "comment" || undefined}
         onPointerDown={pointerDown}
         onPointerMove={pointerMove}
         onPointerUp={active ? completeSelection : undefined}
@@ -411,6 +408,7 @@ export default function BookTextReader({
                                 onClick={(event) => {
                                   if (
                                     !active ||
+                                    mode === "comment" ||
                                     (!part.highlightId && !part.wordId) ||
                                     event.detail > 1 ||
                                     isMousePointer() ||

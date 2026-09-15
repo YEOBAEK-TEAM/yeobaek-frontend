@@ -28,7 +28,7 @@ export function getAnnotatedTextParts(
   );
   comments.forEach((comment) =>
     comment.ranges?.forEach((range) =>
-      add({ ...range, id: comment.id, kind: "comment", color: "#c6d8d4" }, range.pdfPage),
+      add({ ...range, id: comment.id, kind: "comment" }, range.pdfPage),
     ),
   );
   preview?.selection.ranges.forEach((range) =>
@@ -60,7 +60,7 @@ export function getAnnotatedTextParts(
     return {
       position,
       text: text.slice(position, next),
-      background: temporary?.color ?? highlight?.color ?? comment?.color,
+      background: temporary?.color ?? highlight?.color,
       highlightId: highlight?.id,
       wordId: word?.id,
       wordEnd:

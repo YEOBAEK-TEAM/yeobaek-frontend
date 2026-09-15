@@ -40,14 +40,16 @@ export default function TextSelectionMenu({
         if (!(event.target instanceof HTMLInputElement)) event.preventDefault();
       }}
     >
-      <button
-        className="book-reader__selection-close"
-        type="button"
-        aria-label="선택 메뉴 닫기"
-        onClick={onClose}
-      >
-        ×
-      </button>
+      {mode !== "comment" && (
+        <button
+          className="book-reader__selection-close"
+          type="button"
+          aria-label="선택 메뉴 닫기"
+          onClick={onClose}
+        >
+          ×
+        </button>
+      )}
       {mode === "comment" ? (
         <CommentInput onSubmit={onSubmitComment} />
       ) : (
