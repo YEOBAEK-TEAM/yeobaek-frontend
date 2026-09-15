@@ -52,16 +52,30 @@ export function getAnnotatedTextParts(
     );
     const highlight = overlaps.findLast((entry) => entry.kind === "highlight");
     const word = overlaps.findLast((entry) => entry.kind === "word");
+    const wordLastRange = word && words.find((entry) => entry.id === word.id)?.ranges.at(-1);
     const comment = overlaps.findLast((entry) => entry.kind === "comment");
     const temporary = overlaps.findLast((entry) => entry.kind === "preview");
+    const firstSelected = preview?.selection.ranges[0];
+    const lastSelected = preview?.selection.ranges.at(-1);
     return {
       position,
       text: text.slice(position, next),
       background: temporary?.color ?? highlight?.color ?? comment?.color,
       highlightId: highlight?.id,
       wordId: word?.id,
+      wordEnd:
+        !!word &&
+        sourceAt(next) >= word.end &&
+        wordLastRange?.pdfPage === pdfPage &&
+        wordLastRange.end === word.end,
       commentId: comment?.id,
       preview: !!temporary,
+      selectionStart:
+        !!temporary &&
+        firstSelected?.pdfPage === pdfPage &&
+        sourceAt(position) === firstSelected.start,
+      selectionEnd:
+        !!temporary && lastSelected?.pdfPage === pdfPage && sourceAt(next) === lastSelected.end,
     };
   });
 }

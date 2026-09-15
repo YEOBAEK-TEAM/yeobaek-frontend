@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { SyntheticEvent } from "react";
+import type { SyntheticEvent, PointerEvent as ReactPointerEvent } from "react";
 import type { ReaderPage } from "../utils/paginateReaderText";
 import type { ReaderComment, ReaderHighlight, ReaderWord } from "../utils/useReaderData";
 import type { ReaderSelection } from "../utils/readerSelection";
@@ -8,6 +8,8 @@ import { getReaderSelection } from "../utils/readerSelection";
 import { useTextSelection } from "../utils/useTextSelection";
 import TextSelectionMenu from "./TextSelectionMenu";
 import CollectedSentenceMenu from "./CollectedSentenceMenu";
+import WordMeaningCard from "./WordMeaningCard";
+import { isDictionaryWord } from "../../../mocks/dictionary";
 
 type Props = {
   page: ReaderPage;
@@ -48,6 +50,9 @@ export default function BookTextReader({
     pointerDown,
     pointerMove,
     pointerUp,
+    doubleClick,
+    pointerCancel,
+    isMousePointer,
   } = useTextSelection(page, active, articleRef, menuRef);
   const [collected, setCollected] = useState<{ id: string; left: number; top: number } | null>(
     null,
@@ -85,22 +90,49 @@ export default function BookTextReader({
   const preview = selection
     ? {
         selection,
-        color: mode === "default" ? "#d1d1d1" : mode === "comment" ? "#c6d8d4" : selectedColor,
+        color:
+          mode === "default" || mode === "word"
+            ? "#d1d1d1"
+            : mode === "comment"
+              ? "#c6d8d4"
+              : selectedColor,
       }
     : undefined;
 
+  const savedWord =
+    selection &&
+    words.find(
+      (word) =>
+        word.ranges.length === selection.ranges.length &&
+        word.ranges.every((range, index) => {
+          const selected = selection.ranges[index];
+          return (
+            range.pdfPage === selected.pdfPage &&
+            range.start === selected.start &&
+            range.end === selected.end
+          );
+        }),
+    );
   const inlineMenu = active && selection && (
     <TextSelectionMenu
       menuRef={menuRef}
       mode={mode}
       selectedColor={selectedColor}
       onHighlight={() => activate("highlight")}
-      onWord={() => {
-        if (mode !== "word") {
-          activate("word");
-          onWord(selection);
-        }
-      }}
+      onWord={() => activate("word")}
+      wordSaved={!!savedWord}
+      wordCard={
+        <WordMeaningCard
+          key={JSON.stringify(selection.ranges)}
+          text={selection.text}
+          saved={!!savedWord}
+          canSave={isDictionaryWord(selection.text)}
+          onComplete={finish}
+          onSave={() => {
+            if (!savedWord && isDictionaryWord(selection.text)) onWord(selection);
+          }}
+        />
+      }
       onComment={() => activate("comment")}
       onColor={(color) => {
         if (editingHighlight) onUpdateHighlight(editingHighlight.id, color);
@@ -111,8 +143,16 @@ export default function BookTextReader({
         onComment(selection, text);
         finish();
       }}
+      onClose={finish}
     />
   );
+  const openWord = (id: string) => {
+    const word = words.find((entry) => entry.id === id);
+    if (!word?.ranges.length) return;
+    setCollected(null);
+    setEditingId(null);
+    openSelection(word, "word");
+  };
   const openCollected = (id: string) => {
     const container = containerRef.current;
     const article = articleRef.current;
@@ -132,7 +172,34 @@ export default function BookTextReader({
   };
   const completeSelection = (event: SyntheticEvent) => {
     if ((event.target as Element).closest(".book-reader__selection")) return;
-    pointerUp();
+    const clickedHighlight = (event.target as Element).closest<HTMLElement>("[data-highlight-id]")
+      ?.dataset.highlightId;
+    const clickedWord = (event.target as Element).closest<HTMLElement>("[data-word-id]")?.dataset
+      .wordId;
+    const openSaved = (selected: ReaderSelection) => {
+      if (clickedWord) {
+        openWord(clickedWord);
+        return;
+      }
+      if (clickedHighlight) {
+        openCollected(clickedHighlight);
+        return;
+      }
+      const saved = highlights.find(
+        (entry) =>
+          selected.ranges.length > 0 &&
+          selected.ranges.every(
+            (part) =>
+              part.pdfPage === entry.page && part.start >= entry.start && part.end <= entry.end,
+          ),
+      );
+      if (saved) openCollected(saved.id);
+    };
+    if (event.type === "pointerup") {
+      const pointer = event as ReactPointerEvent<HTMLElement>;
+      pointerUp(pointer, openSaved);
+      if (pointer.pointerType === "mouse") return;
+    } else pointerUp();
     const native = window.getSelection();
     if (!active || !articleRef.current || !native?.rangeCount || native.isCollapsed) return;
     const range = native.getRangeAt(0);
@@ -196,7 +263,27 @@ export default function BookTextReader({
       if (containerRef.current) containerRef.current.scrollTop = 0;
       return;
     }
-    menuRef.current?.scrollIntoView({ block: "nearest" });
+    const container = containerRef.current;
+    const menu = menuRef.current;
+    if (!container || !menu) return;
+    // Card expansions happen inside WordMeaningCard, without changing selection
+    // or mode. Keep the inline controls inside this reader's scroll viewport.
+    const reveal = () => {
+      const bounds = container.getBoundingClientRect();
+      const controls = menu.getBoundingClientRect();
+      const delta =
+        controls.bottom > bounds.bottom
+          ? controls.bottom - bounds.bottom
+          : controls.height <= container.clientHeight && controls.top < bounds.top
+            ? controls.top - bounds.top
+            : 0;
+      container.scrollTop += delta;
+    };
+    reveal();
+    const observer = new ResizeObserver(reveal);
+    observer.observe(menu);
+    observer.observe(container);
+    return () => observer.disconnect();
   }, [selection, mode]);
   return (
     <div
@@ -211,7 +298,8 @@ export default function BookTextReader({
         onPointerDown={pointerDown}
         onPointerMove={pointerMove}
         onPointerUp={active ? completeSelection : undefined}
-        onPointerCancel={active ? pointerUp : undefined}
+        onPointerCancel={active ? pointerCancel : undefined}
+        onDoubleClick={active ? doubleClick : undefined}
         onKeyUp={active ? completeSelection : undefined}
         onTouchEnd={active ? completeSelection : undefined}
       >
@@ -301,20 +389,54 @@ export default function BookTextReader({
                                 className={part.wordId ? "book-reader__word" : undefined}
                                 data-highlight-id={part.highlightId}
                                 data-word-id={part.wordId}
+                                role={part.wordEnd ? "button" : undefined}
+                                tabIndex={part.wordEnd ? 0 : undefined}
+                                aria-label={
+                                  part.wordEnd
+                                    ? `${words.find((word) => word.id === part.wordId)?.text} 뜻 보기`
+                                    : undefined
+                                }
+                                onKeyDown={(event) => {
+                                  if (
+                                    active &&
+                                    part.wordId &&
+                                    (event.key === "Enter" || event.key === " ")
+                                  ) {
+                                    event.preventDefault();
+                                    openWord(part.wordId);
+                                  }
+                                }}
                                 data-comment-id={part.commentId}
                                 data-selection-preview={part.preview || undefined}
                                 onClick={(event) => {
                                   if (
                                     !active ||
-                                    !part.highlightId ||
+                                    (!part.highlightId && !part.wordId) ||
                                     event.detail > 1 ||
+                                    isMousePointer() ||
                                     window.getSelection()?.toString()
                                   )
                                     return;
-                                  openCollected(part.highlightId);
+                                  if (part.wordId) openWord(part.wordId);
+                                  else if (part.highlightId) openCollected(part.highlightId);
                                 }}
                               >
+                                {active && mode === "default" && part.selectionStart && (
+                                  <span
+                                    className="book-reader__selection-edge book-reader__selection-edge--start"
+                                    aria-hidden="true"
+                                  />
+                                )}
                                 {part.text}
+                                {active && mode === "default" && part.selectionEnd && (
+                                  <span
+                                    className="book-reader__selection-edge book-reader__selection-edge--end"
+                                    aria-hidden="true"
+                                  />
+                                )}
+                                {part.wordEnd && (
+                                  <span className="book-reader__saved-dot" aria-hidden="true" />
+                                )}
                               </Tag>
                             );
                           },

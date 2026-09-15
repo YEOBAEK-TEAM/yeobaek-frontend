@@ -1,6 +1,5 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
 import type { PointerEvent, ReactNode } from "react";
-import { flushSync } from "react-dom";
 import type { ReaderPage } from "../utils/paginateReaderText";
 
 type Props = {
@@ -113,7 +112,7 @@ export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }:
       ref={viewport}
       className={`book-reader__viewport${selectionMode ? " is-selection-mode" : ""}${motion.dragging ? " is-dragging" : ""}`}
       role="region"
-      aria-label="전자책 본문. 좌우 드래그로 페이지 이동, 더블클릭으로 텍스트 선택"
+      aria-label="전자책 본문. 좌우 드래그로 페이지 이동, 클릭으로 문장 선택, 더블클릭으로 단어 선택"
       tabIndex={0}
       onPointerDownCapture={down}
       onMouseDownCapture={(event) => {
@@ -122,20 +121,8 @@ export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }:
           (event.target as Element).closest("button, input, a, textarea, .book-reader__selection")
         )
           return;
-        if (event.detail >= 2) {
-          // Apply selectable CSS before the second mousedown's native default
-          // action. The browser can then select the word at the click position.
-          gesture.current = null;
-          if ((event.target as Element).closest(".book-reader__text p")) {
-            flushSync(() => onSwipeDisabledChange(true));
-          }
-          return;
-        }
         // Suppress native text dragging only in the default page-navigation mode.
         if (!blocked()) event.preventDefault();
-      }}
-      onDoubleClick={() => {
-        if (!hasSelection()) onSwipeDisabledChange(false);
       }}
       onPointerMove={move}
       onPointerUp={up}

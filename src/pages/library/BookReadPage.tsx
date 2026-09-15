@@ -7,6 +7,7 @@ import { useReaderData } from "./utils/useReaderData";
 import ReaderPageDeck from "./components/ReaderPageDeck";
 import { useReaderPagination } from "./utils/useReaderPagination";
 import { readerPageContainsAnchor } from "./utils/paginateReaderText";
+import { getCommentReaderPageIndex } from "./utils/readerComments";
 import "./BookReadPage.css";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -62,7 +63,6 @@ export default function BookReadPage() {
   const { data, setData, storageError } = useReaderData();
   const [commentOpen, setCommentOpen] = useState(false);
   const [quote, setQuote] = useState("");
-  const [commentPages, setCommentPages] = useState<number[]>([]);
   const [draft, setDraft] = useState("");
   const [notice, setNotice] = useState("");
   useEffect(() => {
@@ -88,20 +88,15 @@ export default function BookReadPage() {
     setNotice("");
     window.getSelection()?.removeAllRanges();
   };
-  const visiblePdfPages = currentPage?.pdfPages ?? [pdfPage];
-  const comments = data.comments.filter((comment) =>
-    (comment.pages ?? [comment.page]).some((page) => visiblePdfPages.includes(page)),
-  );
-  const shownComments = comments.filter((comment) =>
-    (comment.pages ?? [comment.page]).some((page) => commentPages.includes(page)),
+  const comments = data.comments.filter(
+    (comment) => getCommentReaderPageIndex(comment, readerPages) === pageIndex,
   );
   const bookmarks =
     data.readerBookmarks ?? data.bookmarks.map((page) => ({ pdfPage: page, start: 0 }));
   const bookmarked =
     !!currentPage && bookmarks.some((bookmark) => readerPageContainsAnchor(currentPage, bookmark));
-  const openComments = (text = "", pages = visiblePdfPages) => {
-    setQuote(text);
-    setCommentPages(pages);
+  const openComments = () => {
+    setQuote("");
     setDraft("");
     setCommentOpen(true);
   };
@@ -198,7 +193,6 @@ export default function BookReadPage() {
                         ? current.words
                         : [...current.words, { ...word, id: crypto.randomUUID() }],
                     }));
-                    setNotice("선택한 텍스트를 이 기기의 단어장에 저장했습니다.");
                   }}
                   onComment={(selection, text) => {
                     if (!text.trim()) return;
@@ -318,15 +312,15 @@ export default function BookReadPage() {
             }}
           >
             <div className="book-reader__sheet-heading">
-              <h2 id="reader-comments-title">PDF {commentPages.join(", ")}페이지 댓글</h2>
+              <h2 id="reader-comments-title">{pageNumber}페이지 댓글</h2>
               <button type="button" onClick={() => setCommentOpen(false)} aria-label="댓글 닫기">
                 닫기
               </button>
             </div>
             <p className="book-reader__storage-note">댓글과 수집 기록은 이 기기에 저장됩니다.</p>
             <div className="book-reader__comments">
-              {shownComments.length ? (
-                shownComments.map((comment) => (
+              {comments.length ? (
+                comments.map((comment) => (
                   <div key={comment.id}>
                     {comment.quote && <blockquote>{comment.quote}</blockquote>}
                     <p>{comment.text}</p>
@@ -339,15 +333,19 @@ export default function BookReadPage() {
             <form
               onSubmit={(event) => {
                 event.preventDefault();
-                if (!draft.trim()) return;
+                if (!draft.trim() || !ready) return;
                 setData((current) => ({
                   ...current,
                   comments: [
                     ...current.comments,
                     {
                       id: crypto.randomUUID(),
-                      page: commentPages[0] ?? pdfPage,
-                      pages: commentPages,
+                      page: pdfPage,
+                      readerAnchor: {
+                        pdfPage,
+                        start: currentPage.start,
+                        imageId: currentPage.imageId,
+                      },
                       quote,
                       text: draft.trim(),
                     },
