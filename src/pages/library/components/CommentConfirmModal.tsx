@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 
+const buttonClass = "min-h-8 min-w-12 rounded bg-transparent px-3 text-[#141610] active:text-white";
+
 export default function CommentConfirmModal({
   message,
   destructive,
@@ -25,7 +27,7 @@ export default function CommentConfirmModal({
     <dialog
       ref={ref}
       aria-label={message}
-      className="fixed inset-0 m-auto w-[300px] max-w-[calc(100%-40px)] rounded-xl border-0 bg-[#f7f6f1] p-0 text-[#141610] shadow-xl backdrop:bg-black/35"
+      className="[&_button]:[-webkit-tap-highlight-color:transparent] [&_button:focus]:outline-none! [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-[#8b956d] fixed inset-0 m-auto w-[300px] max-w-[calc(100%-40px)] rounded-xl border-0 bg-[#f7f6f1] p-0 text-[#141610] shadow-xl backdrop:bg-black/35"
       onCancel={(event) => {
         event.preventDefault();
         onCancel();
@@ -41,7 +43,7 @@ export default function CommentConfirmModal({
         <div className="mt-4 flex justify-end gap-2 text-xs">
           <button
             type="button"
-            className={`min-h-8 min-w-12 rounded px-3 ${destructive ? "bg-[#c62222] text-white" : "bg-[#69734e] text-white"}`}
+            className={`${buttonClass} ${destructive ? "active:bg-[#D7191C]" : "active:bg-[#493d3c]"}`}
             onClick={onConfirm}
           >
             예
@@ -49,7 +51,7 @@ export default function CommentConfirmModal({
           <button
             type="button"
             autoFocus
-            className="min-h-8 min-w-12 rounded px-3"
+            className={`${buttonClass} active:bg-[#493d3c]`}
             onClick={onCancel}
           >
             아니오

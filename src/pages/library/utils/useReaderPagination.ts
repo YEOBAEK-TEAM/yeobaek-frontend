@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { RefObject } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { extractPdfPageContent } from "./extractPdfPageContent";
-import { PdfImageResources } from "./extractPdfPageImages";
 import type { ReaderBlock } from "./readerBlocks";
 import { findReaderPage, paginateReaderBlocks } from "./paginateReaderText";
-import type { ReaderPage } from "./paginateReaderText";
+import type { ReaderAnchor, ReaderPage } from "./paginateReaderText";
 
 export function useReaderPagination(
   pdf: PDFDocumentProxy | null,
   bodyRef: RefObject<HTMLDivElement | null>,
+  typographyKey = "",
 ) {
+  const scheduleRef = useRef<(() => void) | null>(null);
+  const readingAnchor = useRef<ReaderAnchor | undefined>(undefined);
   const [state, setState] = useState({
     pages: [] as ReaderPage[],
     index: 0,
@@ -22,7 +24,6 @@ export function useReaderPagination(
     const body = bodyRef.current;
     if (!pdf || !body) return;
     const cache = new Map<number, Promise<ReaderBlock[]>>();
-    const resources = new PdfImageResources();
     let generation = 0;
     let disposed = false;
     let timer: number;
@@ -45,7 +46,7 @@ export function useReaderPagination(
           if (disposed || run !== generation) return;
           let text = cache.get(pdfPage);
           if (!text) {
-            text = extractPdfPageContent(pdf, pdfPage, resources);
+            text = extractPdfPageContent(pdf, pdfPage);
             cache.set(pdfPage, text);
             void text.catch(() => cache.delete(pdfPage));
           }
@@ -61,7 +62,7 @@ export function useReaderPagination(
           const pages = paginateReaderBlocks(stream, 1, measure, height);
           setState((current) => ({
             pages,
-            index: findReaderPage(pages, current.pages[current.index]),
+            index: findReaderPage(pages, readingAnchor.current ?? current.pages[current.index]),
             loading: false,
             error: "",
             prepared: pdf.numPages,
@@ -83,6 +84,7 @@ export function useReaderPagination(
       window.clearTimeout(timer);
       timer = window.setTimeout(() => void build(), 120);
     };
+    scheduleRef.current = schedule;
     const observer = new ResizeObserver(() => {
       const size = `${body.clientWidth}:${body.clientHeight}`;
       if (size === lastSize) return;
@@ -92,19 +94,25 @@ export function useReaderPagination(
     observer.observe(body);
     document.fonts.addEventListener("loadingdone", schedule);
     return () => {
+      scheduleRef.current = null;
       disposed = true;
-      resources.dispose();
       generation++;
       window.clearTimeout(timer);
       observer.disconnect();
       document.fonts.removeEventListener("loadingdone", schedule);
     };
   }, [pdf, bodyRef]);
-  const goToPage = (index: number) =>
-    setState((current) => ({
-      ...current,
-      index: Math.max(0, Math.min(index, current.pages.length - 1)),
-    }));
+  // Re-measure with the inherited reader typography without re-extracting PDF
+  // content. build restores the current anchor.
+  useEffect(() => {
+    scheduleRef.current?.();
+  }, [typographyKey]);
+  const goToPage = (index: number) => {
+    const nextIndex = Math.max(0, Math.min(index, state.pages.length - 1));
+    const page = state.pages[nextIndex];
+    if (page) readingAnchor.current = { pdfPage: page.pdfPage, start: page.start };
+    setState((current) => ({ ...current, index: nextIndex }));
+  };
   return {
     readerPages: state.pages,
     pageIndex: state.index,

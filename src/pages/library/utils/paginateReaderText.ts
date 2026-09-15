@@ -1,17 +1,15 @@
-﻿import type { ReaderBlock, ReaderImageBlock } from "./readerBlocks";
+﻿import type { ReaderBlock } from "./readerBlocks";
 
-export type ReaderFragment =
-  | {
-      type: "text";
-      id: string;
-      text: string;
-      pdfPage: number;
-      start: number;
-      end: number;
-      sourceOffsets?: number[];
-      paragraph: number;
-    }
-  | (ReaderImageBlock & { displayWidth: number; displayHeight: number });
+export type ReaderFragment = {
+  type: "text";
+  id: string;
+  text: string;
+  pdfPage: number;
+  start: number;
+  end: number;
+  sourceOffsets?: number[];
+  paragraph: number;
+};
 export type ReaderAnchor = { pdfPage: number; start: number; imageId?: string };
 export type ReaderPage = ReaderAnchor & {
   id: string;
@@ -20,8 +18,7 @@ export type ReaderPage = ReaderAnchor & {
   fragments: ReaderFragment[];
 };
 
-// Measure the same HTML/CSS as the visible reader. Images reserve their final
-// dimensions before loading, and are never split or cropped across reader pages.
+// Measure the same text HTML/CSS as the visible reader.
 export function paginateReaderBlocks(
   blocks: ReaderBlock[],
   pdfPage: number,
@@ -37,12 +34,11 @@ export function paginateReaderBlocks(
     const first = fragments[0];
     const last = fragments[fragments.length - 1];
     pages.push({
-      id: `${first.pdfPage}:${first.type === "image" ? first.id : first.start}`,
+      id: `${first.pdfPage}:${first.start}`,
       pdfPage: first.pdfPage,
       pdfPages: [...new Set(fragments.map((fragment) => fragment.pdfPage))],
       start: first.start,
-      imageId: first.type === "image" ? first.id : undefined,
-      end: last.type === "text" ? last.end : last.start,
+      end: last.end,
       fragments,
     });
     fragments = [];
@@ -50,28 +46,6 @@ export function paginateReaderBlocks(
   };
   const segmenter = new Intl.Segmenter(undefined, { granularity: "grapheme" });
   for (const block of blocks) {
-    if (block.type === "image") {
-      const available = height - 48; // the same 24px top/bottom margin as the image CSS
-      if (available <= 0)
-        throw new Error("삽화를 표시할 본문 높이가 부족합니다. 화면 높이를 늘려 주세요.");
-      const width = Math.min(block.width, measure.clientWidth * block.widthRatio);
-      const displayHeight = Math.min(available, (width * block.height) / block.width);
-      const displayWidth = (displayHeight * block.width) / block.height;
-      const node = document.createElement("img");
-      node.className = "book-reader__image";
-      node.alt = "";
-      node.style.width = `${displayWidth}px`;
-      node.style.height = `${displayHeight}px`;
-      measure.append(node);
-      if (!fits()) {
-        node.remove();
-        flush();
-        measure.append(node);
-      }
-      if (!fits()) throw new Error("삽화를 독서 페이지에 배치하지 못했습니다.");
-      fragments.push({ ...block, displayWidth, displayHeight });
-      continue;
-    }
     const text = block.content;
     const boundaries = [...segmenter.segment(text)].map((part) => part.index);
     boundaries.push(text.length);
@@ -149,18 +123,11 @@ export function paginateReaderText(
 }
 
 export function readerPageContainsAnchor(page: ReaderPage, anchor: ReaderAnchor) {
-  if (anchor.imageId)
-    return page.fragments.some(
-      (fragment) =>
-        fragment.pdfPage === anchor.pdfPage &&
-        fragment.type === "image" &&
-        fragment.id === anchor.imageId,
-    );
+  // Legacy image anchors resolve using their original PDF text offset.
   return (
     page.fragments.some(
       (fragment) =>
         fragment.pdfPage === anchor.pdfPage &&
-        fragment.type === "text" &&
         fragment.start <= anchor.start &&
         anchor.start < fragment.end,
     ) ||

@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from "react";
+import type { CSSProperties } from "react";
+import ReaderSettingsPanel from "./components/ReaderSettingsPanel";
+import { READER_FONTS, useReaderSettings } from "./utils/useReaderSettings";
 import { Document, pdfjs } from "react-pdf";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import { Link } from "react-router-dom";
 
+import { books } from "../../mocks/books";
+import ReaderCoverPage from "./components/ReaderCoverPage";
+import type { DeckPage } from "./components/ReaderPageDeck";
 import BookTextReader from "./components/BookTextReader";
 import ReaderCommentsSheet from "./components/ReaderCommentsSheet";
 import ReaderPageDeck from "./components/ReaderPageDeck";
@@ -21,6 +27,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
+const book = books.find((entry) => entry.id === 1)!;
 const pdfOptions = { wasmUrl: "/wasm/" };
 
 function Icon({
@@ -56,6 +63,8 @@ function Icon({
 export default function BookReadPage() {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const { settings, updateSettings, storageError: settingsStorageError } = useReaderSettings();
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   const {
     readerPages,
@@ -64,9 +73,16 @@ export default function BookReadPage() {
     error,
     prepared,
     goToPage: navigate,
-  } = useReaderPagination(pdf, bodyRef);
+  } = useReaderPagination(
+    pdf,
+    bodyRef,
+    `${settings.fontSize}:${settings.lineHeight}:${settings.fontFamily}`,
+  );
 
-  const pageNumber = pageIndex + 1;
+  const [onCover, setOnCover] = useState(true);
+  const deckPages: DeckPage[] = [{ id: "cover" }, ...readerPages];
+  const deckIndex = onCover ? 0 : pageIndex + 1;
+  const pageNumber = deckIndex + 1;
   const currentPage = readerPages[pageIndex];
   const pdfPage = currentPage?.pdfPage ?? 1;
 
@@ -103,7 +119,8 @@ export default function BookReadPage() {
   const goToPage = (nextPage: number) => {
     if (!ready) return;
 
-    navigate(nextPage - 1);
+    setOnCover(nextPage === 1);
+    if (nextPage > 1) navigate(nextPage - 2);
     setCommentOpen(false);
     setNotice("");
 
@@ -113,6 +130,7 @@ export default function BookReadPage() {
   // 현재 reader page의 원댓글만 가져오기
   const comments = data.comments.filter(
     (comment) =>
+      !onCover &&
       !comment.parentCommentId &&
       !comment.replyTo &&
       comment.type !== "reply" &&
@@ -127,14 +145,27 @@ export default function BookReadPage() {
     }));
 
   const bookmarked =
-    !!currentPage && bookmarks.some((bookmark) => readerPageContainsAnchor(currentPage, bookmark));
+    !onCover &&
+    !!currentPage &&
+    bookmarks.some((bookmark) => readerPageContainsAnchor(currentPage, bookmark));
 
   const openComments = () => {
     setCommentOpen(true);
   };
 
   return (
-    <main className="book-reader bg-[#8C8149]">
+    <main
+      className="book-reader"
+      style={
+        {
+          "--reader-font-size": `${settings.fontSize}px`,
+          "--reader-line-height": settings.lineHeight,
+          "--reader-font-family": READER_FONTS[settings.fontFamily],
+          "--reader-background": settings.backgroundColor,
+          "--reader-foreground": settings.backgroundColor === "#000000" ? "#e7e5dd" : "#595854",
+        } as CSSProperties
+      }
+    >
       {/* Header */}
       <header className="book-reader__header">
         <Link to="/library" aria-label="서재로 돌아가기" className="book-reader__back">
@@ -150,6 +181,16 @@ export default function BookReadPage() {
         </Link>
 
         <h1>어린 왕자</h1>
+        <button
+          type="button"
+          aria-label="읽기 설정"
+          aria-haspopup="dialog"
+          aria-expanded={settingsOpen}
+          className="absolute -right-1 flex h-11 w-11 items-center justify-center !text-base !font-semibold"
+          onClick={() => setSettingsOpen(true)}
+        >
+          Aa
+        </button>
       </header>
 
       {/* Reader */}
@@ -184,100 +225,104 @@ export default function BookReadPage() {
 
           {ready && (
             <ReaderPageDeck
-              key={currentPage.id}
-              pages={readerPages}
-              index={pageIndex}
+              key={onCover ? "cover" : currentPage.id}
+              pages={deckPages}
+              index={deckIndex}
               onNavigate={(index) => goToPage(index + 1)}
-              renderPage={(page, active, onSwipeDisabledChange) => (
-                <BookTextReader
-                  key={page.id}
-                  page={page}
-                  active={active}
-                  onSwipeDisabledChange={onSwipeDisabledChange}
-                  highlights={data.highlights}
-                  words={data.words}
-                  comments={data.comments}
-                  onUpdateHighlight={(id, color) => {
-                    setData((current) => ({
-                      ...current,
-                      highlights: color
-                        ? current.highlights.map((entry) =>
-                            entry.id === id
-                              ? {
-                                  ...entry,
-                                  color,
-                                }
-                              : entry,
-                          )
-                        : current.highlights.filter((entry) => entry.id !== id),
-                    }));
+              renderPage={(page, active, onSwipeDisabledChange) =>
+                page.pdfPage === undefined ? (
+                  <ReaderCoverPage title={book.title} coverUrl={book.coverUrl} />
+                ) : (
+                  <BookTextReader
+                    key={page.id}
+                    page={page}
+                    active={active}
+                    onSwipeDisabledChange={onSwipeDisabledChange}
+                    highlights={data.highlights}
+                    words={data.words}
+                    comments={data.comments}
+                    onUpdateHighlight={(id, color) => {
+                      setData((current) => ({
+                        ...current,
+                        highlights: color
+                          ? current.highlights.map((entry) =>
+                              entry.id === id
+                                ? {
+                                    ...entry,
+                                    color,
+                                  }
+                                : entry,
+                            )
+                          : current.highlights.filter((entry) => entry.id !== id),
+                      }));
 
-                    setNotice("변경사항이 저장됐습니다");
-                  }}
-                  onHighlight={(selection, color) => {
-                    setData((current) => ({
-                      ...current,
-                      highlights: [
-                        ...current.highlights,
-                        ...selection.ranges.map(({ pdfPage, ...range }) => ({
-                          ...range,
-                          color,
-                          page: pdfPage,
-                          id: crypto.randomUUID(),
-                        })),
-                      ],
-                    }));
+                      setNotice("변경사항이 저장됐습니다");
+                    }}
+                    onHighlight={(selection, color) => {
+                      setData((current) => ({
+                        ...current,
+                        highlights: [
+                          ...current.highlights,
+                          ...selection.ranges.map(({ pdfPage, ...range }) => ({
+                            ...range,
+                            color,
+                            page: pdfPage,
+                            id: crypto.randomUUID(),
+                          })),
+                        ],
+                      }));
 
-                    setNotice("문장을 수집했습니다.");
-                  }}
-                  onWord={(word) => {
-                    setData((current) => ({
-                      ...current,
-                      words: current.words.some(
-                        (entry) => JSON.stringify(entry.ranges) === JSON.stringify(word.ranges),
-                      )
-                        ? current.words
-                        : [
-                            ...current.words,
-                            {
-                              ...word,
-                              id: crypto.randomUUID(),
-                            },
-                          ],
-                    }));
-                  }}
-                  onComment={(selection, text) => {
-                    if (!text.trim()) return;
+                      setNotice("문장을 수집했습니다.");
+                    }}
+                    onWord={(word) => {
+                      setData((current) => ({
+                        ...current,
+                        words: current.words.some(
+                          (entry) => JSON.stringify(entry.ranges) === JSON.stringify(word.ranges),
+                        )
+                          ? current.words
+                          : [
+                              ...current.words,
+                              {
+                                ...word,
+                                id: crypto.randomUUID(),
+                              },
+                            ],
+                      }));
+                    }}
+                    onComment={(selection, text) => {
+                      if (!text.trim()) return;
 
-                    setData((current) => ({
-                      ...current,
-                      comments: [
-                        ...current.comments,
-                        {
-                          id: crypto.randomUUID(),
-                          type: "sentence",
-                          user: readerUser,
-                          createdAt: new Date().toISOString(),
-                          page: selection.ranges[0].pdfPage,
-                          pages: [...new Set(selection.ranges.map((range) => range.pdfPage))],
-                          ranges: selection.ranges,
-                          quote: selection.text,
-                          text: text.trim(),
-                        },
-                      ],
-                    }));
+                      setData((current) => ({
+                        ...current,
+                        comments: [
+                          ...current.comments,
+                          {
+                            id: crypto.randomUUID(),
+                            type: "sentence",
+                            user: readerUser,
+                            createdAt: new Date().toISOString(),
+                            page: selection.ranges[0].pdfPage,
+                            pages: [...new Set(selection.ranges.map((range) => range.pdfPage))],
+                            ranges: selection.ranges,
+                            quote: selection.text,
+                            text: text.trim(),
+                          },
+                        ],
+                      }));
 
-                    setNotice("댓글 작성 완료!");
-                  }}
-                />
-              )}
+                      setNotice("댓글 작성 완료!");
+                    }}
+                  />
+                )
+              }
             />
           )}
         </Document>
       </div>
 
       {/* Reader Notice */}
-      {(notice || storageError) && (
+      {(notice || storageError || settingsStorageError) && (
         <p
           role="status"
           className={`book-reader__notice${
@@ -297,7 +342,9 @@ export default function BookReadPage() {
             </svg>
           )}
 
-          {storageError ? "기기에 저장할 수 없어 이번 방문 동안만 유지됩니다." : notice}
+          {storageError || settingsStorageError
+            ? "기기에 저장할 수 없어 이번 방문 동안만 유지됩니다."
+            : notice}
         </p>
       )}
 
@@ -308,21 +355,21 @@ export default function BookReadPage() {
             type="range"
             aria-label="독서 페이지 선택"
             aria-valuetext={
-              ready ? `${readerPages.length}페이지 중 ${pageNumber}페이지` : "독서 페이지 준비 중"
+              ready ? `${deckPages.length}페이지 중 ${pageNumber}페이지` : "독서 페이지 준비 중"
             }
             min={1}
-            max={readerPages.length || 1}
+            max={deckPages.length || 1}
             value={pageNumber}
-            disabled={!ready || readerPages.length <= 1}
+            disabled={!ready || deckPages.length <= 1}
             style={{
               background: `linear-gradient(to right, #595854 ${
-                ready && readerPages.length > 1 ? (pageIndex / (readerPages.length - 1)) * 100 : 0
+                ready && deckPages.length > 1 ? (deckIndex / (deckPages.length - 1)) * 100 : 0
               }%, #eeeede 0)`,
             }}
             onChange={(event) => goToPage(Number(event.target.value))}
           />
 
-          <span aria-live="polite">{ready ? `${pageNumber}/${readerPages.length}` : "—/—"}</span>
+          <span aria-live="polite">{ready ? `${pageNumber}/${deckPages.length}` : "—/—"}</span>
         </div>
 
         <div className="book-reader__actions">
@@ -347,7 +394,7 @@ export default function BookReadPage() {
           <button
             type="button"
             aria-label={`이 페이지 댓글 ${comments.length}개`}
-            disabled={!ready}
+            disabled={!ready || onCover}
             onClick={openComments}
           >
             <Icon name="comment" />
@@ -360,7 +407,7 @@ export default function BookReadPage() {
             className="book-reader__bookmark"
             aria-label={`${pageNumber}페이지 북마크`}
             aria-pressed={bookmarked}
-            disabled={!ready}
+            disabled={!ready || onCover}
             onClick={() =>
               setData((current) => ({
                 ...current,
@@ -371,7 +418,6 @@ export default function BookReadPage() {
                       {
                         pdfPage,
                         start: currentPage.start,
-                        imageId: currentPage.imageId,
                       },
                     ],
               }))
@@ -383,7 +429,7 @@ export default function BookReadPage() {
       </footer>
 
       {/* Comments */}
-      {commentOpen && ready && (
+      {commentOpen && ready && !onCover && (
         <ReaderCommentsSheet
           replies={data.comments.filter(
             (comment) => !!(comment.parentCommentId || comment.replyTo),
@@ -443,7 +489,6 @@ export default function BookReadPage() {
                     parent?.ranges?.[0] ?? {
                       pdfPage,
                       start: currentPage.start,
-                      imageId: currentPage.imageId,
                     },
 
                   text: text.trim(),
@@ -516,6 +561,13 @@ export default function BookReadPage() {
               };
             })
           }
+        />
+      )}
+      {settingsOpen && (
+        <ReaderSettingsPanel
+          settings={settings}
+          onChange={updateSettings}
+          onClose={() => setSettingsOpen(false)}
         />
       )}
     </main>

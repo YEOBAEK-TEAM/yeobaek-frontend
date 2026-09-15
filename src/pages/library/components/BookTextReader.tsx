@@ -301,21 +301,6 @@ export default function BookTextReader({
         onTouchEnd={active ? completeSelection : undefined}
       >
         {page.fragments.map((fragment) => {
-          if (fragment.type === "image")
-            return (
-              <img
-                key={fragment.id}
-                src={fragment.src}
-                alt={`PDF ${fragment.pdfPage}페이지 삽화`}
-                data-pdf-page={fragment.pdfPage}
-                className="book-reader__image"
-                data-image-id={fragment.id}
-                width={fragment.width}
-                height={fragment.height}
-                style={{ width: fragment.displayWidth, height: fragment.displayHeight }}
-                draggable={false}
-              />
-            );
           const lastFragment =
             selection &&
             page.fragments.findLast(
