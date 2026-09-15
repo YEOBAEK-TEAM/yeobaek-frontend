@@ -5,6 +5,11 @@ import type { ReaderComment } from "../utils/useReaderData";
 import { readerUser } from "../../../mocks/readerUser";
 import CommentConfirmModal from "./CommentConfirmModal";
 
+const editButtonClass =
+  "min-h-7 rounded border border-[#626b4e] bg-transparent text-[#141610] active:text-white";
+const saveButtonClass = `${editButtonClass} active:bg-[#626b4e]`;
+const cancelButtonClass = `${editButtonClass} active:bg-[#493d3c]`;
+
 type Props = {
   comments: ReaderComment[];
   replies: ReaderComment[];
@@ -173,7 +178,7 @@ export default function ReaderCommentsSheet({
         aria-modal="true"
         aria-labelledby="reader-comments-title"
         aria-description={`${pageNumber}페이지 댓글`}
-        className="flex h-[82dvh] max-h-[calc(100dvh-24px)] w-full max-w-[390px] flex-col overflow-hidden rounded-t-[20px] bg-[#b8be9f] text-[#141610] shadow-[0_-4px_20px_#00000008] [font-family:system-ui,sans-serif]"
+        className="[&_button]:[-webkit-tap-highlight-color:transparent] [&_button:focus]:outline-none! [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-[#8b956d] flex h-[82dvh] max-h-[calc(100dvh-24px)] w-full max-w-[390px] flex-col overflow-hidden rounded-t-[20px] bg-[#b8be9f] text-[#141610] shadow-[0_-4px_20px_#00000008] [font-family:system-ui,sans-serif]"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
@@ -354,14 +359,14 @@ export default function ReaderCommentsSheet({
                         <button
                           type="submit"
                           disabled={!editText.trim() || editText.length > 200}
-                          className="min-h-7 rounded border border-[#626b4e]"
+                          className={saveButtonClass}
                         >
                           수정완료
                         </button>
 
                         <button
                           type="button"
-                          className="min-h-7 rounded bg-[#493d3c] text-white"
+                          className={cancelButtonClass}
                           onClick={() => setEditingId(undefined)}
                         >
                           취소하기
@@ -399,7 +404,7 @@ export default function ReaderCommentsSheet({
                   >
                     <button
                       type="button"
-                      className="min-h-9 w-full px-3 hover:bg-black/5"
+                      className="min-h-9 w-full bg-transparent px-3 text-[#141610] hover:bg-black/5 active:bg-transparent focus:bg-transparent"
                       onClick={() => {
                         setEditingId(comment.id);
                         setEditText(comment.text);
@@ -411,7 +416,7 @@ export default function ReaderCommentsSheet({
 
                     <button
                       type="button"
-                      className="min-h-9 w-full px-3 hover:bg-black/5"
+                      className="min-h-9 w-full bg-transparent px-3 text-[#141610] hover:bg-black/5 active:bg-transparent focus:bg-transparent"
                       onClick={() => {
                         setConfirmation({
                           id: comment.id,
@@ -427,7 +432,7 @@ export default function ReaderCommentsSheet({
                     <button
                       type="button"
                       disabled={reportedCommentIds.includes(comment.id)}
-                      className="min-h-9 w-full px-3 hover:bg-black/5"
+                      className="min-h-9 w-full bg-transparent px-3 text-[#141610] hover:bg-black/5 active:bg-transparent focus:bg-transparent"
                       onClick={() => {
                         setConfirmation({
                           id: comment.id,
@@ -448,7 +453,7 @@ export default function ReaderCommentsSheet({
                 <div className="mt-5 flex items-center justify-between text-xs font-semibold text-[#8b956d]">
                   <button
                     type="button"
-                    className="rounded border border-[#8b956d] px-3 py-1"
+                    className="rounded border border-[#8b956d] bg-transparent px-3 py-1 text-[#8b956d] hover:bg-transparent active:bg-transparent focus:bg-transparent"
                     onClick={() => {
                       if (parent) {
                         inputRef.current?.focus();
@@ -476,7 +481,9 @@ export default function ReaderCommentsSheet({
                         aria-label={vote === "like" ? "좋아요" : "싫어요"}
                         aria-pressed={comment.myVote === vote}
                         className={`flex items-center gap-1 rounded border border-[#8b956d] px-1.5 py-1 ${
-                          comment.myVote === vote ? "bg-[#8b956d] text-white" : ""
+                          comment.myVote === vote
+                            ? "bg-[#8b956d] text-white hover:bg-[#8b956d] active:bg-[#8b956d] focus:bg-[#8b956d]"
+                            : "bg-transparent text-[#8b956d] hover:bg-transparent active:bg-transparent focus:bg-transparent"
                         }`}
                         onClick={() => onVote(comment.id, vote)}
                       >
@@ -570,14 +577,14 @@ export default function ReaderCommentsSheet({
                         <button
                           type="submit"
                           disabled={!editText.trim() || editText.length > 200}
-                          className="min-h-7 rounded border border-[#626b4e]"
+                          className={saveButtonClass}
                         >
                           수정완료
                         </button>
 
                         <button
                           type="button"
-                          className="min-h-7 rounded bg-[#493d3c] text-white"
+                          className={cancelButtonClass}
                           onClick={() => setEditingId(undefined)}
                         >
                           취소하기
@@ -598,7 +605,9 @@ export default function ReaderCommentsSheet({
                           aria-label={vote === "like" ? "좋아요" : "싫어요"}
                           aria-pressed={reply.myVote === vote}
                           className={`flex items-center gap-1 rounded border border-[#8b956d] px-1.5 py-1 ${
-                            reply.myVote === vote ? "bg-[#8b956d] text-white" : ""
+                            reply.myVote === vote
+                              ? "bg-[#8b956d] text-white hover:bg-[#8b956d] active:bg-[#8b956d] focus:bg-[#8b956d]"
+                              : "bg-transparent text-[#8b956d] hover:bg-transparent active:bg-transparent focus:bg-transparent"
                           }`}
                           onClick={() => onVote(reply.id, vote)}
                         >
@@ -639,7 +648,7 @@ export default function ReaderCommentsSheet({
                     >
                       <button
                         type="button"
-                        className="min-h-9 w-full px-3 hover:bg-black/5"
+                        className="min-h-9 w-full bg-transparent px-3 text-[#141610] hover:bg-black/5 active:bg-transparent focus:bg-transparent"
                         onClick={() => {
                           setEditingId(reply.id);
                           setEditText(reply.text);
@@ -651,7 +660,7 @@ export default function ReaderCommentsSheet({
 
                       <button
                         type="button"
-                        className="min-h-9 w-full px-3 hover:bg-black/5"
+                        className="min-h-9 w-full bg-transparent px-3 text-[#141610] hover:bg-black/5 active:bg-transparent focus:bg-transparent"
                         onClick={() => {
                           setConfirmation({
                             id: reply.id,
@@ -667,7 +676,7 @@ export default function ReaderCommentsSheet({
                       <button
                         type="button"
                         disabled={reportedCommentIds.includes(reply.id)}
-                        className="min-h-9 w-full px-3 hover:bg-black/5"
+                        className="min-h-9 w-full bg-transparent px-3 text-[#141610] hover:bg-black/5 active:bg-transparent focus:bg-transparent"
                         onClick={() => {
                           setConfirmation({
                             id: reply.id,
