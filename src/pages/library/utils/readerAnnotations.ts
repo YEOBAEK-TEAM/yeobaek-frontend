@@ -52,6 +52,7 @@ export function getAnnotatedTextParts(
     );
     const highlight = overlaps.findLast((entry) => entry.kind === "highlight");
     const word = overlaps.findLast((entry) => entry.kind === "word");
+    const wordLastRange = word && words.find((entry) => entry.id === word.id)?.ranges.at(-1);
     const comment = overlaps.findLast((entry) => entry.kind === "comment");
     const temporary = overlaps.findLast((entry) => entry.kind === "preview");
     return {
@@ -60,6 +61,11 @@ export function getAnnotatedTextParts(
       background: temporary?.color ?? highlight?.color ?? comment?.color,
       highlightId: highlight?.id,
       wordId: word?.id,
+      wordEnd:
+        !!word &&
+        sourceAt(next) >= word.end &&
+        wordLastRange?.pdfPage === pdfPage &&
+        wordLastRange.end === word.end,
       commentId: comment?.id,
       preview: !!temporary,
     };

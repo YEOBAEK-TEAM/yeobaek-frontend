@@ -238,6 +238,7 @@
 }
 .book-reader__selection--inline {
   position: static;
+  overflow: visible;
   margin: 8px 0 18px;
   user-select: none;
   cursor: default;
@@ -304,12 +305,179 @@
   outline-offset: 3px;
 }
 .book-reader__word {
-  background-image: radial-gradient(circle, #d56064 1.6px, transparent 1.8px);
-  background-size: 8px 5px;
-  background-repeat: repeat-x;
-  background-position: left bottom;
-  padding-bottom: 3px;
-  box-decoration-break: clone;
+  position: relative;
+  cursor: pointer;
+}
+.book-reader__saved-dot {
+  position: absolute;
+  inset-inline-end: -3px;
+  top: -2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e43c35;
+  pointer-events: none;
+}
+.book-reader__selection-close {
+  float: right;
+  width: 24px;
+  height: 28px;
+  font-size: 18px;
+  color: #888680;
+}
+.book-reader__word-card {
+  position: relative;
+  clear: both;
+  margin-top: 12px;
+  padding: 18px 16px;
+  background: #fff;
+  border: 1px solid #e7e6dd;
+  box-shadow: 0 3px 4px #0003;
+  color: #595854;
+  font:
+    12px/1.65 system-ui,
+    sans-serif;
+  overflow-wrap: anywhere;
+}
+.book-reader__word-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.book-reader__word-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.book-reader__meaning-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #51451e;
+  color: #fff;
+  font-size: 13px;
+}
+.book-reader__part-of-speech {
+  color: #9c9b94;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.book-reader__meaning-badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: #eee7da;
+  color: #514b3f;
+  font-size: 10px;
+  font-weight: 600;
+}
+.book-reader__text .book-reader__current-meaning {
+  margin: 9px 0 18px 30px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.book-reader__word-details {
+  border-top: 1px solid #deddd6;
+}
+.book-reader__word-hint {
+  margin-top: 10px;
+  color: #85847c;
+  font-size: 11px;
+}
+.book-reader__meanings-toggle {
+  width: 100%;
+  min-height: 42px;
+  color: #92918b;
+  font-size: 12px;
+}
+.book-reader__meanings-toggle span {
+  margin-left: 4px;
+}
+.book-reader__other-meanings {
+  margin: 4px 0 16px;
+  padding: 0;
+  list-style: none;
+  color: #85847c;
+}
+.book-reader__other-meanings li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 3px 0;
+}
+.book-reader__other-meanings .book-reader__meaning-number {
+  width: 18px;
+  height: 18px;
+  background: #aaa793;
+  font-size: 11px;
+}
+.book-reader__other-meanings small {
+  margin-left: 4px;
+  color: #9c9b94;
+  font-size: 10px;
+}
+.book-reader__word-examples {
+  margin: 12px 0 18px;
+  padding-left: 17px;
+  list-style: disc;
+}
+.book-reader__word-examples li {
+  margin: 5px 0;
+}
+.book-reader__word-examples li::marker {
+  color: #51451e;
+}
+.book-reader__word-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 8px;
+}
+.book-reader__word-buttons button {
+  flex: 1;
+  min-height: 32px;
+  border: 1px solid #b7af9a;
+  background: #fff;
+  color: #655a3c;
+  font-size: 11px;
+}
+.book-reader__word-buttons button:only-child {
+  flex: 0 1 calc(50% - 7px);
+}
+.book-reader__word-buttons button.is-active {
+  border-color: #51451e;
+  background: #51451e;
+  color: #fff;
+}
+.book-reader__word-card.is-saved > :not(.book-reader__word-saved-toast) {
+  opacity: 0.5;
+}
+.book-reader__word-card.is-saved button:disabled {
+  opacity: 1;
+}
+.book-reader__word-saved-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 44px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 12px 17px;
+  border-radius: 12px;
+  background: #60605f;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
 }
 .book-reader__inline-comment {
   display: flex;

@@ -198,7 +198,6 @@ export default function BookReadPage() {
                         ? current.words
                         : [...current.words, { ...word, id: crypto.randomUUID() }],
                     }));
-                    setNotice("선택한 텍스트를 이 기기의 단어장에 저장했습니다.");
                   }}
                   onComment={(selection, text) => {
                     if (!text.trim()) return;

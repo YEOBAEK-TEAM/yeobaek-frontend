@@ -42,7 +42,7 @@ export function useTextSelection(
       !active ||
       !event.isPrimary ||
       event.button !== 0 ||
-      !(event.target as Element).closest("p")
+      !(event.target as Element).closest("[data-fragment-id]")
     )
       return;
     clearPress();
@@ -169,12 +169,6 @@ export function useTextSelection(
       document.removeEventListener("keydown", escape);
     };
   }, [active, capture, finish, menuRef, articleRef, cancelClick]);
-  useEffect(() => {
-    if (mode !== "word") return;
-    // Brief active-button feedback, then close the completed action's menu.
-    const timer = window.setTimeout(finish, 650);
-    return () => window.clearTimeout(timer);
-  }, [mode, finish]);
   const pointerUp = (
     event?: ReactPointerEvent<HTMLElement>,
     onSingle?: (next: ReaderSelection) => void,
