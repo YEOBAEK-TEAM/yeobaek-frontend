@@ -43,7 +43,7 @@ export default function LibraryPage() {
       {/* 상단 도서 목록 */}
       <section className="mt-6">
         <div
-          className={`flex gap-3 overflow-x-auto px-3 pb-2 [scrollbar] [&::-webkit-scrollbar]:hidden [@media(pointer:fine)]:select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+          className={`flex gap-3 overflow-x-auto px-3 pb-2 [scrollbar] [&::-webkit-scrollbar]:hidden pointer-fine:select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
           onPointerDown={(event) => {
             moved.current = false;
             if (event.pointerType !== "mouse" || event.button !== 0 || !event.isPrimary) return;
