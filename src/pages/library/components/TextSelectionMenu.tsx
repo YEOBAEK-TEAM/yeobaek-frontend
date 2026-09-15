@@ -12,6 +12,7 @@ type Props = {
   onComment: () => void;
   onColor: (color: string) => void;
   onSubmitComment: (text: string) => void;
+  onClose: () => void;
 };
 
 export default function TextSelectionMenu({
@@ -23,6 +24,7 @@ export default function TextSelectionMenu({
   onComment,
   onColor,
   onSubmitComment,
+  onClose,
 }: Props) {
   return (
     <div
@@ -34,6 +36,9 @@ export default function TextSelectionMenu({
         if (!(event.target instanceof HTMLInputElement)) event.preventDefault();
       }}
     >
+      <button type="button" aria-label="선택 메뉴 닫기" onClick={onClose}>
+        ×
+      </button>
       {mode === "comment" ? (
         <CommentInput onSubmit={onSubmitComment} />
       ) : (

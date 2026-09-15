@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { SyntheticEvent } from "react";
+import type { SyntheticEvent, PointerEvent as ReactPointerEvent } from "react";
 import type { ReaderPage } from "../utils/paginateReaderText";
 import type { ReaderComment, ReaderHighlight, ReaderWord } from "../utils/useReaderData";
 import type { ReaderSelection } from "../utils/readerSelection";
@@ -48,6 +48,9 @@ export default function BookTextReader({
     pointerDown,
     pointerMove,
     pointerUp,
+    doubleClick,
+    pointerCancel,
+    isMousePointer,
   } = useTextSelection(page, active, articleRef, menuRef);
   const [collected, setCollected] = useState<{ id: string; left: number; top: number } | null>(
     null,
@@ -111,6 +114,7 @@ export default function BookTextReader({
         onComment(selection, text);
         finish();
       }}
+      onClose={finish}
     />
   );
   const openCollected = (id: string) => {
@@ -132,7 +136,28 @@ export default function BookTextReader({
   };
   const completeSelection = (event: SyntheticEvent) => {
     if ((event.target as Element).closest(".book-reader__selection")) return;
-    pointerUp();
+    const clickedHighlight = (event.target as Element).closest<HTMLElement>("[data-highlight-id]")
+      ?.dataset.highlightId;
+    const openSaved = (selected: ReaderSelection) => {
+      if (clickedHighlight) {
+        openCollected(clickedHighlight);
+        return;
+      }
+      const saved = highlights.find(
+        (entry) =>
+          selected.ranges.length > 0 &&
+          selected.ranges.every(
+            (part) =>
+              part.pdfPage === entry.page && part.start >= entry.start && part.end <= entry.end,
+          ),
+      );
+      if (saved) openCollected(saved.id);
+    };
+    if (event.type === "pointerup") {
+      const pointer = event as ReactPointerEvent<HTMLElement>;
+      pointerUp(pointer, openSaved);
+      if (pointer.pointerType === "mouse") return;
+    } else pointerUp();
     const native = window.getSelection();
     if (!active || !articleRef.current || !native?.rangeCount || native.isCollapsed) return;
     const range = native.getRangeAt(0);
@@ -211,7 +236,8 @@ export default function BookTextReader({
         onPointerDown={pointerDown}
         onPointerMove={pointerMove}
         onPointerUp={active ? completeSelection : undefined}
-        onPointerCancel={active ? pointerUp : undefined}
+        onPointerCancel={active ? pointerCancel : undefined}
+        onDoubleClick={active ? doubleClick : undefined}
         onKeyUp={active ? completeSelection : undefined}
         onTouchEnd={active ? completeSelection : undefined}
       >
@@ -308,6 +334,7 @@ export default function BookTextReader({
                                     !active ||
                                     !part.highlightId ||
                                     event.detail > 1 ||
+                                    isMousePointer() ||
                                     window.getSelection()?.toString()
                                   )
                                     return;
