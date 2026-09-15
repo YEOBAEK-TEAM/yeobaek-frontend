@@ -1,5 +1,7 @@
 import { NavLink } from "react-router-dom";
 
+import BMDOHYEON from "@/assets/fonts/BMDOHYEON.ttf";
+
 import collectionActiveIcon from "@/assets/icons/footer/collectionActiveIcon.png";
 import collectionIcon from "@/assets/icons/footer/collectionIcon.png";
 import homeActiveIcon from "@/assets/icons/footer/homeActiveIcon.png";
@@ -46,33 +48,45 @@ const navigationItems = [
 
 export default function FooterNavigation() {
   return (
-    <nav className="fixed bottom-0 left-1/2 z-50 flex h-22 w-full max-w-97.5 -translate-x-1/2 bg-[#B8C09C]">
-      {navigationItems.map((item) => (
-        <NavLink
-          key={item.path}
-          to={item.path}
-          end={item.path === "/"}
-          className="flex flex-1 flex-col items-center justify-center gap-1"
-        >
-          {({ isActive }) => (
-            <>
-              <img
-                src={isActive ? item.activeIcon : item.icon}
-                alt={item.label}
-                className="h-9 w-9 object-contain"
-              />
+    <>
+      <style>
+        {`
+          @font-face {
+            font-family: "BMDOHYEON";
+            src: url("${BMDOHYEON}") format("truetype");
+            font-weight: 400;
+            font-style: normal;
+          }
+        `}
+      </style>
 
-              <span
-                className={`text-[14px] ${
-                  isActive ? "font-semibold text-white" : "font-medium text-[#68705A]"
-                }`}
-              >
-                {item.label}
-              </span>
-            </>
-          )}
-        </NavLink>
-      ))}
-    </nav>
+      <nav className="fixed bottom-0 left-1/2 z-50 flex h-22 w-full max-w-97.5 -translate-x-1/2 bg-[#B8C09C]">
+        {navigationItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.path === "/home"}
+            className="flex flex-1 flex-col items-center justify-center gap-1"
+          >
+            {({ isActive }) => (
+              <>
+                <img
+                  src={isActive ? item.activeIcon : item.icon}
+                  alt={item.label}
+                  className="h-9 w-9 object-contain"
+                />
+
+                <span
+                  className={`text-sm ${isActive ? "text-white" : "text-[#68705A]"}`}
+                  style={{ fontFamily: "BMDOHYEON" }}
+                >
+                  {item.label}
+                </span>
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+    </>
   );
 }

@@ -4,7 +4,7 @@ export const mockVocabulary: Vocabulary[] = [
   {
     id: 1,
     page: 142,
-    word: "지나브로",
+    word: "시나브로",
     partOfSpeech: "부",
     meaning: "모르는 사이에 조금씩",
     bookTitle: "우리가 몰랐던 밤",
