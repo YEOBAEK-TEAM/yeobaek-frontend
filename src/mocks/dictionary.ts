@@ -7,6 +7,13 @@ export type WordDictionaryEntry = {
 };
 
 export const dictionaryMock: Record<string, WordDictionaryEntry> = {
+  맹수: {
+    word: "맹수",
+    partOfSpeech: "명사",
+    currentMeaning: "성질이 사납고 육식을 하는 짐승",
+    otherMeanings: [],
+    examples: ["숲에서 맹수를 만났다."],
+  },
   타다: {
     word: "타다",
     partOfSpeech: "동사",
@@ -58,12 +65,142 @@ export function isDictionaryWord(text: string) {
   return /^[\p{L}\p{M}\p{N}]+(?:['’-][\p{L}\p{M}\p{N}]+)*$/u.test(normalizeDictionaryWord(text));
 }
 
+// Explicit suffixes keep compound-particle handling bounded; do not repeatedly
+// strip syllables, which could consume part of the noun itself.
+const nounParticles = [
+  "은",
+  "는",
+  "이",
+  "가",
+  "을",
+  "를",
+  "의",
+  "에",
+  "에서",
+  "에게",
+  "에게서",
+  "한테",
+  "한테서",
+  "께",
+  "께서",
+  "로",
+  "으로",
+  "와",
+  "과",
+  "하고",
+  "랑",
+  "이랑",
+  "도",
+  "만",
+  "뿐",
+  "밖에",
+  "부터",
+  "까지",
+  "보다",
+  "처럼",
+  "만큼",
+  "마다",
+  "조차",
+  "마저",
+  "이나",
+  "나",
+  "이든",
+  "든",
+  "이든지",
+  "든지",
+  "이라도",
+  "라도",
+  "이야",
+  "야",
+  "로서",
+  "으로서",
+  "로써",
+  "으로써",
+  "로부터",
+  "으로부터",
+  "에는",
+  "에도",
+  "에만",
+  "에서는",
+  "에서도",
+  "에서만",
+  "에서부터",
+  "에게는",
+  "에게도",
+  "에게만",
+  "에게서는",
+  "에게서도",
+  "에게서부터",
+  "한테는",
+  "한테도",
+  "한테만",
+  "한테서는",
+  "한테서도",
+  "께는",
+  "께도",
+  "로는",
+  "로도",
+  "로만",
+  "으로는",
+  "으로도",
+  "으로만",
+  "와는",
+  "와도",
+  "과는",
+  "과도",
+  "하고는",
+  "하고도",
+  "랑은",
+  "랑도",
+  "이랑은",
+  "이랑도",
+  "부터는",
+  "부터도",
+  "부터만",
+  "까지는",
+  "까지도",
+  "까지만",
+  "만은",
+  "만도",
+  "만을",
+  "만이",
+  "만의",
+  "뿐만",
+  "뿐만은",
+  "뿐만도",
+  "보다는",
+  "보다도",
+  "처럼은",
+  "처럼도",
+  "만큼은",
+  "만큼도",
+  "조차도",
+  "마저도",
+  "로부터는",
+  "로부터도",
+  "으로부터는",
+  "으로부터도",
+].sort((a, b) => b.length - a.length);
+
+// Keep exact dictionary words and verb forms intact. Only a known noun can
+// justify shortening a selection; unknown words retain their original offsets.
+export function stripKnownNounParticle(word: string) {
+  if (Object.hasOwn(dictionaryMock, word) || Object.hasOwn(aliases, word)) return word;
+  for (const particle of nounParticles) {
+    if (!word.endsWith(particle)) continue;
+    const candidate = word.slice(0, -particle.length);
+    if (
+      Object.hasOwn(dictionaryMock, candidate) &&
+      dictionaryMock[candidate].partOfSpeech === "명사"
+    )
+      return candidate;
+  }
+  return word;
+}
+
 export function getDictionaryEntry(text: string): WordDictionaryEntry {
   const normalized = normalizeDictionaryWord(text);
-  const withoutParticle = normalized.replace(
-    /(?:에서|에게|으로|은|는|이|가|을|를|의|에|와|과|도)$/u,
-    "",
-  );
+  const withoutParticle = stripKnownNounParticle(normalized);
   const key = [normalized, aliases[normalized], withoutParticle].find(
     (word) => word && Object.hasOwn(dictionaryMock, word),
   );

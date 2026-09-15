@@ -1,4 +1,5 @@
 import type { ReaderFragment } from "./paginateReaderText";
+import { stripKnownNounParticle } from "../../../mocks/dictionary";
 
 export type ReaderSelectionRange = { pdfPage: number; start: number; end: number; text: string };
 export type ReaderSelection = { text: string; ranges: ReaderSelectionRange[] };
@@ -68,7 +69,10 @@ export function getReaderSelectionAtPoint(
       )
     : null;
   const range = word
-    ? segment && { start: segment.index, end: segment.index + segment.segment.length }
+    ? segment && {
+        start: segment.index,
+        end: segment.index + stripKnownNounParticle(segment.segment).length,
+      }
     : getSentenceRangeFromOffset(text, offset);
   if (!range) return null;
   const ranges = entries.flatMap(({ fragment, start }) => {
