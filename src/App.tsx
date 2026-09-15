@@ -3,6 +3,9 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import AppLayout from "@/layouts/AppLayout";
 import FooterLayout from "@/layouts/FooterLayout";
 
+import SplashPage from "@/pages/splash/SplashPage";
+import LoginPage from "@/pages/login/LoginPage";
+
 import HomePage from "@/pages/home/HomePage";
 import LibraryPage from "@/pages/library/LibraryPage";
 import BookReadPage from "@/pages/library/BookReadPage";
@@ -17,10 +20,12 @@ export default function App() {
         <Route element={<AppLayout />}>
           {/* Footer 없는 페이지 */}
           <Route path="/library/read" element={<BookReadPage />} />
+          <Route path="/" element={<SplashPage />} />
+          <Route path="/login" element={<LoginPage />} />
 
           {/* Footer 있는 페이지 */}
           <Route element={<FooterLayout />}>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/home" element={<HomePage />} />
             <Route path="/vocabulary" element={<VocabularyPage />} />
             <Route path="/training" element={<TrainingPage />} />
             <Route path="/library" element={<LibraryPage />} />
