@@ -60,7 +60,7 @@ export default function FooterNavigation() {
         `}
       </style>
 
-      <nav className="fixed bottom-0 left-1/2 z-50 flex h-22 w-full max-w-97.5 -translate-x-1/2 bg-[#B8C09C]">
+      <nav className="fixed bottom-0 left-1/2 z-50 flex h-22 w-full max-w-97.5 -translate-x-1/2 bg-[#F7F6F1]">
         {navigationItems.map((item) => (
           <NavLink
             key={item.path}
@@ -77,7 +77,7 @@ export default function FooterNavigation() {
                 />
 
                 <span
-                  className={`text-sm ${isActive ? "text-white" : "text-[#68705A]"}`}
+                  className={`text-sm ${isActive ? "text-[#4F4D4E]" : "text-[#D7D4C7]"}`}
                   style={{ fontFamily: "BMDOHYEON" }}
                 >
                   {item.label}
