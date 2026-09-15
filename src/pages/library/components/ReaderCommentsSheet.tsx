@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ReaderComment } from "../utils/useReaderData";
 import { readerUser } from "../../../mocks/readerUser";
 import CommentConfirmModal from "./CommentConfirmModal";
 
 type Props = {
   comments: ReaderComment[];
+  replies: ReaderComment[];
   pageNumber: number;
   onClose: () => void;
   onSubmit: (text: string, replyTo?: string) => void;
@@ -23,6 +24,7 @@ const dateLabel = (value?: string) => {
 
 export default function ReaderCommentsSheet({
   comments,
+  replies,
   pageNumber,
   onClose,
   onSubmit,
@@ -35,6 +37,9 @@ export default function ReaderCommentsSheet({
   const [tab, setTab] = useState("popular");
   const [draft, setDraft] = useState("");
   const [replyTo, setReplyTo] = useState<string>();
+  const listRef = useRef<HTMLDivElement>(null);
+  const commentScroll = useRef(0);
+  const scrollToNewReply = useRef(false);
   const [menu, setMenu] = useState<string>();
   const [editingId, setEditingId] = useState<string>();
   const [editText, setEditText] = useState("");
@@ -61,14 +66,38 @@ export default function ReaderCommentsSheet({
     closeRef.current?.focus();
     return () => previous?.focus();
   }, []);
-  const shown = comments
-    .filter((comment) => tab !== "fan" || comment.user?.isFan)
-    .sort((a, b) => {
-      if (tab === "popular" && (a.likes ?? 0) !== (b.likes ?? 0))
-        return (b.likes ?? 0) - (a.likes ?? 0);
-      return (Date.parse(b.createdAt ?? "") || 0) - (Date.parse(a.createdAt ?? "") || 0);
-    });
-  const reply = comments.find((comment) => comment.id === replyTo);
+  const parent = comments.find((comment) => comment.id === replyTo);
+  const parentId = parent?.id;
+  const threadReplies = replies.filter(
+    (reply) => (reply.parentCommentId ?? reply.replyTo) === parent?.id,
+  );
+  const back = () => {
+    if (!replyTo) {
+      onClose();
+      return;
+    }
+    setReplyTo(undefined);
+    setDraft("");
+    setMenu(undefined);
+    setEditingId(undefined);
+  };
+  useLayoutEffect(() => {
+    if (listRef.current) listRef.current.scrollTop = parentId ? 0 : commentScroll.current;
+  }, [parentId]);
+  useLayoutEffect(() => {
+    if (!scrollToNewReply.current || !listRef.current) return;
+    listRef.current.scrollTop = listRef.current.scrollHeight;
+    scrollToNewReply.current = false;
+  }, [threadReplies.length]);
+  const shown = parent
+    ? [parent]
+    : comments
+        .filter((comment) => tab !== "fan" || comment.user?.isFan)
+        .sort((a, b) => {
+          if (tab === "popular" && (a.likes ?? 0) !== (b.likes ?? 0))
+            return (b.likes ?? 0) - (a.likes ?? 0);
+          return (Date.parse(b.createdAt ?? "") || 0) - (Date.parse(a.createdAt ?? "") || 0);
+        });
   return (
     <div className="book-reader__sheet-backdrop !bg-transparent" onClick={onClose}>
       <section
@@ -89,7 +118,7 @@ export default function ReaderCommentsSheet({
               setEditingId(undefined);
               return;
             }
-            onClose();
+            back();
           }
           if (event.key !== "Tab") return;
           const controls = [
@@ -110,14 +139,14 @@ export default function ReaderCommentsSheet({
       >
         <header className="flex shrink-0 items-center justify-between px-7 pt-4 pb-3">
           <h2 id="reader-comments-title" className="text-xl font-semibold">
-            댓글 ({comments.length})
+            {parent ? `답글 (${threadReplies.length})` : `댓글 (${comments.length})`}
           </h2>
           <button
             ref={closeRef}
             type="button"
-            aria-label="댓글 닫기"
+            aria-label={parent ? "댓글 목록으로 돌아가기" : "댓글 닫기"}
             className="flex h-11 w-11 items-center justify-center"
-            onClick={onClose}
+            onClick={back}
           >
             <svg
               width="24"
@@ -155,7 +184,11 @@ export default function ReaderCommentsSheet({
             </button>
           ))}
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" aria-live="polite">
+        <div
+          ref={listRef}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          aria-live="polite"
+        >
           {shown.length === 0 && (
             <p className="px-7 py-10 text-center text-sm text-[#72795e]">
               {tab === "fan" ? "아직 찐팬 댓글이 없습니다." : "이 페이지에 첫 의견을 남겨보세요."}
@@ -305,8 +338,16 @@ export default function ReaderCommentsSheet({
                     type="button"
                     className="rounded border border-[#8b956d] px-3 py-1"
                     onClick={() => {
+                      if (parent) {
+                        inputRef.current?.focus();
+                        return;
+                      }
+                      commentScroll.current = listRef.current?.scrollTop ?? 0;
                       setReplyTo(comment.id);
-                      inputRef.current?.focus();
+                      setDraft("");
+                      setMenu(undefined);
+                      setEditingId(undefined);
+                      closeRef.current?.focus();
                     }}
                   >
                     답글
@@ -341,32 +382,54 @@ export default function ReaderCommentsSheet({
               )}
             </article>
           ))}
+          {parent && threadReplies.length === 0 && (
+            <p className="px-7 py-8 text-center text-sm text-[#72795e]">첫 답글을 남겨보세요.</p>
+          )}
+          {parent &&
+            threadReplies.map((reply) => (
+              <article
+                key={reply.id}
+                data-reply-id={reply.id}
+                className="flex gap-3 border-b border-[#aab38a] py-5 pr-6 pl-8"
+              >
+                <span className="pt-2 text-[#72795e]" aria-hidden="true">
+                  └
+                </span>
+                <img
+                  src={reply.user?.profileImage || readerUser.profileImage}
+                  alt=""
+                  className="h-10 w-10 shrink-0 rounded-full object-cover"
+                />
+                <div className="min-w-0 flex-1 text-sm">
+                  <p>{reply.user?.nickname ?? "독자"}</p>
+                  {reply.createdAt && (
+                    <time dateTime={reply.createdAt} className="text-[#747b60]">
+                      {dateLabel(reply.createdAt)}
+                    </time>
+                  )}
+                  <p className="mt-2 whitespace-pre-wrap break-words leading-5">{reply.text}</p>
+                </div>
+              </article>
+            ))}
         </div>
         <form
           className="shrink-0 border-t border-[#f7f6f1] px-4 pt-4 pb-[max(16px,env(safe-area-inset-bottom))]"
           onSubmit={(event) => {
             event.preventDefault();
-            if (!draft.trim() || composing.current) return;
-            onSubmit(draft.trim(), reply?.id);
+            if (!draft.trim() || composing.current || (parent && draft.length > 200)) return;
+            scrollToNewReply.current = !!parent;
+            onSubmit(draft.trim(), parent?.id);
             setDraft("");
-            setReplyTo(undefined);
+            if (parent) setNotice("답글 작성 완료!");
           }}
         >
-          {reply && (
-            <div className="mb-2 flex justify-between text-xs text-[#4b5239]">
-              <span>{reply.user?.nickname ?? "독자"}님에게 답글</span>
-              <button type="button" onClick={() => setReplyTo(undefined)}>
-                취소
-              </button>
-            </div>
-          )}
           <div className="flex items-center gap-3">
             <input
               ref={inputRef}
               className="min-w-0 flex-1 rounded-full bg-[#f7f6f1] px-5 py-3 text-sm outline-none placeholder:text-[#b4b4b4]"
-              aria-label="댓글 내용"
-              placeholder="댓글을 남겨주세요"
-              maxLength={2000}
+              aria-label={parent ? "답글 내용" : "댓글 내용"}
+              placeholder={parent ? "답글을 남겨주세요" : "댓글을 남겨주세요"}
+              maxLength={parent ? 200 : 2000}
               value={draft}
               onChange={(event) => setDraft(event.target.value)}
               onCompositionStart={() => {
@@ -388,7 +451,7 @@ export default function ReaderCommentsSheet({
             <button
               type="submit"
               disabled={!draft.trim()}
-              aria-label="댓글 전송"
+              aria-label={parent ? "답글 전송" : "댓글 전송"}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f7f6f1] text-[#777f62] disabled:!opacity-100 disabled:text-[#b4b4b4]"
             >
               <svg
@@ -428,7 +491,10 @@ export default function ReaderCommentsSheet({
           onConfirm={() => {
             if (confirmation.action === "delete") {
               onDelete(confirmation.id);
-              if (replyTo === confirmation.id) setReplyTo(undefined);
+              if (replyTo === confirmation.id) {
+                setReplyTo(undefined);
+                setDraft("");
+              }
               if (editingId === confirmation.id) setEditingId(undefined);
               setNotice("댓글이 삭제되었습니다.");
             } else {

@@ -89,7 +89,11 @@ export default function BookReadPage() {
     window.getSelection()?.removeAllRanges();
   };
   const comments = data.comments.filter(
-    (comment) => getCommentReaderPageIndex(comment, readerPages) === pageIndex,
+    (comment) =>
+      !comment.parentCommentId &&
+      !comment.replyTo &&
+      comment.type !== "reply" &&
+      getCommentReaderPageIndex(comment, readerPages) === pageIndex,
   );
   const bookmarks =
     data.readerBookmarks ?? data.bookmarks.map((page) => ({ pdfPage: page, start: 0 }));
@@ -301,6 +305,9 @@ export default function BookReadPage() {
       </footer>
       {commentOpen && ready && (
         <ReaderCommentsSheet
+          replies={data.comments.filter(
+            (comment) => !!(comment.parentCommentId || comment.replyTo),
+          )}
           comments={comments}
           pageNumber={pageNumber}
           reportedCommentIds={data.reportedCommentIds ?? []}
@@ -321,20 +328,27 @@ export default function BookReadPage() {
           }
           onClose={() => setCommentOpen(false)}
           onSubmit={(text, replyTo) => {
-            if (!text.trim()) return;
+            if (!text.trim() || (replyTo && text.length > 200)) return;
+            const parent = replyTo ? comments.find((comment) => comment.id === replyTo) : undefined;
+            if (replyTo && !parent) return;
             setData((current) => ({
               ...current,
               comments: [
                 ...current.comments,
                 {
                   id: crypto.randomUUID(),
-                  type: "page",
+                  type: parent ? "reply" : "page",
                   user: readerUser,
                   createdAt: new Date().toISOString(),
-                  page: pdfPage,
-                  readerAnchor: { pdfPage, start: currentPage.start, imageId: currentPage.imageId },
+                  page: parent?.page ?? pdfPage,
+                  readerAnchor: parent?.readerAnchor ??
+                    parent?.ranges?.[0] ?? {
+                      pdfPage,
+                      start: currentPage.start,
+                      imageId: currentPage.imageId,
+                    },
                   text: text.trim(),
-                  ...(replyTo ? { replyTo } : {}),
+                  ...(parent ? { parentCommentId: parent.id } : {}),
                 },
               ],
             }));

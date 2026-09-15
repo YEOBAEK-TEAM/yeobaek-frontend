@@ -12,7 +12,8 @@ export type ReaderHighlight = {
   color: string;
 };
 export type ReaderComment = {
-  type?: "sentence" | "page";
+  type?: "sentence" | "page" | "reply";
+  parentCommentId?: string;
   user?: { id: number | string; nickname: string; profileImage?: string; isFan?: boolean };
   likes?: number;
   dislikes?: number;
@@ -53,7 +54,13 @@ export function useReaderData() {
           ...saved,
           comments: saved.comments.map((comment: ReaderComment) => ({
             ...comment,
-            type: comment.type ?? (comment.ranges?.length || comment.quote ? "sentence" : "page"),
+            ...(comment.parentCommentId || comment.replyTo
+              ? { parentCommentId: comment.parentCommentId ?? comment.replyTo }
+              : {}),
+            type:
+              comment.parentCommentId || comment.replyTo
+                ? "reply"
+                : (comment.type ?? (comment.ranges?.length || comment.quote ? "sentence" : "page")),
           })),
           // Legacy entries have no source location. Keep them in the collection
           // without guessing which occurrence in the book should be marked.
