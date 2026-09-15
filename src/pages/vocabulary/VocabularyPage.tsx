@@ -22,7 +22,7 @@ export default function VocabularyPage() {
       {/* API 연동 시 사용자 이름으로 변경 */}
       <Header title="서후의 글귀수집" />
 
-      <div className="mt-5">
+      <div className="mt-5 px-5">
         {/* 단어 / 문장 탭 */}
         <div className="flex items-end">
           <button

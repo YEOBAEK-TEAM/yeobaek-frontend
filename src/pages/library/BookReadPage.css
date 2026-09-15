@@ -197,7 +197,7 @@
   bottom: calc(-1 * var(--reader-mark-padding) - 4px);
 }
 .book-reader__footer {
-  color: #595854;
+  color: #f7f6f1;
   position: relative;
   flex-shrink: 0;
   margin-inline: -20px;
@@ -205,7 +205,7 @@
   width: calc(100% + 40px);
   max-width: 390px;
   padding: 9px 16px calc(5px + env(safe-area-inset-bottom));
-  background: #b8be9f;
+  background: #4f4d4e;
   font:
     14px system-ui,
     sans-serif;
@@ -233,14 +233,14 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #595854;
+  background: #b7bd9e;
 }
 .book-reader__progress input::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border: 0;
   border-radius: 50%;
-  background: #595854;
+  background: #b7bd9e;
 }
 .book-reader__actions {
   display: flex;

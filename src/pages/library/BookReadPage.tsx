@@ -362,9 +362,9 @@ export default function BookReadPage() {
             value={pageNumber}
             disabled={!ready || deckPages.length <= 1}
             style={{
-              background: `linear-gradient(to right, #595854 ${
+              background: `linear-gradient(to right, #b7bd9e ${
                 ready && deckPages.length > 1 ? (deckIndex / (deckPages.length - 1)) * 100 : 0
-              }%, #eeeede 0)`,
+              }%, #f7f6f1 0)`,
             }}
             onChange={(event) => goToPage(Number(event.target.value))}
           />
