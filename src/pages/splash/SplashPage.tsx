@@ -10,13 +10,13 @@ export default function SplashPage() {
   useEffect(() => {
     const timer = window.setTimeout(() => {
       navigate("/login", { replace: true });
-    }, 108000);
+    }, 1800);
 
     return () => window.clearTimeout(timer);
   }, [navigate]);
 
   return (
-    <main className="relative mx-auto h-[100dvh] w-full max-w-97.5 overflow-hidden">
+    <main className="relative mx-auto h-dvh w-full max-w-97.5 overflow-hidden">
       {/* 배경 */}
       <img
         src={splashBackground}
@@ -29,7 +29,7 @@ export default function SplashPage() {
       <div className="relative z-10 flex h-full flex-col items-center justify-center">
         <img src={splashLogo} alt="여백" className="w-20 object-contain" />
 
-        <h1 className="mt-3 text-[32px] font-semibold text-[#4B5239]">여백</h1>
+        <h1 className="mt-3 text-[32px] font-bold text-[#4F4D4E]">여백</h1>
       </div>
     </main>
   );
