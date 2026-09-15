@@ -9,6 +9,8 @@ import LoginPage from "@/pages/login/LoginPage";
 import HomePage from "@/pages/home/HomePage";
 import LibraryPage from "@/pages/library/LibraryPage";
 import BookReadPage from "@/pages/library/BookReadPage";
+import BookSearchPage from "@/pages/library/BookSearchPage";
+import BookDetailPage from "@/pages/library/BookDetailPage";
 import MyPage from "@/pages/my/MyPage";
 import TrainingPage from "@/pages/training/TrainingPage";
 import VocabularyPage from "@/pages/vocabulary/VocabularyPage";
@@ -20,6 +22,8 @@ export default function App() {
         <Route element={<AppLayout />}>
           {/* Footer 없는 페이지 */}
           <Route path="/library/read" element={<BookReadPage />} />
+          <Route path="/library/search" element={<BookSearchPage />} />
+          <Route path="/library/books/:bookId" element={<BookDetailPage />} />
           <Route path="/" element={<SplashPage />} />
           <Route path="/login" element={<LoginPage />} />
 

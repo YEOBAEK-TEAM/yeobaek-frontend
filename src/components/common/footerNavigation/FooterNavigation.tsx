@@ -25,7 +25,7 @@ const navigationItems = [
     activeIcon: trainingActiveIcon,
   },
   {
-    path: "/",
+    path: "/home",
     label: "HOME",
     icon: homeIcon,
     activeIcon: homeActiveIcon,
