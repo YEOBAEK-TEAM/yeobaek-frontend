@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+﻿import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import type { ReaderComment } from "../utils/useReaderData";
 
@@ -6,8 +6,8 @@ import { readerUser } from "../../../mocks/readerUser";
 import CommentConfirmModal from "./CommentConfirmModal";
 
 const editButtonClass =
-  "min-h-7 rounded border border-[#626b4e] bg-transparent text-[#141610] active:text-white";
-const saveButtonClass = `${editButtonClass} active:bg-[#626b4e]`;
+  "min-h-7 rounded border border-[#909090] bg-transparent text-[#F7F6F1] active:text-white";
+const saveButtonClass = `${editButtonClass} active:bg-[#777777]`;
 const cancelButtonClass = `${editButtonClass} active:bg-[#493d3c]`;
 
 type Props = {
@@ -178,7 +178,7 @@ export default function ReaderCommentsSheet({
         aria-modal="true"
         aria-labelledby="reader-comments-title"
         aria-description={`${pageNumber}페이지 댓글`}
-        className="[&_button]:[-webkit-tap-highlight-color:transparent] [&_button:focus]:outline-none! [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-[#8b956d] flex h-[82dvh] max-h-[calc(100dvh-24px)] w-full max-w-[390px] flex-col overflow-hidden rounded-t-[20px] bg-[#b8be9f] text-[#141610] shadow-[0_-4px_20px_#00000008] [font-family:system-ui,sans-serif]"
+        className="[&_button]:[-webkit-tap-highlight-color:transparent] [&_button:focus]:outline-none! [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-[#8b956d] flex h-[82dvh] max-h-[calc(100dvh-24px)] w-full max-w-[390px] flex-col overflow-hidden rounded-t-[20px] bg-[#4F4D4E] text-[#F7F6F1] shadow-[0_-4px_20px_#00000008] [font-family:system-ui,sans-serif]"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
@@ -218,7 +218,7 @@ export default function ReaderCommentsSheet({
         }}
       >
         {/* Header */}
-        <header className="flex shrink-0 items-center justify-between px-7 pt-4 pb-3">
+        <header className="flex shrink-0 items-center justify-between px-7 pt-5 pb-3">
           <h2 id="reader-comments-title" className="text-xl font-semibold">
             {parent ? `답글 (${threadReplies.length})` : `댓글 (${comments.length})`}
           </h2>
@@ -246,7 +246,7 @@ export default function ReaderCommentsSheet({
 
         {/* Tabs */}
         <div
-          className="grid shrink-0 grid-cols-3 border-b-4 border-[#d8ddc5] px-4"
+          className="grid shrink-0 grid-cols-3 border-b-4 border-[#808080] px-4"
           aria-label="댓글 정렬"
         >
           {[
@@ -260,8 +260,8 @@ export default function ReaderCommentsSheet({
               aria-pressed={tab === key}
               className={`relative min-h-12 text-sm ${
                 tab === key
-                  ? "font-bold after:absolute after:-bottom-1 after:left-[12%] after:h-1 after:w-3/4 after:bg-[#4b5239]"
-                  : "font-normal"
+                  ? "font-bold after:absolute after:-bottom-1 after:left-[12%] after:h-1 after:w-3/4 after:bg-[#F7F6F1]"
+                  : "font-normal text-[#909090]"
               }`}
               onClick={() => {
                 setTab(key);
@@ -280,17 +280,14 @@ export default function ReaderCommentsSheet({
           aria-live="polite"
         >
           {!parent && shown.length === 0 && (
-            <p className="px-7 py-10 text-center text-sm text-[#72795e]">
+            <p className="px-7 py-10 text-center text-sm text-[#A3A3A3]">
               {tab === "fan" ? "아직 찐팬 댓글이 없습니다." : "이 페이지에 첫 의견을 남겨보세요."}
             </p>
           )}
 
           {/* 원댓글 / 댓글 목록 */}
           {shown.map((comment) => (
-            <article
-              key={comment.id}
-              className="relative border-b-[3px] border-[#aab38a] px-6 pt-4 pb-5"
-            >
+            <article key={comment.id} className="relative border-b border-[#808080] px-6 pt-4 pb-5">
               <div className="flex gap-4">
                 {/* Profile */}
                 <div className="flex w-12 shrink-0 flex-col items-center gap-3">
@@ -301,7 +298,7 @@ export default function ReaderCommentsSheet({
                   />
 
                   {(comment.likes ?? 0) >= 10 && (
-                    <span className="rounded-full border border-white px-2 text-sm text-white">
+                    <span className="rounded-full border border-[#F7F6F1] px-2 text-sm text-[#F7F6F1]">
                       BEST
                     </span>
                   )}
@@ -311,14 +308,14 @@ export default function ReaderCommentsSheet({
                   <div className="pr-6 text-sm">{comment.user?.nickname ?? "독자"}</div>
 
                   {comment.createdAt && (
-                    <time dateTime={comment.createdAt} className="text-sm text-[#747b60]">
+                    <time dateTime={comment.createdAt} className="text-sm text-[#A3A3A3]">
                       {dateLabel(comment.createdAt)}
                     </time>
                   )}
 
                   {/* 문장 댓글 quote */}
                   {comment.quote && (
-                    <p title={comment.quote} className="mt-2 truncate text-sm text-[#747b60]">
+                    <p title={comment.quote} className="mt-2 truncate text-sm text-[#A3A3A3]">
                       {comment.quote}
                     </p>
                   )}
@@ -340,7 +337,7 @@ export default function ReaderCommentsSheet({
                         setNotice("댓글이 수정되었습니다.");
                       }}
                     >
-                      <div className="bg-[#ccd0b6] px-2 pt-2 pb-1">
+                      <div className="bg-[#606060] px-2 pt-2 pb-1">
                         <textarea
                           autoFocus
                           aria-label="댓글 수정"
@@ -350,7 +347,7 @@ export default function ReaderCommentsSheet({
                           onChange={(event) => setEditText(event.target.value)}
                         />
 
-                        <div className="text-right text-[10px] text-[#747b60]" aria-live="polite">
+                        <div className="text-right text-[10px] text-[#A3A3A3]" aria-live="polite">
                           {editText.length}/200
                         </div>
                       </div>
@@ -391,7 +388,7 @@ export default function ReaderCommentsSheet({
                   type="button"
                   aria-label="댓글 더보기"
                   aria-expanded={menu === comment.id}
-                  className="h-8 w-6 text-xl text-[#4b5239]"
+                  className="h-8 w-6 text-xl text-[#A3A3A3]"
                   onClick={() => setMenu(menu === comment.id ? undefined : comment.id)}
                 >
                   ⋮
@@ -450,10 +447,10 @@ export default function ReaderCommentsSheet({
 
               {/* 답글 + 좋아요 / 싫어요 */}
               {editingId !== comment.id && (
-                <div className="mt-5 flex items-center justify-between text-xs font-semibold text-[#8b956d]">
+                <div className="mt-5 flex items-center justify-between text-xs font-semibold text-[#909090]">
                   <button
                     type="button"
-                    className="rounded border border-[#8b956d] bg-transparent px-3 py-1 text-[#8b956d] hover:bg-transparent active:bg-transparent focus:bg-transparent"
+                    className="rounded border border-[#808080] bg-transparent px-3 py-1 text-[#909090] hover:bg-transparent active:bg-transparent focus:bg-transparent"
                     onClick={() => {
                       if (parent) {
                         inputRef.current?.focus();
@@ -480,10 +477,10 @@ export default function ReaderCommentsSheet({
                         key={vote}
                         aria-label={vote === "like" ? "좋아요" : "싫어요"}
                         aria-pressed={comment.myVote === vote}
-                        className={`flex items-center gap-1 rounded border border-[#8b956d] px-1.5 py-1 ${
+                        className={`flex items-center gap-1 rounded border border-[#808080] px-1.5 py-1 ${
                           comment.myVote === vote
-                            ? "bg-[#8b956d] text-white hover:bg-[#8b956d] active:bg-[#8b956d] focus:bg-[#8b956d]"
-                            : "bg-transparent text-[#8b956d] hover:bg-transparent active:bg-transparent focus:bg-transparent"
+                            ? "bg-[#777777] text-white hover:bg-[#777777] active:bg-[#777777] focus:bg-[#777777]"
+                            : "bg-transparent text-[#909090] hover:bg-transparent active:bg-transparent focus:bg-transparent"
                         }`}
                         onClick={() => onVote(comment.id, vote)}
                       >
@@ -498,7 +495,9 @@ export default function ReaderCommentsSheet({
                           <path d="M2 10h4v12H2zm6 0 5-8c3 0 3 3 2 6h5c2 0 2 2 2 3l-2 9c0 1-1 2-3 2H8z" />
                         </svg>
 
-                        <span>{(vote === "like" ? comment.likes : comment.dislikes) ?? 0}</span>
+                        <span className="text-[#F7F6F1]">
+                          {(vote === "like" ? comment.likes : comment.dislikes) ?? 0}
+                        </span>
                       </button>
                     ))}
                   </div>
@@ -509,7 +508,7 @@ export default function ReaderCommentsSheet({
 
           {/* 답글이 없을 때 */}
           {parent && threadReplies.length === 0 && (
-            <p className="px-7 py-8 text-center text-sm text-[#72795e]">첫 답글을 남겨보세요.</p>
+            <p className="px-7 py-8 text-center text-sm text-[#A3A3A3]">첫 답글을 남겨보세요.</p>
           )}
 
           {/* 답글 목록 */}
@@ -518,10 +517,10 @@ export default function ReaderCommentsSheet({
               <article
                 key={reply.id}
                 data-reply-id={reply.id}
-                className="relative flex gap-3 border-b border-[#aab38a] py-5 pr-6 pl-8"
+                className="relative flex gap-3 border-b border-[#808080] py-5 pr-6 pl-8"
               >
                 {/* 답글 표시 */}
-                <span className="pt-2 text-[#72795e]" aria-hidden="true">
+                <span className="pt-2 text-[#A3A3A3]" aria-hidden="true">
                   └
                 </span>
 
@@ -536,7 +535,7 @@ export default function ReaderCommentsSheet({
                   <p>{reply.user?.nickname ?? "독자"}</p>
 
                   {reply.createdAt && (
-                    <time dateTime={reply.createdAt} className="text-[#747b60]">
+                    <time dateTime={reply.createdAt} className="text-[#A3A3A3]">
                       {dateLabel(reply.createdAt)}
                     </time>
                   )}
@@ -558,7 +557,7 @@ export default function ReaderCommentsSheet({
                         setNotice("답글이 수정되었습니다.");
                       }}
                     >
-                      <div className="bg-[#ccd0b6] px-2 pt-2 pb-1">
+                      <div className="bg-[#606060] px-2 pt-2 pb-1">
                         <textarea
                           autoFocus
                           aria-label="답글 수정"
@@ -568,7 +567,7 @@ export default function ReaderCommentsSheet({
                           onChange={(event) => setEditText(event.target.value)}
                         />
 
-                        <div className="text-right text-[10px] text-[#747b60]" aria-live="polite">
+                        <div className="text-right text-[10px] text-[#A3A3A3]" aria-live="polite">
                           {editText.length}/200
                         </div>
                       </div>
@@ -597,17 +596,17 @@ export default function ReaderCommentsSheet({
 
                   {/* 답글 좋아요 / 싫어요 */}
                   {editingId !== reply.id && (
-                    <div className="mt-4 flex justify-end gap-2 text-xs font-semibold text-[#8b956d]">
+                    <div className="mt-4 flex justify-end gap-2 text-xs font-semibold text-[#909090]">
                       {(["like", "dislike"] as const).map((vote) => (
                         <button
                           type="button"
                           key={vote}
                           aria-label={vote === "like" ? "좋아요" : "싫어요"}
                           aria-pressed={reply.myVote === vote}
-                          className={`flex items-center gap-1 rounded border border-[#8b956d] px-1.5 py-1 ${
+                          className={`flex items-center gap-1 rounded border border-[#808080] px-1.5 py-1 ${
                             reply.myVote === vote
-                              ? "bg-[#8b956d] text-white hover:bg-[#8b956d] active:bg-[#8b956d] focus:bg-[#8b956d]"
-                              : "bg-transparent text-[#8b956d] hover:bg-transparent active:bg-transparent focus:bg-transparent"
+                              ? "bg-[#777777] text-white hover:bg-[#777777] active:bg-[#777777] focus:bg-[#777777]"
+                              : "bg-transparent text-[#909090] hover:bg-transparent active:bg-transparent focus:bg-transparent"
                           }`}
                           onClick={() => onVote(reply.id, vote)}
                         >
@@ -622,7 +621,9 @@ export default function ReaderCommentsSheet({
                             <path d="M2 10h4v12H2zm6 0 5-8c3 0 3 3 2 6h5c2 0 2 2 2 3l-2 9c0 1-1 2-3 2H8z" />
                           </svg>
 
-                          <span>{(vote === "like" ? reply.likes : reply.dislikes) ?? 0}</span>
+                          <span className="text-[#F7F6F1]">
+                            {(vote === "like" ? reply.likes : reply.dislikes) ?? 0}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -635,7 +636,7 @@ export default function ReaderCommentsSheet({
                     type="button"
                     aria-label="답글 더보기"
                     aria-expanded={menu === reply.id}
-                    className="h-8 w-6 text-xl text-[#4b5239]"
+                    className="h-8 w-6 text-xl text-[#A3A3A3]"
                     onClick={() => setMenu(menu === reply.id ? undefined : reply.id)}
                   >
                     ⋮
@@ -719,7 +720,7 @@ export default function ReaderCommentsSheet({
           <div className="flex items-center gap-3">
             <input
               ref={inputRef}
-              className="min-w-0 flex-1 rounded-full bg-[#f7f6f1] px-5 py-3 text-sm outline-none placeholder:text-[#b4b4b4]"
+              className="min-w-0 flex-1 rounded-full border border-[#B4B4B4] bg-[#F7F6F1] px-5 py-3 text-sm text-[#4F4D4E] outline-none placeholder:text-[#b4b4b4]"
               aria-label={parent ? "답글 내용" : "댓글 내용"}
               placeholder={parent ? "답글을 남겨주세요" : "댓글을 남겨주세요"}
               maxLength={parent ? 200 : 2000}
@@ -747,7 +748,7 @@ export default function ReaderCommentsSheet({
               type="submit"
               disabled={!draft.trim()}
               aria-label={parent ? "답글 전송" : "댓글 전송"}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[#f7f6f1] text-[#777f62] disabled:!opacity-100 disabled:text-[#b4b4b4]"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#B4B4B4] bg-[#F7F6F1] text-[#4F4D4E] disabled:!opacity-100 disabled:text-[#b4b4b4]"
             >
               <svg
                 width="28"
