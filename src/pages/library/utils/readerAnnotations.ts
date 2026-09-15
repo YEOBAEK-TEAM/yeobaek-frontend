@@ -55,6 +55,8 @@ export function getAnnotatedTextParts(
     const wordLastRange = word && words.find((entry) => entry.id === word.id)?.ranges.at(-1);
     const comment = overlaps.findLast((entry) => entry.kind === "comment");
     const temporary = overlaps.findLast((entry) => entry.kind === "preview");
+    const firstSelected = preview?.selection.ranges[0];
+    const lastSelected = preview?.selection.ranges.at(-1);
     return {
       position,
       text: text.slice(position, next),
@@ -68,6 +70,12 @@ export function getAnnotatedTextParts(
         wordLastRange.end === word.end,
       commentId: comment?.id,
       preview: !!temporary,
+      selectionStart:
+        !!temporary &&
+        firstSelected?.pdfPage === pdfPage &&
+        sourceAt(position) === firstSelected.start,
+      selectionEnd:
+        !!temporary && lastSelected?.pdfPage === pdfPage && sourceAt(next) === lastSelected.end,
     };
   });
 }

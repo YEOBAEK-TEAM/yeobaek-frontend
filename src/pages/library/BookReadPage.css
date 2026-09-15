@@ -82,7 +82,7 @@
   flex: 0 0 100%;
   min-width: 0;
   height: 100%;
-  padding: 0 20px 4px;
+  padding: 0 20px 4px 20px;
   overflow: hidden;
 }
 .book-reader__slide[inert] {
@@ -149,9 +149,40 @@
   color: inherit;
 }
 .book-reader__text mark {
+  --reader-mark-padding: 5px;
   color: inherit;
-  padding: 2px 0;
+  padding: var(--reader-mark-padding) 0;
   box-decoration-break: clone;
+}
+.book-reader__selection-edge {
+  position: relative;
+  display: inline;
+  pointer-events: none;
+  user-select: none;
+}
+.book-reader__selection-edge::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: calc(-1 * var(--reader-mark-padding));
+  bottom: calc(-1 * var(--reader-mark-padding));
+  width: 2px;
+  background: #9e9e9e;
+}
+.book-reader__selection-edge::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9e9e9e;
+}
+.book-reader__selection-edge--start::after {
+  top: calc(-1 * var(--reader-mark-padding) - 4px);
+}
+.book-reader__selection-edge--end::after {
+  bottom: calc(-1 * var(--reader-mark-padding) - 4px);
 }
 .book-reader__footer {
   position: relative;

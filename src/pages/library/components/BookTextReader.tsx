@@ -421,7 +421,19 @@ export default function BookTextReader({
                                   else if (part.highlightId) openCollected(part.highlightId);
                                 }}
                               >
+                                {active && mode === "default" && part.selectionStart && (
+                                  <span
+                                    className="book-reader__selection-edge book-reader__selection-edge--start"
+                                    aria-hidden="true"
+                                  />
+                                )}
                                 {part.text}
+                                {active && mode === "default" && part.selectionEnd && (
+                                  <span
+                                    className="book-reader__selection-edge book-reader__selection-edge--end"
+                                    aria-hidden="true"
+                                  />
+                                )}
                                 {part.wordEnd && (
                                   <span className="book-reader__saved-dot" aria-hidden="true" />
                                 )}

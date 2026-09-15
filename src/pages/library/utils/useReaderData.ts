@@ -1,6 +1,7 @@
 ﻿import { useState } from "react";
 import type { SetStateAction } from "react";
 import type { ReaderSelection, ReaderSelectionRange } from "./readerSelection";
+import type { ReaderAnchor } from "./paginateReaderText";
 
 export type ReaderHighlight = {
   id: string;
@@ -11,6 +12,7 @@ export type ReaderHighlight = {
   color: string;
 };
 export type ReaderComment = {
+  readerAnchor?: ReaderAnchor;
   id: string;
   page: number;
   pages?: number[];
