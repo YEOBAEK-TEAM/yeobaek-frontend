@@ -23,7 +23,7 @@ export default function BookDetailPage() {
   const isAdded = book.isInLibrary || addedBookIds.includes(book.id);
 
   return (
-    <main className="flex min-h-dvh flex-col bg-[#F7F6F1] px-5 pt-10 pb-8">
+    <main className="flex min-h-dvh flex-col bg-[#F7F6F1] px-5 pt-8 pb-8">
       {/* 헤더 */}
       <header className="relative flex h-12 items-center justify-center">
         <Link to="/library/search" className="absolute left-0" aria-label="뒤로가기">
@@ -89,9 +89,9 @@ export default function BookDetailPage() {
         type="button"
         disabled={isAdded}
         onClick={() => addBook(book.id)}
-        className="mt-auto h-14 w-full rounded-lg bg-[#70785B] text-base font-bold text-white"
+        className="mt-auto h-14 w-full rounded-lg bg-[#BEC5A5] text-base font-semibold text-[#4F4D4E]"
       >
-        {isAdded ? "내 서재에 추가됨" : "내 서재에 추가"}
+        내 서재에 추가
       </button>
     </main>
   );
