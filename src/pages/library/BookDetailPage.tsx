@@ -1,4 +1,5 @@
-import { Link, useParams } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { books } from "@/mocks/books";
 
@@ -7,10 +8,12 @@ import { useLibrary } from "./utils/useLibrary";
 
 export default function BookDetailPage() {
   const { bookId } = useParams();
+  const navigate = useNavigate();
+  const [saveError, setSaveError] = useState(false);
 
   const book = books.find((book) => book.id === Number(bookId));
 
-  const { addedBookIds, addBook } = useLibrary();
+  const addBook = useLibrary((state) => state.addBook);
 
   if (!book) {
     return (
@@ -19,8 +22,6 @@ export default function BookDetailPage() {
       </main>
     );
   }
-
-  const isAdded = book.isInLibrary || addedBookIds.includes(book.id);
 
   return (
     <main className="flex min-h-dvh flex-col bg-[#F7F6F1] px-5 pt-8 pb-8">
@@ -87,12 +88,23 @@ export default function BookDetailPage() {
       {/* 내 서재에 추가 */}
       <button
         type="button"
-        disabled={isAdded}
-        onClick={() => addBook(book.id)}
+        onClick={() => {
+          try {
+            addBook(book.id);
+            navigate("/library", { state: { bookAdded: true } });
+          } catch {
+            setSaveError(true);
+          }
+        }}
         className="mt-auto h-14 w-full rounded-lg bg-[#BEC5A5] text-base font-semibold text-[#4F4D4E]"
       >
         내 서재에 추가
       </button>
+      {saveError && (
+        <p role="alert" className="mt-2 text-sm text-[#4F4D4E]">
+          서재에 저장하지 못했습니다. 다시 시도해주세요.
+        </p>
+      )}
     </main>
   );
 }

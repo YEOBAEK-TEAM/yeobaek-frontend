@@ -1,6 +1,6 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PointerEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
 import { books } from "@/mocks/books";
@@ -10,6 +10,16 @@ const tabs = ["전체", "완독", "독후감"] as const;
 
 export default function LibraryPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showAddedNotice, setShowAddedNotice] = useState(location.state?.bookAdded === true);
+
+  useEffect(() => {
+    if (!showAddedNotice) return;
+    // Consume the navigation notice so refresh/back does not show it again.
+    navigate("/library", { replace: true, state: null });
+    const timeout = window.setTimeout(() => setShowAddedNotice(false), 3000);
+    return () => window.clearTimeout(timeout);
+  }, [navigate, showAddedNotice]);
 
   const [tab, setTab] = useState<(typeof tabs)[number]>("전체");
   const addedBookIds = useLibrary((state) => state.addedBookIds);
@@ -48,11 +58,25 @@ export default function LibraryPage() {
       className="min-h-dvh pb-24 text-[#4F4D4E]"
       style={{ fontFamily: "Arial, 'Malgun Gothic', sans-serif" }}
     >
-      <Header
-        title="서재"
-        action="search"
-        onActionClick={() => navigate("/library/search")}
-      />
+      {showAddedNotice && (
+        <div
+          role="status"
+          className="pointer-events-none fixed top-28 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl bg-[#5F5D5E] px-4 py-3 text-sm whitespace-nowrap text-white shadow-sm"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="h-5 w-5 shrink-0"
+          >
+            <path d="m5 12 4 4L19 6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          서재에 추가되었습니다
+        </div>
+      )}
+      <Header title="서재" action="search" onActionClick={() => navigate("/library/search")} />
       <div role="tablist" aria-label="서재 도서 분류" className="mx-5 mt-4 flex">
         {tabs.map((item) => (
           <button
