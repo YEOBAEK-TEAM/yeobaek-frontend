@@ -67,7 +67,7 @@ export default function VocabularyPage() {
     <main className="min-h-screen">
       <Header title="서후의 글귀수집" />
 
-      <div className="mt-6.5 px-[23px]">
+      <div className="mt-6.5 px-6">
         {/* 단어 / 문장 탭 */}
         <div className="flex items-end gap-2" role="tablist" aria-label="수집 종류">
           {(["word", "sentence"] as const).map((tab) => (
@@ -80,7 +80,7 @@ export default function VocabularyPage() {
                 setTab(tab);
                 setMenuId(null);
               }}
-              className={`h-[33px] w-13 text-sm font-bold ${
+              className={`h-8 w-13 text-sm font-bold ${
                 activeTab === tab ? "bg-[#898F72] text-[#FFFEFB]" : "bg-[#DEDAD6] text-[#887D77]"
               }`}
             >
@@ -93,7 +93,7 @@ export default function VocabularyPage() {
         <section className="grid min-h-140 grid-cols-[minmax(0,1fr)_34px] border border-[#ECE9E3] bg-[#F7F6F1]">
           <div className="min-w-0">
             {/* 목록 상단 */}
-            <div className="flex h-[49px] items-center justify-between border-b border-[#DDD7D1] px-[23px] text-sm font-semibold">
+            <div className="flex h-12 items-center justify-between border-b border-[#DDD7D1] px-5 text-sm font-semibold">
               <span className="text-[#9D938D]">
                 {activeInitial} · {items.length}개
               </span>

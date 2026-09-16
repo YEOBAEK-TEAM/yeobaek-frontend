@@ -4,7 +4,7 @@ type Props = { initialMemo: string; onSave: (memo: string) => void };
 export default function MemoSection({ initialMemo, onSave }: Props) {
   const [memo, setMemo] = useState(initialMemo);
   return (
-    <section className="bg-[#FBFAF5] px-[15px] pt-4 pb-10">
+    <section className="bg-[#FBFAF5] px-4 pt-4 pb-10">
       <h2 className="mb-2 ml-2 text-xl font-bold text-[#30201D]">
         <label htmlFor="sentence-memo">내 메모</label>
       </h2>
@@ -16,7 +16,7 @@ export default function MemoSection({ initialMemo, onSave }: Props) {
           onChange={(event) => setMemo(event.target.value)}
           placeholder="이 문장에 대한 생각을 적어보세요"
           aria-describedby="memo-count"
-          className="block h-[271px] w-full resize-none rounded-xl border border-[#DDD9D4] bg-[#F7F6F1] px-6 pt-7 pb-12 text-[15px] leading-6 placeholder:text-[#808080] focus:outline-2 focus:outline-[#898F72]"
+          className="block h-60 w-full resize-none rounded-xl border border-[#DDD9D4] bg-[#F7F6F1] px-6 pt-7 pb-12 text-[15px] leading-6 placeholder:text-[#808080] focus:outline-2 focus:outline-[#898F72]"
         />
         <span
           id="memo-count"
@@ -25,7 +25,7 @@ export default function MemoSection({ initialMemo, onSave }: Props) {
           {memo.length}/200
         </span>
       </div>
-      <div className="mt-6 ml-[7px]">
+      <div className="mt-6 ml-1">
         <button
           type="button"
           disabled={memo.length === 0}
