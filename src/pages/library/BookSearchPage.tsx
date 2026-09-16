@@ -31,7 +31,7 @@ export default function BookSearchPage() {
   const handleSearch = () => {
     const normalizedInput = input.trim();
 
-    if (normalizedInput === keyword) {
+    if (normalizedInput === keyword && keyword) {
       void refetch();
       return;
     }
@@ -64,18 +64,19 @@ export default function BookSearchPage() {
           <BookSearchInput value={input} onChange={setInput} onSearch={handleSearch} />
         </header>
 
-        {isPending || isError ? (
-          <p
-            role={isError ? "alert" : "status"}
-            className="border-t border-[#999999] px-4 py-12 text-center text-[#77746D]"
-          >
-            {isError
-              ? "도서를 불러오지 못했습니다. 다시 검색해주세요."
-              : "도서를 불러오고 있습니다."}
-          </p>
-        ) : (
-          <BookSearchList books={results} fromSearch={`/library/search?${params}`} />
-        )}
+        {keyword.trim() &&
+          (isPending || isError ? (
+            <p
+              role={isError ? "alert" : "status"}
+              className="border-t border-[#999999] px-4 py-12 text-center text-[#77746D]"
+            >
+              {isError
+                ? "도서를 불러오지 못했습니다. 다시 검색해주세요."
+                : "도서를 검색하고 있습니다."}
+            </p>
+          ) : (
+            <BookSearchList books={results} fromSearch={`/library/search?${params}`} />
+          ))}
       </section>
     </main>
   );
