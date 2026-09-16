@@ -1,21 +1,46 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import { login } from "@/api/auth";
+
 import loginIcon from "@/assets/icons/LogIn.png";
+
+import { useAuthStore } from "@/stores/auth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
+  const setAuth = useAuthStore((state) => state.setAuth);
+
   const [nickname, setNickname] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  const isLoginEnabled = nickname.trim() !== "" && password.trim() !== "";
+  const isLoginEnabled = nickname.trim() !== "" && password.trim() !== "" && !isLoading;
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!isLoginEnabled) return;
 
-    // API 로그인 연동 후 변경
-    navigate("/home");
+    try {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      const data = await login({
+        nickname: nickname.trim(),
+        password,
+      });
+
+      setAuth(data);
+
+      navigate("/home");
+    } catch (error) {
+      console.error("로그인 실패", error);
+
+      setErrorMessage("닉네임 또는 비밀번호를 확인해주세요.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -36,7 +61,7 @@ export default function LoginPage() {
         className="mt-9"
         onSubmit={(event) => {
           event.preventDefault();
-          handleLogin();
+          void handleLogin();
         }}
       >
         {/* 닉네임 */}
@@ -54,6 +79,7 @@ export default function LoginPage() {
             value={nickname}
             onChange={(event) => setNickname(event.target.value)}
             placeholder="닉네임을 입력하시오"
+            autoComplete="username"
             className="
               h-14 w-full
               rounded-[10px]
@@ -82,6 +108,7 @@ export default function LoginPage() {
             value={password}
             onChange={(event) => setPassword(event.target.value)}
             placeholder="비밀번호를 입력하시오"
+            autoComplete="current-password"
             className="
               h-14 w-full
               rounded-[10px]
@@ -95,6 +122,9 @@ export default function LoginPage() {
           />
         </div>
 
+        {/* 로그인 실패 메시지 */}
+        {errorMessage && <p className="mt-3 text-sm text-red-500">{errorMessage}</p>}
+
         {/* 로그인 버튼 */}
         <button
           type="submit"
@@ -105,10 +135,10 @@ export default function LoginPage() {
             border border-[#555555]
             bg-[#C0C99E]
             text-[17px] font-semibold text-[#4F4F4F]
-            disabled:cursor-default
+            disabled:cursor-default disabled:opacity-60
           "
         >
-          로그인 하기
+          {isLoading ? "로그인 중..." : "로그인 하기"}
         </button>
       </form>
     </main>
