@@ -1,6 +1,7 @@
 ﻿import { create } from "zustand";
 import { mockSentences, mockVocabulary } from "@/mocks/vocabulary";
-import type { DeleteType, SentenceItem, WordItem } from "@/types/vocabulary";
+import type { SentenceItem } from "@/types/sentence";
+import type { DeleteType, WordItem } from "@/types/vocabulary";
 
 type VocabularyState = {
   words: WordItem[];

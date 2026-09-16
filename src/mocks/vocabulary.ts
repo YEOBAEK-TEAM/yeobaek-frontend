@@ -1,4 +1,5 @@
-﻿import type { SentenceItem, WordItem } from "@/types/vocabulary";
+﻿import type { SentenceItem } from "@/types/sentence";
+import type { WordItem } from "@/types/vocabulary";
 
 export const mockVocabulary: WordItem[] = [
   {

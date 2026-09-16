@@ -1,9 +1,10 @@
-﻿import type { SentenceItem, WordItem } from "@/types/vocabulary";
+﻿import type { SentenceListItem } from "@/types/sentence";
+import type { WordListItem } from "@/types/vocabulary";
 
 import VocabularyMenu from "./VocabularyMenu";
 
 type Props = {
-  item: WordItem | SentenceItem;
+  item: WordListItem | SentenceListItem;
   menuOpen: boolean;
   onToggleMenu: () => void;
   onCloseMenu: () => void;
@@ -22,9 +23,9 @@ export default function VocabularyItem({
   const isWord = "word" in item;
 
   return (
-    <div className="grid min-h-[89px] grid-cols-[69px_minmax(0,1fr)] border-b border-dashed border-[#DDD7D1]">
+    <div className="grid min-h-22 grid-cols-[69px_minmax(0,1fr)] border-b border-dashed border-[#DDD7D1]">
       {/* 페이지 */}
-      <div className="border-r border-[#D2B4A3] pt-3 px-2 text-left text-xs text-[#B6ADA8]">
+      <div className="border-r border-[#D2B4A3] px-2 pt-3 text-left text-xs text-[#B6ADA8]">
         {item.page}p
       </div>
 
