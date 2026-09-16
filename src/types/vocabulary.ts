@@ -1,3 +1,4 @@
+// 단어 상세용
 export type WordItem = {
   id: number;
   page: number;
@@ -15,6 +16,7 @@ export type WordItem = {
   }[];
 };
 
+// 단어 목록 UI용
 export type WordListItem = {
   id: number;
   page: number;
@@ -26,8 +28,10 @@ export type WordListItem = {
 
 export type Vocabulary = WordItem;
 
+// 단어/문장 삭제 타입
 export type DeleteType = "word" | "sentence";
 
+// 문장 데이터
 export type SentenceItem = {
   id: number;
   content: string;
@@ -38,6 +42,7 @@ export type SentenceItem = {
   collectedAt: string;
 };
 
+// 단어장 목록 API 응답 항목
 export type VocabularyListItemResponse = {
   vocabularyId: number;
   word: string;
@@ -49,9 +54,31 @@ export type VocabularyListItemResponse = {
   createdAt: string;
 };
 
+// 단어장 목록 API 응답
 export type VocabularyListResponse = {
   items: VocabularyListItemResponse[];
   page: number;
   hasNext: boolean;
   totalCount: number;
+};
+
+// 단어 뜻 하나
+export type WordSenseResponse = {
+  order: number;
+  definition: string;
+  examples: string[];
+};
+
+// 단어 상세 API 응답
+export type VocabularyDetailResponse = {
+  vocabularyId: number;
+  word: string;
+  pos: string;
+  senses: WordSenseResponse[];
+  bookId: number;
+  bookTitle: string;
+  pageId: number;
+  pageNumber: number;
+  sentenceId: number;
+  createdAt: string;
 };

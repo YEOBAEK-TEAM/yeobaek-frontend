@@ -1,6 +1,6 @@
 import { api } from "@/api/axios";
 
-import type { VocabularyListResponse } from "@/types/vocabulary";
+import type { VocabularyDetailResponse, VocabularyListResponse } from "@/types/vocabulary";
 
 type ApiResponse<T> = {
   success: boolean;
@@ -24,6 +24,16 @@ export const getVocabularyList = async ({
       page,
     },
   });
+
+  return response.data.data;
+};
+
+export const getVocabularyDetail = async (
+  vocabularyId: number,
+): Promise<VocabularyDetailResponse> => {
+  const response = await api.get<ApiResponse<VocabularyDetailResponse>>(
+    `/api/v1/vocabularies/${vocabularyId}`,
+  );
 
   return response.data.data;
 };
