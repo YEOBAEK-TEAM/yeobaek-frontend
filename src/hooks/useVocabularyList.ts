@@ -1,15 +1,21 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery } from "@tanstack/react-query";
 
 import { getVocabularyList } from "@/api/vocabulary";
 
 export const useVocabularyList = (choseong: string, enabled = true) => {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ["vocabularies", choseong],
-    queryFn: () =>
+
+    initialPageParam: 0,
+
+    queryFn: ({ pageParam }) =>
       getVocabularyList({
         choseong,
-        page: 0,
+        page: pageParam,
       }),
+
+    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.page + 1 : undefined),
+
     enabled,
   });
 };

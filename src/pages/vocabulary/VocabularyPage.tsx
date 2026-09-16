@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
@@ -44,33 +44,70 @@ export default function VocabularyPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [toast, setToast] = useState(false);
 
-  // 단어 탭일 때만 단어장 목록 API 호출
+  // 무한 스크롤 감지 요소
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+
+  // 단어 탭일 때만 단어장 API 호출
   const {
     data: vocabularyData,
     isPending,
     isError,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
   } = useVocabularyList(activeInitial, activeTab === "word");
 
-  // API 응답을 기존 VocabularyItem에서 사용할 수 있는 형태로 변환
-  const words: WordListItem[] =
-    vocabularyData?.items.map((item) => ({
-      id: item.vocabularyId,
-      word: item.word,
-      meaning: item.meaning,
-      bookTitle: item.bookTitle,
-      page: item.pageNumber,
-      collectedAt: item.createdAt,
-    })) ?? [];
+  // 여러 페이지의 단어 데이터를 하나의 배열로 합치기
+  const vocabularyItems = vocabularyData?.pages.flatMap((page) => page.items) ?? [];
 
-  // 단어는 API 데이터, 문장은 기존 Zustand 데이터 사용
+  // API 응답 → 기존 VocabularyItem용 데이터로 변환
+  const words: WordListItem[] = vocabularyItems.map((item) => ({
+    id: item.vocabularyId,
+    word: item.word,
+    meaning: item.meaning,
+    bookTitle: item.bookTitle,
+    page: item.pageNumber,
+    collectedAt: item.createdAt,
+  }));
+
+  // 단어는 API 데이터
+  // 문장은 기존 Zustand 데이터
   const items =
     activeTab === "word"
       ? words
       : [...sentences].sort((a, b) => Date.parse(b.collectedAt) - Date.parse(a.collectedAt));
 
-  // 단어는 현재 페이지 items.length가 아니라
-  // 서버에서 내려주는 전체 개수 totalCount 사용
-  const totalCount = activeTab === "word" ? (vocabularyData?.totalCount ?? 0) : sentences.length;
+  // 전체 단어 개수는 서버의 totalCount 사용
+  const totalCount =
+    activeTab === "word" ? (vocabularyData?.pages[0]?.totalCount ?? 0) : sentences.length;
+
+  // 목록 마지막이 화면에 들어오면 다음 페이지 요청
+  useEffect(() => {
+    const target = loadMoreRef.current;
+
+    if (!target || activeTab !== "word" || !hasNextPage) {
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+
+        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
+        }
+      },
+      {
+        rootMargin: "100px",
+      },
+    );
+
+    observer.observe(target);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [activeTab, fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   const handleDelete = () => {
     if (deleteId === null) return;
@@ -123,14 +160,14 @@ export default function VocabularyPage() {
               <span className="text-[#727272]">최근순</span>
             </div>
 
-            {/* 단어 목록 로딩 */}
+            {/* 최초 로딩 */}
             {activeTab === "word" && isPending && (
               <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
                 단어장을 불러오는 중입니다.
               </p>
             )}
 
-            {/* 단어 목록 에러 */}
+            {/* 에러 */}
             {activeTab === "word" && isError && (
               <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
                 단어장을 불러오지 못했습니다.
@@ -154,17 +191,26 @@ export default function VocabularyPage() {
                 />
               ))}
 
-            {/* 빈 목록 */}
+            {/* 단어 빈 목록 */}
             {activeTab === "word" && !isPending && !isError && items.length === 0 && (
               <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
                 해당 초성으로 수집한 단어가 없습니다.
               </p>
             )}
 
+            {/* 문장 빈 목록 */}
             {activeTab === "sentence" && items.length === 0 && (
               <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
                 수집한 문장이 없습니다.
               </p>
+            )}
+
+            {/* 무한 스크롤 감지 영역 */}
+            {activeTab === "word" && <div ref={loadMoreRef} className="h-1" />}
+
+            {/* 다음 페이지 로딩 */}
+            {activeTab === "word" && isFetchingNextPage && (
+              <p className="py-4 text-center text-xs text-[#9D938D]">더 불러오는 중입니다.</p>
             )}
           </div>
 
