@@ -64,7 +64,7 @@ export default function VocabularyPage() {
   };
 
   return (
-    <main className="min-h-screen">
+    <main className="flex-1">
       <Header title="서후의 글귀수집" />
 
       <div className="mt-6.5 px-6">

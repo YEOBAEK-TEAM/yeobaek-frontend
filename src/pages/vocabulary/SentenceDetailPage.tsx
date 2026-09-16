@@ -48,7 +48,7 @@ export default function SentenceDetailPage() {
   };
 
   return (
-    <main className="flex h-dvh flex-col overflow-hidden">
+    <main className="flex flex-1 flex-col">
       <Header title="문장 상세" onBack={goBack} />
 
       {!sentence ? (
@@ -56,7 +56,7 @@ export default function SentenceDetailPage() {
           <p className="px-5 text-center text-[#887D77]">문장을 찾을 수 없습니다.</p>
         </div>
       ) : (
-        <div className="flex min-h-0 flex-1 flex-col">
+        <div className="flex flex-1 flex-col">
           {/* 문장 정보 */}
           <section className="shrink-0 px-6 pt-2 pb-4">
             <blockquote className="mx-auto max-w-71 text-center font-serif text-[20px] leading-7 text-black">
@@ -90,7 +90,7 @@ export default function SentenceDetailPage() {
           </section>
 
           {/* 메모 */}
-          <div className="min-h-0 flex-1 overflow-hidden">
+          <div className="flex-1">
             <MemoSection key={sentence.id} initialMemo={sentence.memo} onSave={handleSave} />
           </div>
 
