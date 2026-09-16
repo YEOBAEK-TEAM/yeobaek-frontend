@@ -4,7 +4,9 @@ import ReaderSettingsPanel from "./components/ReaderSettingsPanel";
 import { READER_FONTS, useReaderSettings } from "./utils/useReaderSettings";
 import { Document, pdfjs } from "react-pdf";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import { Link } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import Header from "@/components/common/header/Header";
+import type { Book } from "@/mocks/books";
 
 import { books } from "../../mocks/books";
 import ReaderCoverPage from "./components/ReaderCoverPage";
@@ -27,7 +29,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-const book = books.find((entry) => entry.id === 1)!;
 const pdfOptions = { wasmUrl: "/wasm/" };
 
 function Icon({
@@ -61,6 +62,44 @@ function Icon({
 }
 
 export default function BookReadPage() {
+  const [params] = useSearchParams();
+  const navigateBack = useNavigate();
+  const bookId = Number(params.get("bookId") ?? 1);
+  const book = books.find((entry) => entry.id === bookId);
+  const requestedPage = Number(params.get("page") ?? 1);
+  const initialPage = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
+  const commentId = params.get("commentId");
+
+  if (!book?.pdfUrl) {
+    return (
+      <main>
+        <Header title={book?.title ?? "책 읽기"} onBack={() => navigateBack(-1)} />
+        <p className="px-6 py-16 text-center text-sm text-[#888]">
+          {book ? "이 책의 본문은 아직 준비되지 않았습니다." : "책을 찾을 수 없습니다."}
+        </p>
+      </main>
+    );
+  }
+
+  return (
+    <BookReader
+      key={`${book.id}:${initialPage}:${commentId ?? ""}`}
+      book={book}
+      initialPage={initialPage}
+      openComment={!!commentId}
+    />
+  );
+}
+
+function BookReader({
+  book,
+  initialPage,
+  openComment,
+}: {
+  book: Book;
+  initialPage: number;
+  openComment: boolean;
+}) {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const { settings, updateSettings, storageError: settingsStorageError } = useReaderSettings();
@@ -79,7 +118,7 @@ export default function BookReadPage() {
     `${settings.fontSize}:${settings.lineHeight}:${settings.fontFamily}`,
   );
 
-  const [onCover, setOnCover] = useState(true);
+  const [onCover, setOnCover] = useState(initialPage === 1 && !openComment);
   const deckPages: DeckPage[] = [{ id: "cover" }, ...readerPages];
   const deckIndex = onCover ? 0 : pageIndex + 1;
   const pageNumber = deckIndex + 1;
@@ -90,8 +129,18 @@ export default function BookReadPage() {
 
   const { data, setData, storageError } = useReaderData();
 
-  const [commentOpen, setCommentOpen] = useState(false);
+  const [commentOpen, setCommentOpen] = useState(openComment);
   const [notice, setNotice] = useState("");
+  const initialLocationApplied = useRef(false);
+
+  useEffect(() => {
+    if (!ready || initialLocationApplied.current) return;
+    const timer = window.setTimeout(() => {
+      initialLocationApplied.current = true;
+      if (initialPage > 1) navigate(initialPage - 2);
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [ready, initialPage, navigate]);
 
   useEffect(() => {
     const elements = [document.documentElement, document.body];
@@ -180,7 +229,7 @@ export default function BookReadPage() {
           </svg>
         </Link>
 
-        <h1>어린 왕자</h1>
+        <h1>{book.title}</h1>
         <button
           type="button"
           aria-label="읽기 설정"
@@ -197,7 +246,7 @@ export default function BookReadPage() {
       <div className="book-reader__body" ref={bodyRef}>
         <Document
           className="book-reader__document"
-          file="/books/little-prince.pdf"
+          file={book.pdfUrl}
           options={pdfOptions}
           onLoadSuccess={setPdf}
           loading={

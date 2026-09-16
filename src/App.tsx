@@ -12,6 +12,11 @@ import BookReadPage from "@/pages/library/BookReadPage";
 import BookSearchPage from "@/pages/library/BookSearchPage";
 import BookDetailPage from "@/pages/library/BookDetailPage";
 import MyPage from "@/pages/my/MyPage";
+import ReadingCalendarPage from "@/pages/my/ReadingCalendarPage";
+import LikedCommentsPage from "@/pages/my/LikedCommentsPage";
+import LikedPagesPage from "@/pages/my/LikedPagesPage";
+import LikedBookPagesPage from "@/pages/my/LikedBookPagesPage";
+import MyActivityProvider from "@/components/my/MyActivityProvider";
 import TrainingPage from "@/pages/training/TrainingPage";
 import VocabularyPage from "@/pages/vocabulary/VocabularyPage";
 import WordDetailPage from "@/pages/vocabulary/WordDetailPage";
@@ -20,27 +25,33 @@ import SentenceDetailPage from "@/pages/vocabulary/SentenceDetailPage";
 export default function App() {
   return (
     <BrowserRouter>
-      <Routes>
-        <Route element={<AppLayout />}>
-          {/* Footer 없는 페이지 */}
-          <Route path="/library/read" element={<BookReadPage />} />
-          <Route path="/library/search" element={<BookSearchPage />} />
-          <Route path="/library/books/:bookId" element={<BookDetailPage />} />
-          <Route path="/" element={<SplashPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/vocabulary/word/:id" element={<WordDetailPage />} />
+      <MyActivityProvider>
+        <Routes>
+          <Route element={<AppLayout />}>
+            {/* Footer 없는 페이지 */}
+            <Route path="/library/read" element={<BookReadPage />} />
+            <Route path="/library/search" element={<BookSearchPage />} />
+            <Route path="/library/books/:bookId" element={<BookDetailPage />} />
+            <Route path="/" element={<SplashPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/vocabulary/word/:id" element={<WordDetailPage />} />
+            <Route path="/my/calendar" element={<ReadingCalendarPage />} />
+            <Route path="/my/liked-comments" element={<LikedCommentsPage />} />
+            <Route path="/my/liked-pages" element={<LikedPagesPage />} />
+            <Route path="/my/liked-pages/:bookId" element={<LikedBookPagesPage />} />
 
-          {/* Footer 있는 페이지 */}
-          <Route element={<FooterLayout />}>
-            <Route path="/home" element={<HomePage />} />
-            <Route path="/vocabulary" element={<VocabularyPage />} />
-            <Route path="/vocabulary/sentence/:id" element={<SentenceDetailPage />} />
-            <Route path="/training" element={<TrainingPage />} />
-            <Route path="/library" element={<LibraryPage />} />
-            <Route path="/my" element={<MyPage />} />
+            {/* Footer 있는 페이지 */}
+            <Route element={<FooterLayout />}>
+              <Route path="/home" element={<HomePage />} />
+              <Route path="/vocabulary" element={<VocabularyPage />} />
+              <Route path="/vocabulary/sentence/:id" element={<SentenceDetailPage />} />
+              <Route path="/training" element={<TrainingPage />} />
+              <Route path="/library" element={<LibraryPage />} />
+              <Route path="/my" element={<MyPage />} />
+            </Route>
           </Route>
-        </Route>
-      </Routes>
+        </Routes>
+      </MyActivityProvider>
     </BrowserRouter>
   );
 }
