@@ -7,7 +7,7 @@ export const searchBooks = async (
   signal?: AbortSignal,
 ): Promise<BookSearchResult[]> => {
   const response = await api.get<ApiResponse<BookSearchResult[]>>("/api/v1/books/search", {
-    params: { keyword },
+    params: keyword ? { keyword } : undefined,
     signal,
   });
   if (!response.data.success) throw new Error(response.data.message);
