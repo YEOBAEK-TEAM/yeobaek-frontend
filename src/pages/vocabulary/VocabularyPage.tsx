@@ -6,7 +6,11 @@ import DeleteConfirmModal from "@/components/vocabulary/DeleteConfirmModal";
 import VocabularyItem from "@/components/vocabulary/VocabularyItem";
 import VocabularyToast from "@/components/vocabulary/VocabularyToast";
 
+import { useVocabularyList } from "@/hooks/useVocabularyList";
+
 import { useVocabularyStore } from "@/stores/vocabulary";
+
+import type { WordListItem } from "@/types/vocabulary";
 
 const initialList = [
   "ㄱ",
@@ -30,37 +34,55 @@ const initialList = [
   "ㅎ",
 ];
 
-function getInitial(word: string) {
-  const code = word.charCodeAt(0) - 0xac00;
-
-  return code >= 0 && code <= 11171 ? initialList[Math.floor(code / 588)] : word[0];
-}
-
 export default function VocabularyPage() {
   const navigate = useNavigate();
 
-  const { words, sentences, activeTab, activeInitial, setTab, setInitial, deleteItem } =
+  const { sentences, activeTab, activeInitial, setTab, setInitial, deleteItem } =
     useVocabularyStore();
 
   const [menuId, setMenuId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [toast, setToast] = useState(false);
 
-  // 단어 탭은 초성 필터 적용
-  // 문장 탭은 전체 문장을 최근순으로 표시
-  const items = [
-    ...(activeTab === "word"
-      ? words.filter((word) => getInitial(word.word) === activeInitial)
-      : sentences),
-  ].sort((a, b) => Date.parse(b.collectedAt) - Date.parse(a.collectedAt));
+  // 단어 탭일 때만 단어장 목록 API 호출
+  const {
+    data: vocabularyData,
+    isPending,
+    isError,
+  } = useVocabularyList(activeInitial, activeTab === "word");
+
+  // API 응답을 기존 VocabularyItem에서 사용할 수 있는 형태로 변환
+  const words: WordListItem[] =
+    vocabularyData?.items.map((item) => ({
+      id: item.vocabularyId,
+      word: item.word,
+      meaning: item.meaning,
+      bookTitle: item.bookTitle,
+      page: item.pageNumber,
+      collectedAt: item.createdAt,
+    })) ?? [];
+
+  // 단어는 API 데이터, 문장은 기존 Zustand 데이터 사용
+  const items =
+    activeTab === "word"
+      ? words
+      : [...sentences].sort((a, b) => Date.parse(b.collectedAt) - Date.parse(a.collectedAt));
+
+  // 단어는 현재 페이지 items.length가 아니라
+  // 서버에서 내려주는 전체 개수 totalCount 사용
+  const totalCount = activeTab === "word" ? (vocabularyData?.totalCount ?? 0) : sentences.length;
 
   const handleDelete = () => {
-    if (deleteId !== null) {
-      deleteItem(activeTab, deleteId);
+    if (deleteId === null) return;
+
+    // 문장 삭제는 기존 목데이터 로직 유지
+    if (activeTab === "sentence") {
+      deleteItem("sentence", deleteId);
+      setToast(true);
     }
 
+    // TODO: 단어 삭제 API 연동 후 처리
     setDeleteId(null);
-    setToast(true);
   };
 
   return (
@@ -95,34 +117,53 @@ export default function VocabularyPage() {
             {/* 목록 상단 */}
             <div className="flex h-12 items-center justify-between border-b border-[#DDD7D1] px-5 text-sm font-semibold">
               <span className="text-[#9D938D]">
-                {activeInitial} · {items.length}개
+                {activeInitial} · {totalCount}개
               </span>
 
               <span className="text-[#727272]">최근순</span>
             </div>
 
+            {/* 단어 목록 로딩 */}
+            {activeTab === "word" && isPending && (
+              <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
+                단어장을 불러오는 중입니다.
+              </p>
+            )}
+
+            {/* 단어 목록 에러 */}
+            {activeTab === "word" && isError && (
+              <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
+                단어장을 불러오지 못했습니다.
+              </p>
+            )}
+
             {/* 목록 */}
-            {items.map((item) => (
-              <VocabularyItem
-                key={item.id}
-                item={item}
-                menuOpen={menuId === item.id}
-                onToggleMenu={() => setMenuId(menuId === item.id ? null : item.id)}
-                onCloseMenu={() => setMenuId(null)}
-                onDetail={() => navigate(`/vocabulary/${activeTab}/${item.id}`)}
-                onDelete={() => {
-                  setMenuId(null);
-                  setDeleteId(item.id);
-                }}
-              />
-            ))}
+            {!(activeTab === "word" && (isPending || isError)) &&
+              items.map((item) => (
+                <VocabularyItem
+                  key={item.id}
+                  item={item}
+                  menuOpen={menuId === item.id}
+                  onToggleMenu={() => setMenuId(menuId === item.id ? null : item.id)}
+                  onCloseMenu={() => setMenuId(null)}
+                  onDetail={() => navigate(`/vocabulary/${activeTab}/${item.id}`)}
+                  onDelete={() => {
+                    setMenuId(null);
+                    setDeleteId(item.id);
+                  }}
+                />
+              ))}
 
             {/* 빈 목록 */}
-            {items.length === 0 && (
+            {activeTab === "word" && !isPending && !isError && items.length === 0 && (
               <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
-                {activeTab === "word"
-                  ? "해당 초성으로 수집한 단어가 없습니다."
-                  : "수집한 문장이 없습니다."}
+                해당 초성으로 수집한 단어가 없습니다.
+              </p>
+            )}
+
+            {activeTab === "sentence" && items.length === 0 && (
+              <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
+                수집한 문장이 없습니다.
               </p>
             )}
           </div>
