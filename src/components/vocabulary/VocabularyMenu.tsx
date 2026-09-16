@@ -46,7 +46,7 @@ export default function VocabularyMenu({
         aria-expanded={open}
         aria-controls={open ? id : undefined}
         onClick={onToggle}
-        className="flex h-9 w-9 items-center justify-center gap-[3px] text-[#665752]"
+        className="flex h-9 w-9 items-center justify-center gap-0.75 text-[#665752]"
       >
         {[0, 1, 2].map((dot) => (
           <span key={dot} className="h-1 w-1 rounded-full bg-current" />
@@ -55,7 +55,7 @@ export default function VocabularyMenu({
       {open && (
         <div
           id={id}
-          className="absolute top-7 right-0 z-20 w-[91px] rounded-xl bg-white py-3 shadow-[0_5px_9px_#0004]"
+          className="absolute top-7 right-0 z-20 w-23 rounded-xl bg-white py-3 shadow-[0_5px_9px_#0004]"
         >
           <button
             type="button"

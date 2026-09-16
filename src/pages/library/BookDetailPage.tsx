@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
-import { books } from "@/mocks/books";
+import { useBookDetail } from "@/hooks/useBookDetail";
+import BookCover from "./components/BookCover";
 
 import { ArrowIcon } from "./components/LibraryIcons";
 import { useLibrary } from "./utils/useLibrary";
@@ -11,14 +12,27 @@ export default function BookDetailPage() {
   const navigate = useNavigate();
   const [saveError, setSaveError] = useState(false);
 
-  const book = books.find((book) => book.id === Number(bookId));
+  const numericBookId = bookId && /^\d+$/.test(bookId) ? Number(bookId) : NaN;
+  const validBookId = Number.isSafeInteger(numericBookId) && numericBookId > 0;
+  const { data: book, isPending, isError } = useBookDetail(numericBookId);
 
   const addBook = useLibrary((state) => state.addBook);
 
-  if (!book) {
+  if (!validBookId || isPending || isError || !book) {
     return (
       <main className="flex min-h-dvh items-center justify-center">
-        <p>도서를 찾을 수 없습니다.</p>
+        <div className="text-center">
+          <p role={validBookId && isPending ? "status" : "alert"}>
+            {!validBookId
+              ? "잘못된 도서 주소입니다."
+              : isPending
+                ? "도서를 불러오는 중입니다."
+                : "도서 정보를 불러오지 못했습니다."}
+          </p>
+          <Link to="/library/search" className="mt-4 block">
+            도서 검색으로 돌아가기
+          </Link>
+        </div>
       </main>
     );
   }
@@ -36,9 +50,9 @@ export default function BookDetailPage() {
 
       {/* 책 정보 */}
       <section className="mt-6 flex gap-5">
-        <img
-          src={book.coverUrl}
-          alt={`${book.title} 표지`}
+        <BookCover
+          src={book.coverImageUrl}
+          title={book.title}
           className="w-28 shrink-0 rounded-lg object-contain"
         />
 
@@ -48,13 +62,13 @@ export default function BookDetailPage() {
           <p className="mt-2 text-base text-[#747474]">{book.author}</p>
 
           <p className="mt-1 text-sm text-[#747474]">
-            {book.publisher} | {book.publishedAt}
+            {book.publisher} | {book.createdAt}
           </p>
 
           {/* 장르 */}
           {book.genre && (
             <div className="mt-4 flex flex-wrap gap-2">
-              {book.genre.map((genre) => (
+              {[book.genre].map((genre) => (
                 <span
                   key={genre}
                   className="rounded-full bg-[#E7E1D6] px-3 py-2 text-sm text-[#555354]"
@@ -71,9 +85,9 @@ export default function BookDetailPage() {
       <div className="mt-5 flex items-center gap-2 text-[#555354]">
         <span>★</span>
 
-        <span className="font-bold">{book.rating ?? 0}</span>
+        <span className="font-bold">—</span>
 
-        <span className="text-sm text-[#999999]">({(book.reviewCount ?? 0).toLocaleString()})</span>
+        <span className="text-sm text-[#999999]">(미제공)</span>
       </div>
 
       {/* 줄거리 */}
@@ -90,7 +104,7 @@ export default function BookDetailPage() {
         type="button"
         onClick={() => {
           try {
-            addBook(book.id);
+            addBook(numericBookId);
             navigate("/library", { state: { bookAdded: true } });
           } catch {
             setSaveError(true);

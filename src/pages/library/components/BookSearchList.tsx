@@ -1,7 +1,7 @@
-﻿import type { Book } from "@/mocks/books";
+﻿import type { BookSearchResult } from "@/types/book";
 import BookSearchItem from "./BookSearchItem";
 
-type BookSearchListProps = { books: Book[]; fromSearch: string };
+type BookSearchListProps = { books: BookSearchResult[]; fromSearch: string };
 
 export default function BookSearchList({ books, fromSearch }: BookSearchListProps) {
   return (
@@ -9,7 +9,7 @@ export default function BookSearchList({ books, fromSearch }: BookSearchListProp
       {books.length > 0 ? (
         <ul aria-label="도서 검색 결과" className="space-y-5">
           {books.map((book) => (
-            <li key={book.id}>
+            <li key={book.bookId}>
               <BookSearchItem book={book} fromSearch={fromSearch} />
             </li>
           ))}
