@@ -60,14 +60,14 @@ export default function VocabularyMenu({
           <button
             type="button"
             onClick={onDetail}
-            className="h-10 w-full text-[16px] text-black hover:bg-[#F7F6F1]"
+            className="h-10 w-full text-base text-black hover:bg-[#F7F6F1]"
           >
             상세보기
           </button>
           <button
             type="button"
             onClick={onDelete}
-            className="h-10 w-full text-[16px] text-black hover:bg-[#F7F6F1]"
+            className="h-10 w-full text-base text-black hover:bg-[#F7F6F1]"
           >
             삭제하기
           </button>

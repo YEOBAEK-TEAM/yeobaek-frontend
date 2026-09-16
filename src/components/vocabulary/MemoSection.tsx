@@ -25,14 +25,16 @@ export default function MemoSection({ initialMemo, onSave }: Props) {
           {memo.length}/200
         </span>
       </div>
-      <button
-        type="button"
-        disabled={memo.length === 0}
-        onClick={() => onSave(memo)}
-        className="mt-6 ml-[7px] h-16 w-[calc(100%-7px)] rounded-lg bg-[#4B512F] text-base font-bold text-white disabled:bg-[#858584]"
-      >
-        저장하기
-      </button>
+      <div className="mt-6 ml-[7px]">
+        <button
+          type="button"
+          disabled={memo.length === 0}
+          onClick={() => onSave(memo)}
+          className="h-16 w-full rounded-lg bg-[#4B512F] text-base font-bold text-white disabled:bg-[#858584]"
+        >
+          저장하기
+        </button>
+      </div>
     </section>
   );
 }

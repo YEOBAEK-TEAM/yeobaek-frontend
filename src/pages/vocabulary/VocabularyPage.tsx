@@ -1,9 +1,11 @@
 ﻿import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+
 import Header from "@/components/common/header/Header";
-import VocabularyItem from "@/components/vocabulary/VocabularyItem";
 import DeleteConfirmModal from "@/components/vocabulary/DeleteConfirmModal";
+import VocabularyItem from "@/components/vocabulary/VocabularyItem";
 import VocabularyToast from "@/components/vocabulary/VocabularyToast";
+
 import { useVocabularyStore } from "@/stores/vocabulary";
 
 const initialList = [
@@ -27,32 +29,47 @@ const initialList = [
   "ㅍ",
   "ㅎ",
 ];
+
 function getInitial(word: string) {
   const code = word.charCodeAt(0) - 0xac00;
+
   return code >= 0 && code <= 11171 ? initialList[Math.floor(code / 588)] : word[0];
 }
+
 export default function VocabularyPage() {
   const navigate = useNavigate();
+
   const { words, sentences, activeTab, activeInitial, setTab, setInitial, deleteItem } =
     useVocabularyStore();
+
   const [menuId, setMenuId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [toast, setToast] = useState(false);
+
+  // 단어 탭은 초성 필터 적용
+  // 문장 탭은 전체 문장을 최근순으로 표시
   const items = [
     ...(activeTab === "word"
       ? words.filter((word) => getInitial(word.word) === activeInitial)
       : sentences),
   ].sort((a, b) => Date.parse(b.collectedAt) - Date.parse(a.collectedAt));
+
   const handleDelete = () => {
-    if (deleteId !== null) deleteItem(activeTab, deleteId);
+    if (deleteId !== null) {
+      deleteItem(activeTab, deleteId);
+    }
+
     setDeleteId(null);
     setToast(true);
   };
+
   return (
-    <main className="min-h-screen pb-24">
+    <main className="min-h-screen">
       <Header title="서후의 글귀수집" />
-      <div className="mt-[26px] px-[23px]">
-        <div className="flex items-end" role="tablist" aria-label="수집 종류">
+
+      <div className="mt-6.5 px-[23px]">
+        {/* 단어 / 문장 탭 */}
+        <div className="flex items-end gap-2" role="tablist" aria-label="수집 종류">
           {(["word", "sentence"] as const).map((tab) => (
             <button
               key={tab}
@@ -63,23 +80,28 @@ export default function VocabularyPage() {
                 setTab(tab);
                 setMenuId(null);
               }}
-              className={`h-[33px] w-[52px] text-sm font-bold ${activeTab === tab ? "bg-[#898F72] text-[#FFFEFB]" : "bg-[#DEDAD6] text-[#887D77]"}`}
+              className={`h-[33px] w-13 text-sm font-bold ${
+                activeTab === tab ? "bg-[#898F72] text-[#FFFEFB]" : "bg-[#DEDAD6] text-[#887D77]"
+              }`}
             >
               {tab === "word" ? "단어" : "문장"}
             </button>
           ))}
         </div>
-        <section
-          className={`grid min-h-[560px] border border-[#ECE9E3] bg-[#F7F6F1] ${activeTab === "word" ? "grid-cols-[minmax(0,1fr)_34px]" : "grid-cols-1"}`}
-        >
+
+        {/* 단어 / 문장 목록 */}
+        <section className="grid min-h-140 grid-cols-[minmax(0,1fr)_34px] border border-[#ECE9E3] bg-[#F7F6F1]">
           <div className="min-w-0">
+            {/* 목록 상단 */}
             <div className="flex h-[49px] items-center justify-between border-b border-[#DDD7D1] px-[23px] text-sm font-semibold">
               <span className="text-[#9D938D]">
-                {activeTab === "word" ? `${activeInitial} · ` : "문장 · "}
-                {items.length}개
+                {activeInitial} · {items.length}개
               </span>
+
               <span className="text-[#727272]">최근순</span>
             </div>
+
+            {/* 목록 */}
             {items.map((item) => (
               <VocabularyItem
                 key={item.id}
@@ -94,6 +116,8 @@ export default function VocabularyPage() {
                 }}
               />
             ))}
+
+            {/* 빈 목록 */}
             {items.length === 0 && (
               <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
                 {activeTab === "word"
@@ -102,30 +126,34 @@ export default function VocabularyPage() {
               </p>
             )}
           </div>
-          {activeTab === "word" && (
-            <aside aria-label="초성 필터" className="border-l border-[#E4E0DB] py-2">
-              {initialList.map((initial) => (
-                <button
-                  type="button"
-                  key={initial}
-                  aria-pressed={activeInitial === initial}
-                  onClick={() => {
-                    setInitial(initial);
-                    setMenuId(null);
-                  }}
-                  className="flex h-7 w-full items-center justify-center"
+
+          {/* 초성 필터 */}
+          <aside aria-label="초성 필터" className="border-l border-[#E4E0DB] py-2">
+            {initialList.map((initial) => (
+              <button
+                type="button"
+                key={initial}
+                aria-pressed={activeInitial === initial}
+                onClick={() => {
+                  setInitial(initial);
+                  setMenuId(null);
+                }}
+                className="flex h-7 w-full items-center justify-center"
+              >
+                <span
+                  className={`flex h-6.5 w-5 items-center justify-center text-xs ${
+                    activeInitial === initial ? "bg-[#B7BD9F]" : ""
+                  }`}
                 >
-                  <span
-                    className={`flex h-[26px] w-5 items-center justify-center text-xs ${activeInitial === initial ? "bg-[#B7BD9F]" : ""}`}
-                  >
-                    {initial}
-                  </span>
-                </button>
-              ))}
-            </aside>
-          )}
+                  {initial}
+                </span>
+              </button>
+            ))}
+          </aside>
         </section>
       </div>
+
+      {/* 삭제 확인 모달 */}
       {deleteId !== null && (
         <DeleteConfirmModal
           type={activeTab}
@@ -133,6 +161,8 @@ export default function VocabularyPage() {
           onClose={() => setDeleteId(null)}
         />
       )}
+
+      {/* 삭제 완료 토스트 */}
       {toast && <VocabularyToast onClose={() => setToast(false)} />}
     </main>
   );

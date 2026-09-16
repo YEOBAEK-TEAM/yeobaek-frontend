@@ -27,8 +27,8 @@ export default function WordDetailPage() {
         <p className="px-5 py-12 text-center text-[#887D77]">단어를 찾을 수 없습니다.</p>
       ) : (
         <div className="px-5">
-          <div className="mb-[21px] flex min-h-[76px] items-center border-b-2 border-[#E4E0DB] px-2 pb-4">
-            <h2 className="font-serif text-[36px] leading-none text-black">{word.word}</h2>
+          <div className="mb-[21px] flex min-h-19 items-center border-b-2 border-[#E4E0DB] px-2 pb-4">
+            <h2 className="font-serif text-4xl leading-none text-black">{word.word}</h2>
             <span className="ml-4 self-end pb-2 text-base font-semibold text-[#665752]">
               {word.partOfSpeech}
             </span>
@@ -41,7 +41,7 @@ export default function WordDetailPage() {
               <TrashIcon />
             </button>
           </div>
-          <section aria-label="사전 정보" className="bg-[#F7F6F1] px-[19px] py-[22px]">
+          <section aria-label="사전 정보" className="bg-[#F7F6F1] px-[19px] py-5.5">
             <div className="flex items-center gap-2">
               <span className="flex h-[25px] w-[25px] shrink-0 items-center justify-center rounded-full bg-[#4F411D] text-sm text-white">
                 1
@@ -49,9 +49,9 @@ export default function WordDetailPage() {
               <h3 className="font-serif text-[23px] leading-7">{word.word}</h3>
               <span className="ml-1 text-xs text-[#8B8D80]">{word.partOfSpeech}</span>
             </div>
-            <p className="mt-2 ml-[30px] font-serif text-[14px] leading-5">{word.meaning}</p>
+            <p className="mt-2 ml-7.5 font-serif text-sm leading-5">{word.meaning}</p>
             {word.otherMeanings.length > 0 && (
-              <div className="mt-[26px] border-t border-[#D2D2CE] pt-3">
+              <div className="mt-6.5 border-t border-[#D2D2CE] pt-3">
                 <button
                   type="button"
                   aria-expanded={expanded}
