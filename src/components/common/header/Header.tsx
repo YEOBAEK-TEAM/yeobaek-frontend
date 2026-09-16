@@ -8,6 +8,7 @@ type HeaderProps = {
   action?: "bell" | "search";
   onActionClick?: () => void;
   className?: string;
+  onBack?: () => void;
 };
 
 export default function Header({
@@ -15,7 +16,32 @@ export default function Header({
   action,
   onActionClick,
   className = "h-17 py-10 px-5",
+  onBack,
 }: HeaderProps) {
+  if (onBack) {
+    return (
+      <header className="relative flex h-[92px] items-center justify-center px-5 text-[#30201D]">
+        <button
+          type="button"
+          onClick={onBack}
+          aria-label="뒤로가기"
+          className="absolute left-3 flex h-11 w-11 items-center justify-center"
+        >
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="h-6 w-6"
+          >
+            <path d="m15 4-8 8 8 8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+        <h1 className="text-xl font-bold">{title}</h1>
+      </header>
+    );
+  }
   return (
     <>
       <style>

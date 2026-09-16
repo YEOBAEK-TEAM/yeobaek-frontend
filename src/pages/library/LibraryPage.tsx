@@ -55,7 +55,7 @@ export default function LibraryPage() {
 
   return (
     <main
-      className="min-h-dvh pb-24 text-[#4F4D4E]"
+      className="flex-1 pb-2 text-[#4F4D4E]"
       style={{ fontFamily: "Arial, 'Malgun Gothic', sans-serif" }}
     >
       {showAddedNotice && (

@@ -4,7 +4,7 @@ import FooterNavigation from "@/components/common/footerNavigation/FooterNavigat
 
 export default function FooterLayout() {
   return (
-    <div className="pb-10">
+    <div className="flex min-h-dvh flex-col pb-22">
       <Outlet />
       <FooterNavigation />
     </div>

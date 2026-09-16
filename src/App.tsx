@@ -14,6 +14,8 @@ import BookDetailPage from "@/pages/library/BookDetailPage";
 import MyPage from "@/pages/my/MyPage";
 import TrainingPage from "@/pages/training/TrainingPage";
 import VocabularyPage from "@/pages/vocabulary/VocabularyPage";
+import WordDetailPage from "@/pages/vocabulary/WordDetailPage";
+import SentenceDetailPage from "@/pages/vocabulary/SentenceDetailPage";
 
 export default function App() {
   return (
@@ -26,11 +28,13 @@ export default function App() {
           <Route path="/library/books/:bookId" element={<BookDetailPage />} />
           <Route path="/" element={<SplashPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/vocabulary/word/:id" element={<WordDetailPage />} />
 
           {/* Footer 있는 페이지 */}
           <Route element={<FooterLayout />}>
             <Route path="/home" element={<HomePage />} />
             <Route path="/vocabulary" element={<VocabularyPage />} />
+            <Route path="/vocabulary/sentence/:id" element={<SentenceDetailPage />} />
             <Route path="/training" element={<TrainingPage />} />
             <Route path="/library" element={<LibraryPage />} />
             <Route path="/my" element={<MyPage />} />
