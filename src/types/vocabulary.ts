@@ -31,17 +31,6 @@ export type Vocabulary = WordItem;
 // 단어/문장 삭제 타입
 export type DeleteType = "word" | "sentence";
 
-// 문장 데이터
-export type SentenceItem = {
-  id: number;
-  content: string;
-  bookTitle: string;
-  page: number;
-  memo: string;
-  hasComment: boolean;
-  collectedAt: string;
-};
-
 // 단어장 목록 API 응답 항목
 export type VocabularyListItemResponse = {
   vocabularyId: number;

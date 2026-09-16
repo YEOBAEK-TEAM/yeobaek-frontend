@@ -7,11 +7,14 @@ import VocabularyItem from "@/components/vocabulary/VocabularyItem";
 import VocabularyToast from "@/components/vocabulary/VocabularyToast";
 
 import { useDeleteVocabulary } from "@/hooks/useDeleteVocabulary";
+import { useDeleteSentence } from "@/hooks/useDeleteSentence";
+import { useSentenceList } from "@/hooks/useSentenceList";
 import { useVocabularyList } from "@/hooks/useVocabularyList";
 
 import { useVocabularyStore } from "@/stores/vocabulary";
 
 import type { WordListItem } from "@/types/vocabulary";
+import type { SentenceListItem } from "@/types/sentence";
 
 const initialList = [
   "ㄱ",
@@ -38,8 +41,7 @@ const initialList = [
 export default function VocabularyPage() {
   const navigate = useNavigate();
 
-  const { sentences, activeTab, activeInitial, setTab, setInitial, deleteItem } =
-    useVocabularyStore();
+  const { activeTab, activeInitial, setTab, setInitial } = useVocabularyStore();
 
   const [menuId, setMenuId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -50,6 +52,21 @@ export default function VocabularyPage() {
 
   // 단어 삭제 API
   const { mutateAsync: deleteVocabulary } = useDeleteVocabulary();
+  const { mutateAsync: deleteSentence } = useDeleteSentence();
+
+  const {
+    data: sentenceData,
+    isPending: isSentencePending,
+    isError: isSentenceError,
+  } = useSentenceList(activeTab === "sentence");
+
+  const sentences: SentenceListItem[] = (sentenceData ?? []).map((item) => ({
+    id: item.sentenceId,
+    content: item.content,
+    bookTitle: item.bookTitle,
+    page: item.pageNumber,
+    collectedAt: item.createdAt,
+  }));
 
   // 단어 탭일 때만 단어장 목록 API 호출
   const {
@@ -74,8 +91,7 @@ export default function VocabularyPage() {
     collectedAt: item.createdAt,
   }));
 
-  // 단어는 API 데이터
-  // 문장은 기존 Zustand 데이터
+  // 단어 / 문장 API 데이터를 목록에 표시
   const items =
     activeTab === "word"
       ? words
@@ -122,8 +138,7 @@ export default function VocabularyPage() {
         // 단어 삭제 API
         await deleteVocabulary(deleteId);
       } else {
-        // 문장은 아직 기존 목데이터 삭제
-        deleteItem("sentence", deleteId);
+        await deleteSentence(deleteId);
       }
 
       setDeleteId(null);
@@ -186,7 +201,14 @@ export default function VocabularyPage() {
             )}
 
             {/* 목록 */}
-            {!(activeTab === "word" && (isPending || isError)) &&
+            {activeTab === "sentence" && (isSentencePending || isSentenceError) && (
+              <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
+                {isSentenceError ? "문장을 불러오지 못했습니다." : "문장을 불러오는 중입니다."}
+              </p>
+            )}
+            {!(activeTab === "word"
+              ? isPending || isError
+              : isSentencePending || isSentenceError) &&
               items.map((item) => (
                 <VocabularyItem
                   key={item.id}
@@ -210,11 +232,14 @@ export default function VocabularyPage() {
             )}
 
             {/* 문장 빈 목록 */}
-            {activeTab === "sentence" && items.length === 0 && (
-              <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
-                수집한 문장이 없습니다.
-              </p>
-            )}
+            {activeTab === "sentence" &&
+              !isSentencePending &&
+              !isSentenceError &&
+              items.length === 0 && (
+                <p className="px-4 py-16 text-center text-sm text-[#9D938D]">
+                  수집한 문장이 없습니다.
+                </p>
+              )}
 
             {/* 무한 스크롤 감지 영역 */}
             {activeTab === "word" && <div ref={loadMoreRef} className="h-1" />}

@@ -1,9 +1,10 @@
-﻿import type { SentenceItem, WordListItem } from "@/types/vocabulary";
+﻿import type { SentenceListItem } from "@/types/sentence";
+import type { WordListItem } from "@/types/vocabulary";
 
 import VocabularyMenu from "./VocabularyMenu";
 
 type Props = {
-  item: WordListItem | SentenceItem;
+  item: WordListItem | SentenceListItem;
   menuOpen: boolean;
   onToggleMenu: () => void;
   onCloseMenu: () => void;
