@@ -14,6 +14,7 @@ type GetVocabularyListParams = {
   page?: number;
 };
 
+// 단어장 목록 조회
 export const getVocabularyList = async ({
   choseong,
   page = 0,
@@ -28,6 +29,7 @@ export const getVocabularyList = async ({
   return response.data.data;
 };
 
+// 단어 상세 조회
 export const getVocabularyDetail = async (
   vocabularyId: number,
 ): Promise<VocabularyDetailResponse> => {
@@ -36,4 +38,9 @@ export const getVocabularyDetail = async (
   );
 
   return response.data.data;
+};
+
+// 단어 삭제
+export const deleteVocabulary = async (vocabularyId: number): Promise<void> => {
+  await api.delete(`/api/v1/vocabularies/${vocabularyId}`);
 };

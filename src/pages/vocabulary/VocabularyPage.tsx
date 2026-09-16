@@ -6,6 +6,7 @@ import DeleteConfirmModal from "@/components/vocabulary/DeleteConfirmModal";
 import VocabularyItem from "@/components/vocabulary/VocabularyItem";
 import VocabularyToast from "@/components/vocabulary/VocabularyToast";
 
+import { useDeleteVocabulary } from "@/hooks/useDeleteVocabulary";
 import { useVocabularyList } from "@/hooks/useVocabularyList";
 
 import { useVocabularyStore } from "@/stores/vocabulary";
@@ -47,7 +48,10 @@ export default function VocabularyPage() {
   // 무한 스크롤 감지 요소
   const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
-  // 단어 탭일 때만 단어장 API 호출
+  // 단어 삭제 API
+  const { mutateAsync: deleteVocabulary } = useDeleteVocabulary();
+
+  // 단어 탭일 때만 단어장 목록 API 호출
   const {
     data: vocabularyData,
     isPending,
@@ -60,7 +64,7 @@ export default function VocabularyPage() {
   // 여러 페이지의 단어 데이터를 하나의 배열로 합치기
   const vocabularyItems = vocabularyData?.pages.flatMap((page) => page.items) ?? [];
 
-  // API 응답 → 기존 VocabularyItem용 데이터로 변환
+  // API 응답을 목록 UI용 데이터로 변환
   const words: WordListItem[] = vocabularyItems.map((item) => ({
     id: item.vocabularyId,
     word: item.word,
@@ -77,7 +81,7 @@ export default function VocabularyPage() {
       ? words
       : [...sentences].sort((a, b) => Date.parse(b.collectedAt) - Date.parse(a.collectedAt));
 
-  // 전체 단어 개수는 서버의 totalCount 사용
+  // 전체 개수
   const totalCount =
     activeTab === "word" ? (vocabularyData?.pages[0]?.totalCount ?? 0) : sentences.length;
 
@@ -109,17 +113,24 @@ export default function VocabularyPage() {
     };
   }, [activeTab, fetchNextPage, hasNextPage, isFetchingNextPage]);
 
-  const handleDelete = () => {
+  // 단어 / 문장 삭제
+  const handleDelete = async () => {
     if (deleteId === null) return;
 
-    // 문장 삭제는 기존 목데이터 로직 유지
-    if (activeTab === "sentence") {
-      deleteItem("sentence", deleteId);
-      setToast(true);
-    }
+    try {
+      if (activeTab === "word") {
+        // 단어 삭제 API
+        await deleteVocabulary(deleteId);
+      } else {
+        // 문장은 아직 기존 목데이터 삭제
+        deleteItem("sentence", deleteId);
+      }
 
-    // TODO: 단어 삭제 API 연동 후 처리
-    setDeleteId(null);
+      setDeleteId(null);
+      setToast(true);
+    } catch (error) {
+      console.error("삭제 실패", error);
+    }
   };
 
   return (
@@ -244,7 +255,7 @@ export default function VocabularyPage() {
       {deleteId !== null && (
         <DeleteConfirmModal
           type={activeTab}
-          onConfirm={handleDelete}
+          onConfirm={() => void handleDelete()}
           onClose={() => setDeleteId(null)}
         />
       )}
