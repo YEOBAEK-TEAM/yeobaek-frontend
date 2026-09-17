@@ -80,7 +80,10 @@ function ContentBookReader({
     ...pages.map((page) => ({ type: "content" as const, page })),
   ];
   const deckIndex = onCover ? 0 : index + 1;
-  const progressPercent = deckPages.length > 1 ? (deckIndex / (deckPages.length - 1)) * 100 : 0;
+  const progressPercent =
+    ready && !onCover && chapter.data && chapter.data.allPage > 0
+      ? (currentPage.pageNumber / chapter.data.allPage) * 100
+      : 0;
   const deckPage = deckPages[deckIndex];
   const actualPageId = ready && deckPage?.type === "content" ? deckPage.page.pageId : undefined;
   const deckReady = ready && (!onCover || (!!book.data && !book.isError));
@@ -286,23 +289,29 @@ function ContentBookReader({
           </p>
         )}
         <div className="book-reader__progress">
-          <input
-            type="range"
-            aria-label="불러온 페이지 범위에서 이동"
+          <div
+            className="book-reader__progress-bar"
+            role="progressbar"
+            aria-label="전체 책 읽기 진행률"
             aria-valuetext={
               deckReady ? (onCover ? "표지" : currentPage.pageNumber + "페이지") : "페이지 준비 중"
             }
-            min={0}
-            max={Math.max(0, deckPages.length - 1)}
-            value={Math.max(0, deckIndex)}
-            disabled={!deckReady || deckPages.length <= 1}
-            style={{
-              background: `linear-gradient(to right, #B7BD9E 0%, #B7BD9E ${progressPercent}%, #F7F6F1 ${progressPercent}%, #F7F6F1 100%)`,
-            }}
-            onChange={(event) => navigate(Number(event.target.value))}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={progressPercent}
+            style={
+              {
+                "--reader-progress": `${progressPercent}%`,
+                background: `linear-gradient(to right, #B7BD9E 0%, #B7BD9E ${progressPercent}%, #F7F6F1 ${progressPercent}%, #F7F6F1 100%)`,
+              } as CSSProperties
+            }
           />
           <span aria-live="polite">
-            {deckReady ? (onCover ? "표지" : currentPage.pageNumber + "p") : "—"}
+            {deckReady && chapter.data
+              ? onCover
+                ? "표지"
+                : `${currentPage.pageNumber}/${chapter.data.allPage}`
+              : "—"}
           </span>
         </div>
         <div className="book-reader__actions">

@@ -22,5 +22,6 @@ export type ContentPage = ContentChapterPage & {
 
 export type ContentChapter = {
   chapter: string;
+  allPage: number;
   pages: ContentChapterPage[];
 };
