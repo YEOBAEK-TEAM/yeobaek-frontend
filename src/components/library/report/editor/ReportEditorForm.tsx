@@ -10,17 +10,17 @@ import {
   REPORT_EDITOR,
   REPORT_PATH,
   REPORT_SAVE_ERROR_FALLBACK,
-  REPORT_SAVE_ERROR_MESSAGE,
   REPORT_TITLE_MAX_LENGTH,
 } from "@/constants/library/report";
 import { useBackGuard } from "@/hooks/common/useBackGuard";
-import { useSaveReportDraft, useSubmitReport } from "@/hooks/library/report/useReportEditor";
+import { useSaveReport } from "@/hooks/library/report/useReportEditor";
 import { useToastStore } from "@/stores/common/toast";
+import { getApiErrorMessage } from "@/utils/common/getApiErrorMessage";
 
-import type { ReportEditorResponse, ReportFormValues } from "@/types/library/report";
+import type { BookReviewStatus, ReportEditorView, ReportFormValues } from "@/types/library/report";
 
 type ReportEditorFormProps = {
-  editor: ReportEditorResponse;
+  editor: ReportEditorView;
 };
 
 const FIELD_CLASS =
@@ -28,8 +28,8 @@ const FIELD_CLASS =
 
 const LABEL_CLASS = "block px-3.5 text-[16px] font-bold text-[#4F4D4E]";
 
-const toSaveErrorMessage = (error: Error) =>
-  REPORT_SAVE_ERROR_MESSAGE[error.message] ?? REPORT_SAVE_ERROR_FALLBACK;
+// 작성 조건 위반은 서버 안내 문구 그대로 표시
+const toSaveErrorMessage = (error: Error) => getApiErrorMessage(error, REPORT_SAVE_ERROR_FALLBACK);
 
 export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
   const fieldId = useId();
@@ -39,7 +39,6 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
   const [reportId, setReportId] = useState(editor.reportId);
   const [values, setValues] = useState<ReportFormValues>({
     title: editor.title,
-    reportDate: editor.reportDate,
     content: editor.content,
   });
 
@@ -50,13 +49,12 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
 
   const showToast = useToastStore((state) => state.showToast);
 
-  const saveDraft = useSaveReportDraft();
-  const submit = useSubmitReport();
+  const saveReport = useSaveReport();
 
-  const isDirty =
-    values.title !== savedValues.title ||
-    values.reportDate !== savedValues.reportDate ||
-    values.content !== savedValues.content;
+  // 임시저장과 제출이 같은 요청이라 진행 중인 쪽 버튼에만 로딩 표시
+  const pendingStatus = saveReport.isPending ? saveReport.variables.status : null;
+
+  const isDirty = values.title !== savedValues.title || values.content !== savedValues.content;
 
   // 제목이나 본문 중 한 글자라도 있어야 임시저장, 둘 다 있어야 제출
   const hasAnyContent = values.title.trim().length > 0 || values.content.trim().length > 0;
@@ -81,11 +79,16 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
 
   const leave = () => (location.key === "default" ? navigate("/library") : navigate(-1));
 
-  const request = { ...values, reportId, bookId: editor.bookId };
+  const toRequest = (status: BookReviewStatus) => ({
+    ...values,
+    status,
+    reviewId: reportId,
+    bookId: editor.bookId,
+  });
 
   const tempSave = (afterSave?: () => void) =>
-    saveDraft.mutate(request, {
-      onSuccess: ({ reportId: savedId }) => {
+    saveReport.mutate(toRequest("DRAFT"), {
+      onSuccess: ({ reviewId: savedId }) => {
         setReportId(savedId);
         setSavedValues(values);
 
@@ -110,7 +113,7 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
   const handleBack = () => (shouldConfirmExit ? setIsExitOpen(true) : release(leave));
 
   const handleSubmit = () =>
-    submit.mutate(request, {
+    saveReport.mutate(toRequest("PUBLISHED"), {
       // 제출 후 작성 화면 기록을 서재 독후감 탭으로 교체
       onSuccess: () =>
         release(() => {
@@ -138,15 +141,9 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
           className={`${FIELD_CLASS} mt-2.5 h-15 px-7`}
         />
 
-        <label htmlFor={`${fieldId}-date`} className={`${LABEL_CLASS} mt-4`}>
-          {REPORT_EDITOR.dateLabel}
-        </label>
+        <p className={`${LABEL_CLASS} mt-4`}>{REPORT_EDITOR.dateLabel}</p>
         <div className="mt-2.5">
-          <ReportDateField
-            id={`${fieldId}-date`}
-            value={values.reportDate}
-            onChange={(value) => updateValue("reportDate", value)}
-          />
+          <ReportDateField id={`${fieldId}-date`} label={editor.dateLabel} />
         </div>
 
         <label htmlFor={`${fieldId}-content`} className="sr-only">
@@ -165,8 +162,8 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
         <button
           type="button"
           onClick={() => tempSave()}
-          disabled={!hasAnyContent || saveDraft.isPending}
-          aria-busy={saveDraft.isPending}
+          disabled={!hasAnyContent || saveReport.isPending}
+          aria-busy={pendingStatus === "DRAFT"}
           className="h-13.5 rounded-xl bg-[#C1C1C1] text-[18px] font-bold text-[#1E1E1E] disabled:opacity-70"
         >
           {REPORT_EDITOR.tempSaveLabel}
@@ -175,8 +172,8 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
         <button
           type="button"
           onClick={handleSubmit}
-          disabled={!canSubmit || submit.isPending}
-          aria-busy={submit.isPending}
+          disabled={!canSubmit || saveReport.isPending}
+          aria-busy={pendingStatus === "PUBLISHED"}
           className="h-13.5 rounded-xl bg-[#B8BC9F] text-[18px] font-bold text-white disabled:bg-[#D5D7C9]"
         >
           {REPORT_EDITOR.submitLabel}
@@ -192,7 +189,7 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
             {
               label: MODAL_ANSWER.yes,
               onClick: () => tempSave(() => release(leave)),
-              isPending: saveDraft.isPending,
+              isPending: saveReport.isPending,
             },
           ]}
         />

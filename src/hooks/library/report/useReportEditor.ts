@@ -1,35 +1,41 @@
-import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { getReportEditor, saveReportDraft, submitReport } from "@/api/library/report";
+import { createBookReview, getBookReviewDetail, updateBookReview } from "@/api/library/report";
 import { libraryReportKeys } from "@/hooks/library/report/useReportQueries";
+import { toReportEditorView } from "@/utils/library/report/toReportView";
 
-export const useReportEditor = (reportId: number | null, bookId: number | null) =>
+import type { SaveBookReviewRequest } from "@/types/library/report";
+
+export const useReportDetail = (reviewId: number | null) =>
   useQuery({
-    queryKey: [...libraryReportKeys.all, "editor", { reportId, bookId }] as const,
-    queryFn: () => getReportEditor({ reportId, bookId }),
-    enabled: reportId !== null || bookId !== null,
+    queryKey: libraryReportKeys.detail(reviewId ?? 0),
+    queryFn: ({ signal }) => getBookReviewDetail(reviewId ?? 0, signal),
+    select: toReportEditorView,
+    enabled: reviewId !== null,
     refetchOnWindowFocus: false,
-    // 첫 임시저장 후 주소가 바뀌어도 입력 화면 유지
-    placeholderData: keepPreviousData,
+    retry: false,
   });
 
-const useInvalidateReportLists = () => {
+// 새 독후감은 작성, 이미 있는 독후감은 수정으로 저장
+export const useSaveReport = () => {
   const queryClient = useQueryClient();
 
-  return () =>
-    [libraryReportKeys.draft(), libraryReportKeys.mine()].forEach(
-      (queryKey) => void queryClient.invalidateQueries({ queryKey }),
-    );
-};
+  return useMutation({
+    mutationFn: ({ reviewId, bookId, ...body }: SaveBookReviewRequest) =>
+      reviewId === null ? createBookReview({ bookId, ...body }) : updateBookReview(reviewId, body),
+    retry: 0,
+    onSuccess: (review) => {
+      // 첫 저장 후 주소가 바뀌어도 입력 화면이 끊기지 않도록 상세 캐시 선반영
+      queryClient.setQueryData(libraryReportKeys.detail(review.reviewId), review);
 
-export const useSaveReportDraft = () => {
-  const invalidate = useInvalidateReportLists();
-
-  return useMutation({ mutationFn: saveReportDraft, onSuccess: invalidate });
-};
-
-export const useSubmitReport = () => {
-  const invalidate = useInvalidateReportLists();
-
-  return useMutation({ mutationFn: submitReport, onSuccess: invalidate });
+      [
+        libraryReportKeys.latest(),
+        libraryReportKeys.mine(),
+        libraryReportKeys.unlockedBooks(),
+      ].forEach((queryKey) => void queryClient.invalidateQueries({ queryKey }));
+    },
+    // 해금 상태가 바뀌었을 수 있어 해금 목록 재조회
+    onError: () =>
+      void queryClient.invalidateQueries({ queryKey: libraryReportKeys.unlockedBooks() }),
+  });
 };

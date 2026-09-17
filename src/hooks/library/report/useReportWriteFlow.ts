@@ -1,9 +1,7 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { REPORT_PATH } from "@/constants/library/report";
-import { draftReportQuery } from "@/hooks/library/report/useReportQueries";
 
 export type ReportWriteTarget = {
   bookId: number;
@@ -11,60 +9,45 @@ export type ReportWriteTarget = {
 };
 
 export type ReportWriteFlowStep =
-  | { step: "idle" }
-  | { step: "draftExists" }
-  | { step: "selectBook" }
-  | { step: "confirm"; book: ReportWriteTarget }
-  | { step: "unlockGuide"; bookId: number };
+  { step: "idle" } | { step: "selectBook" } | { step: "confirm"; book: ReportWriteTarget };
 
 type WriteBookOptions = {
   confirm?: boolean;
   replace?: boolean;
 };
 
+// 작성 가능 여부는 저장 시점에 서버에서 확인
 export const useReportWriteFlow = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const [flow, setFlow] = useState<ReportWriteFlowStep>({ step: "idle" });
 
   const close = useCallback(() => setFlow({ step: "idle" }), []);
 
-  // 해금예정 책의 퀴즈도 풀 수 있도록 목록은 작성 중 독후감과 무관하게 오픈
+  const goWrite = (book: ReportWriteTarget, replace = false) =>
+    navigate(REPORT_PATH.write(book.bookId), { replace, state: { bookTitle: book.title } });
+
   const startWrite = () => setFlow({ step: "selectBook" });
 
-  // 작성 중인 독후감은 하나만 허용, 있으면 작성 대신 안내
-  const writeBook = async (
+  const writeBook = (
     book: ReportWriteTarget,
     { confirm = true, replace = false }: WriteBookOptions = {},
   ) => {
-    try {
-      if ((await queryClient.fetchQuery(draftReportQuery)) !== null) {
-        setFlow({ step: "draftExists" });
-        return;
-      }
-    } catch {
-      close();
-      return;
-    }
-
     if (confirm) {
       setFlow({ step: "confirm", book });
       return;
     }
 
-    navigate(REPORT_PATH.write(book.bookId), { replace });
+    goWrite(book, replace);
   };
-
-  const openUnlockGuide = (bookId: number) => setFlow({ step: "unlockGuide", bookId });
 
   const confirmWrite = () => {
     if (flow.step !== "confirm") return;
 
-    navigate(REPORT_PATH.write(flow.book.bookId));
+    goWrite(flow.book);
   };
 
-  return { flow, close, startWrite, writeBook, openUnlockGuide, confirmWrite };
+  return { flow, close, startWrite, writeBook, confirmWrite };
 };
 
 export type ReportWriteFlow = ReturnType<typeof useReportWriteFlow>;

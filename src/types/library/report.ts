@@ -1,82 +1,86 @@
-export type DraftReportResponse = {
-  reportId: number;
+export type BookReviewStatus = "DRAFT" | "PUBLISHED";
+
+export type BookReviewListItemResponse = {
+  reviewId: number;
   bookId: number;
   bookTitle: string;
-  // 저자와 장르를 합친 표기, 예: 유혜영 장편소설
-  bookSubtitle: string;
-  coverUrl: string;
-  completedAt: string;
+  title: string | null;
+  status: BookReviewStatus;
+  writtenAt: string;
+  updatedAt: string;
 };
 
-export type MyReportResponse = {
-  reportId: number;
-  bookId: number;
+export type BookReviewListResponse = {
+  items: BookReviewListItemResponse[];
+  // 0부터 시작하는 페이지 번호
+  page: number;
+  hasNext: boolean;
+  totalCount: number;
+};
+
+export type BookReviewDetailResponse = BookReviewListItemResponse & {
+  content: string | null;
+};
+
+// 작성 중 독후감이 있으면 그 책, 없으면 가장 최근 독후감의 책
+export type LatestBookReviewResponse = {
   bookTitle: string;
-  coverUrl: string;
-  reportTitle: string;
-  createdAt: string;
-  isLiked: boolean;
-  // 작성 중인 독후감이 없을 때 상단 배너 표시용
-  bookSubtitle: string;
-  completedAt: string;
+  author: string;
+  completedAt: string | null;
 };
 
-// 독후감을 쓸 수 있게 해금된 책, 이미 쓴 책도 남아 여러 번 작성 가능
+// 해금됐지만 아직 독후감을 쓰지 않은 책
 export type UnlockedBookResponse = {
   bookId: number;
   bookTitle: string;
-  author: string;
-  coverUrl: string;
-  unlockedAt: string;
+  quizPassedAt: string;
 };
 
-export type UnlockedBookSortOrder = "latest" | "oldest";
-
-// 새 독후감이면 reportId가 null
-export type ReportEditorResponse = {
-  reportId: number | null;
-  bookId: number;
-  bookTitle: string;
+export type SaveBookReviewBody = {
   title: string;
-  reportDate: string;
   content: string;
+  status: BookReviewStatus;
 };
 
-export type ReportFormValues = Pick<ReportEditorResponse, "title" | "reportDate" | "content">;
-
-export type SaveReportRequest = ReportFormValues & {
-  reportId: number | null;
+export type CreateBookReviewRequest = SaveBookReviewBody & {
   bookId: number;
 };
 
-export type SaveReportResponse = {
-  reportId: number;
+// 새 독후감이면 reviewId가 null
+export type SaveBookReviewRequest = SaveBookReviewBody & {
+  reviewId: number | null;
+  bookId: number;
 };
 
-export type DraftReportView = {
-  reportId: number;
+export type LatestReportView = {
   title: string;
   subtitle: string;
-  coverUrl: string;
   completedLabel: string;
-  // 완료된 독후감을 보여줄 때만 있는 독후감 부제목
-  quote?: string;
 };
 
 export type MyReportView = {
   reportId: number;
   bookTitle: string;
-  coverUrl: string;
   dateLabel: string;
   quote: string;
-  isLiked: boolean;
+  isDraft: boolean;
 };
 
 export type UnlockedBookView = {
   bookId: number;
   title: string;
-  author: string;
-  coverUrl: string;
   unlockedAt: string;
   unlockedLabel: string;
 };
+
+export type ReportEditorView = {
+  reportId: number | null;
+  bookId: number;
+  bookTitle: string;
+  title: string;
+  content: string;
+  status: BookReviewStatus | null;
+  dateLabel: string;
+};
+
+export type ReportFormValues = Pick<ReportEditorView, "title" | "content">;

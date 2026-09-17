@@ -1,41 +1,45 @@
-import { queryOptions, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
-import { getDraftReport, getMyReports, getUnlockedBooks } from "@/api/library/report";
-import { toDraftReportView, toUnlockedBookViews } from "@/utils/library/report/toReportView";
+import { getBookReviews, getLatestBookReview, getUnlockedBooks } from "@/api/library/report";
+import {
+  toLatestReportView,
+  toMyReportView,
+  toUnlockedBookViews,
+} from "@/utils/library/report/toReportView";
 
 const STALE_TIME = 30_000;
 
 // 서재 독후감 query key 팩토리
 export const libraryReportKeys = {
   all: ["library", "reports"] as const,
-  draft: () => [...libraryReportKeys.all, "draft"] as const,
+  latest: () => [...libraryReportKeys.all, "latest"] as const,
   mine: () => [...libraryReportKeys.all, "mine"] as const,
+  detail: (reviewId: number) => [...libraryReportKeys.all, "detail", reviewId] as const,
   unlockedBooks: () => [...libraryReportKeys.all, "unlocked-books"] as const,
 };
 
-export const draftReportQuery = queryOptions({
-  queryKey: libraryReportKeys.draft(),
-  queryFn: getDraftReport,
-  staleTime: STALE_TIME,
-});
-
-export const useDraftReport = () =>
+export const useLatestReport = () =>
   useQuery({
-    ...draftReportQuery,
-    select: toDraftReportView,
+    queryKey: libraryReportKeys.latest(),
+    queryFn: ({ signal }) => getLatestBookReview(signal),
+    select: toLatestReportView,
+    staleTime: STALE_TIME,
   });
 
 export const useMyReports = () =>
-  useQuery({
+  useInfiniteQuery({
     queryKey: libraryReportKeys.mine(),
-    queryFn: getMyReports,
+    queryFn: ({ pageParam, signal }) => getBookReviews(pageParam, signal),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.page + 1 : undefined),
+    select: (data) => data.pages.flatMap((page) => page.items.map(toMyReportView)),
     staleTime: STALE_TIME,
   });
 
 export const useUnlockedBooks = (enabled: boolean) =>
   useQuery({
     queryKey: libraryReportKeys.unlockedBooks(),
-    queryFn: getUnlockedBooks,
+    queryFn: ({ signal }) => getUnlockedBooks(signal),
     select: toUnlockedBookViews,
     staleTime: STALE_TIME,
     enabled,

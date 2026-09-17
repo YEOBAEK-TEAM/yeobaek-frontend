@@ -1,17 +1,10 @@
 import { ChevronRight } from "lucide-react";
-import { useMemo } from "react";
 
 import SectionState from "@/components/common/section/SectionState";
 import MyReportCard from "@/components/library/report/MyReportCard";
-import { MY_REPORT_SECTION, REPORT_LIKE_ERROR_TEXT } from "@/constants/library/report";
+import { MY_REPORT_SECTION } from "@/constants/library/report";
 import { useMyReports } from "@/hooks/library/report/useReportQueries";
-import { useStableOrder } from "@/hooks/library/report/useStableOrder";
-import { useToggleReportLike } from "@/hooks/library/report/useToggleReportLike";
-import { useToastStore } from "@/stores/common/toast";
-import { sortReportsByLike } from "@/utils/library/report/sortReportsByLike";
-import { toMyReportView } from "@/utils/library/report/toReportView";
-
-import type { MyReportResponse } from "@/types/library/report";
+import { useInfiniteSentinel } from "@/hooks/training/discussion/useInfiniteSentinel";
 
 type MyReportSectionProps = {
   onWrite: () => void;
@@ -20,22 +13,24 @@ type MyReportSectionProps = {
 
 const SKELETON_ITEMS = [0, 1, 2];
 
-const getReportId = (report: MyReportResponse) => report.reportId;
+const SKELETON_CARD_CLASS = "h-50 w-28.5 animate-pulse rounded-lg bg-[#EFEDE7]";
 
 export default function MyReportSection({ onWrite, onOpenReport }: MyReportSectionProps) {
-  const { data, isPending, isError, refetch } = useMyReports();
+  const { data, isPending, isError, refetch, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useMyReports();
 
-  const showToast = useToastStore((state) => state.showToast);
+  const reports = data ?? [];
 
-  const toggleLike = useToggleReportLike(() => showToast(REPORT_LIKE_ERROR_TEXT, "error"));
-
-  const sortedReports = useMemo(() => (data ? sortReportsByLike(data) : undefined), [data]);
-
-  // 하트를 누른 자리에서 카드가 튀지 않도록 재정렬은 다음 진입 때 반영
-  const reports = useStableOrder(sortedReports, getReportId) ?? [];
+  // 가로 목록 끝에 닿으면 다음 페이지 요청
+  const sentinelRef = useInfiniteSentinel({
+    hasNextPage,
+    isFetchingNextPage,
+    isError,
+    fetchNextPage,
+  });
 
   const renderList = () => {
-    if (isError) {
+    if (isError && reports.length === 0) {
       return (
         <div className="px-4">
           <SectionState isError onRetry={() => void refetch()} className="h-50" />
@@ -56,18 +51,20 @@ export default function MyReportSection({ onWrite, onOpenReport }: MyReportSecti
         {isPending
           ? SKELETON_ITEMS.map((item) => (
               <li key={item} className="shrink-0 snap-start">
-                <div className="h-50 w-28.5 animate-pulse rounded-lg bg-[#EFEDE7]" />
+                <div className={SKELETON_CARD_CLASS} />
               </li>
             ))
           : reports.map((report) => (
               <li key={report.reportId} className="shrink-0 snap-start">
-                <MyReportCard
-                  report={toMyReportView(report)}
-                  onOpen={() => onOpenReport(report.reportId)}
-                  onToggleLike={() => toggleLike(report.reportId)}
-                />
+                <MyReportCard report={report} onOpen={() => onOpenReport(report.reportId)} />
               </li>
             ))}
+
+        {hasNextPage && (
+          <li className="shrink-0">
+            <div ref={sentinelRef} className={SKELETON_CARD_CLASS} />
+          </li>
+        )}
       </ul>
     );
   };
