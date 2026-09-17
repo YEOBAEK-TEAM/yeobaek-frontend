@@ -1,3 +1,4 @@
+import { getRememberedUnlocks } from "@/api/library/mockUnlockMemory";
 import { books } from "@/mocks/books";
 import {
   mockDraftReport,
@@ -56,7 +57,7 @@ export const getDraftReport = async (): Promise<DraftReportResponse | null> => {
     bookTitle: book?.title ?? "",
     bookSubtitle: `${book?.author ?? ""} 장편소설`,
     coverUrl: book?.coverUrl ?? "",
-    completedAt: unlocked?.completedAt ?? saved.reportDate,
+    completedAt: unlocked?.unlockedAt ?? saved.reportDate,
   };
 };
 
@@ -96,7 +97,24 @@ export const getMyReports = async (): Promise<MyReportResponse[]> => {
 
 // 독후감을 쓸 수 있는 완독 도서 조회
 export const getUnlockedBooks = async (): Promise<UnlockedBookResponse[]> => {
-  return mockUnlockedBooks;
+  const listedIds = new Set(mockUnlockedBooks.map((book) => book.bookId));
+
+  // 퀴즈로 새로 해금한 책을 목록에 합침
+  const unlockedByQuiz = getRememberedUnlocks()
+    .filter(([bookId]) => !listedIds.has(bookId))
+    .map(([bookId, unlockedAt]): UnlockedBookResponse => {
+      const book = findBookById(bookId);
+
+      return {
+        bookId,
+        bookTitle: book?.title ?? "",
+        author: book?.author ?? "",
+        coverUrl: book?.coverUrl ?? "",
+        unlockedAt,
+      };
+    });
+
+  return [...unlockedByQuiz, ...mockUnlockedBooks];
 };
 
 // 독후감 작성 화면 조회, reportId가 있으면 저장된 내용으로 채움

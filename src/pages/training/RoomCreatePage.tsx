@@ -5,7 +5,7 @@ import ConfirmModal from "@/components/common/confirmModal/ConfirmModal";
 import FunnelFooterButton from "@/components/training/discussion/create/FunnelFooterButton";
 import RoomInfoStep from "@/components/training/discussion/create/RoomInfoStep";
 import StepHeader from "@/components/training/discussion/create/StepHeader";
-import StepProgressBar from "@/components/training/discussion/create/StepProgressBar";
+import StepProgressBar from "@/components/common/progress/StepProgressBar";
 import TopicStep from "@/components/training/discussion/create/TopicStep";
 import { DISCUSSION_PATH } from "@/constants/training/discussion/discussion";
 import {

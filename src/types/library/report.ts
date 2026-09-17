@@ -27,7 +27,7 @@ export type UnlockedBookResponse = {
   bookTitle: string;
   author: string;
   coverUrl: string;
-  completedAt: string;
+  unlockedAt: string;
 };
 
 export type UnlockedBookSortOrder = "latest" | "oldest";
@@ -77,6 +77,6 @@ export type UnlockedBookView = {
   title: string;
   author: string;
   coverUrl: string;
-  completedAt: string;
-  completedLabel: string;
+  unlockedAt: string;
+  unlockedLabel: string;
 };
