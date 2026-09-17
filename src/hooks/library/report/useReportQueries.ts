@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { queryOptions, useQuery } from "@tanstack/react-query";
 
 import { getDraftReport, getMyReports, getUnlockedBooks } from "@/api/library/report";
 import { toDraftReportView, toUnlockedBookViews } from "@/utils/library/report/toReportView";
@@ -13,12 +13,16 @@ export const libraryReportKeys = {
   unlockedBooks: () => [...libraryReportKeys.all, "unlocked-books"] as const,
 };
 
+export const draftReportQuery = queryOptions({
+  queryKey: libraryReportKeys.draft(),
+  queryFn: getDraftReport,
+  staleTime: STALE_TIME,
+});
+
 export const useDraftReport = () =>
   useQuery({
-    queryKey: libraryReportKeys.draft(),
-    queryFn: getDraftReport,
+    ...draftReportQuery,
     select: toDraftReportView,
-    staleTime: STALE_TIME,
   });
 
 export const useMyReports = () =>
