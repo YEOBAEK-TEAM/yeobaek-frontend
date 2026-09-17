@@ -49,10 +49,7 @@ export default function BookSearchPage() {
   };
 
   return (
-    <main
-      className="relative isolate flex min-h-dvh flex-col bg-[#BDBAB2] pt-16 text-[#202020]"
-      style={{ fontFamily: "Arial, 'Malgun Gothic', sans-serif" }}
-    >
+    <main className="relative isolate flex min-h-dvh flex-col bg-[#BDBAB2] pt-16 text-[#202020]">
       <Link
         to="/library"
         aria-label="검색 닫고 홈으로 돌아가기"

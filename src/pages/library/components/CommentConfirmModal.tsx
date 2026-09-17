@@ -38,7 +38,7 @@ export default function CommentConfirmModal({
       }}
       onKeyDown={(event) => event.stopPropagation()}
     >
-      <div className="px-5 pt-7 pb-3 text-center [font-family:system-ui,sans-serif]">
+      <div className="px-5 pt-7 pb-3 text-center">
         <p className="text-sm leading-6">{message}</p>
         <div className="mt-4 flex justify-end gap-2 text-xs">
           <button

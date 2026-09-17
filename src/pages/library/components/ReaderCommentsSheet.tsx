@@ -178,7 +178,7 @@ export default function ReaderCommentsSheet({
         aria-modal="true"
         aria-labelledby="reader-comments-title"
         aria-description={`${pageNumber}페이지 댓글`}
-        className="[&_button]:[-webkit-tap-highlight-color:transparent] [&_button:focus]:outline-none! [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-[#8b956d] flex h-[82dvh] max-h-[calc(100dvh-24px)] w-full max-w-[390px] flex-col overflow-hidden rounded-t-[20px] bg-[#4F4D4E] text-[#F7F6F1] shadow-[0_-4px_20px_#00000008] [font-family:system-ui,sans-serif]"
+        className="[&_button]:[-webkit-tap-highlight-color:transparent] [&_button:focus]:outline-none! [&_button:focus-visible]:ring-2 [&_button:focus-visible]:ring-[#8b956d] flex h-[82dvh] max-h-[calc(100dvh-24px)] w-full max-w-[390px] flex-col overflow-hidden rounded-t-[20px] bg-[#4F4D4E] text-[#F7F6F1] shadow-[0_-4px_20px_#00000008]"
         onClick={(event) => event.stopPropagation()}
         onKeyDown={(event) => {
           if (event.key === "Escape") {
