@@ -4,7 +4,7 @@ export const READER_FONTS = {
   batang: '"Batang", "바탕", "Noto Serif CJK KR", Georgia, serif',
   nanum: '"Nanum Myeongjo", "나눔명조", "Noto Serif CJK KR", Georgia, serif',
 };
-export const READER_BACKGROUNDS = ["#ffffff", "#f7f6f1", "#000000", "#fafafa"];
+export const READER_BACKGROUNDS = ["#ffffff", "#FFFEFB", "#000000", "#fafafa"];
 export const READER_LINE_HEIGHTS = [2.3, 1.95, 1.6];
 export type ReaderSettings = {
   fontSize: number;
@@ -15,7 +15,7 @@ export type ReaderSettings = {
 export const DEFAULT_READER_SETTINGS: ReaderSettings = {
   fontSize: 16,
   lineHeight: 1.95,
-  backgroundColor: "#f7f6f1",
+  backgroundColor: "#fffefb",
   fontFamily: "batang",
 };
 const key = "yeobaek:reader:settings";

@@ -11,6 +11,7 @@ import { useDeleteSentence } from "@/hooks/useDeleteSentence";
 import { useSentenceList } from "@/hooks/useSentenceList";
 import { useVocabularyList } from "@/hooks/useVocabularyList";
 
+import { useAuthStore } from "@/stores/auth";
 import { useVocabularyStore } from "@/stores/vocabulary";
 
 import type { WordListItem } from "@/types/vocabulary";
@@ -40,6 +41,8 @@ const initialList = [
 
 export default function VocabularyPage() {
   const navigate = useNavigate();
+
+  const nickname = useAuthStore((state) => state.nickname);
 
   const { activeTab, activeInitial, setTab, setInitial } = useVocabularyStore();
 
@@ -150,7 +153,7 @@ export default function VocabularyPage() {
 
   return (
     <main className="flex-1">
-      <Header title="서후의 글귀수집" />
+      <Header title={nickname ? `${nickname}의 글귀수집` : "나의 글귀수집"} />
 
       <div className="mt-6.5 px-6">
         {/* 단어 / 문장 탭 */}
