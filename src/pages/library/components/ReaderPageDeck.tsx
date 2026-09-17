@@ -4,12 +4,13 @@ import type { ReaderPage } from "../utils/paginateReaderText";
 
 export type DeckPage = ReaderPage | { id: "cover"; pdfPage?: undefined; start?: undefined };
 
-type Props = {
-  pages: DeckPage[];
+type Props<T> = {
+  pages: T[];
+  ariaLabel?: string;
   index: number;
   onNavigate: (index: number) => void;
   renderPage: (
-    page: DeckPage,
+    page: T,
     active: boolean,
     onSwipeDisabledChange: (disabled: boolean) => void,
   ) => ReactNode;
@@ -17,7 +18,13 @@ type Props = {
 type Gesture = { id: number; x: number; y: number; time: number; width: number; dragging: boolean };
 const hasSelection = () => Boolean(window.getSelection()?.toString());
 
-export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }: Props) {
+export default function ReaderPageDeck<T>({
+  pages,
+  index,
+  onNavigate,
+  renderPage,
+  ariaLabel = "전자책 본문. 좌우 드래그로 페이지 이동, 클릭으로 문장 선택, 더블클릭으로 단어 선택",
+}: Props<T>) {
   const viewport = useRef<HTMLDivElement>(null);
   const gesture = useRef<Gesture | null>(null);
   const timer = useRef<number | undefined>(undefined);
@@ -114,7 +121,7 @@ export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }:
       ref={viewport}
       className={`book-reader__viewport${selectionMode ? " is-selection-mode" : ""}${motion.dragging ? " is-dragging" : ""}`}
       role="region"
-      aria-label="전자책 본문. 좌우 드래그로 페이지 이동, 클릭으로 문장 선택, 더블클릭으로 단어 선택"
+      aria-label={ariaLabel}
       tabIndex={0}
       onPointerDownCapture={down}
       onMouseDownCapture={(event) => {
@@ -161,8 +168,6 @@ export default function ReaderPageDeck({ pages, index, onNavigate, renderPage }:
               inert={offset !== 0}
               aria-hidden={offset !== 0}
               data-reader-page={page ? index + offset + 1 : undefined}
-              data-pdf-page={page?.pdfPage}
-              data-source-start={page?.start}
             >
               {page && renderPage(page, offset === 0, onSwipeDisabledChange)}
             </section>

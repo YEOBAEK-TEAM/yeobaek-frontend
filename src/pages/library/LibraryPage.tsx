@@ -44,7 +44,8 @@ export default function LibraryPage() {
     libraryBooks.find((book) => book.recordId === selectedRecordId) ?? libraryBooks[0];
 
   const handleReadBook = () => {
-    navigate("/library/read");
+    if (!selectedBook) return;
+    navigate(`/library/read?bookId=${selectedBook.bookId}&pageId=${selectedBook.lastPageId}`);
   };
 
   return (
