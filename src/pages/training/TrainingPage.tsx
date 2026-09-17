@@ -6,6 +6,7 @@ import OngoingTrainingCard from "@/components/training/OngoingTrainingCard";
 import TrainingGreeting from "@/components/training/TrainingGreeting";
 import TrainingProgramCard from "@/components/training/TrainingProgramCard";
 import TrainingSegmentTabs from "@/components/training/TrainingSegmentTabs";
+import DiscussionPanel from "@/components/training/discussion/DiscussionPanel";
 import { TRAINING_PROGRAMS } from "@/constants/training/trainingPrograms";
 import { useTrainingStore } from "@/stores/training/trainingTab";
 
@@ -17,7 +18,7 @@ export default function TrainingPage() {
   const { data: ongoingTraining } = useOngoingTraining();
 
   return (
-    <main className="flex-1">
+    <main className="flex flex-1 flex-col">
       {/* 상단 헤더 */}
       <Header title="훈련" action="bell" className="px-5 pt-8 pb-5" />
 
@@ -29,7 +30,7 @@ export default function TrainingPage() {
           <TrainingSegmentTabs />
         </div>
 
-        {activeTab === "lity" ? (
+        {activeTab === "lity" && (
           <>
             {ongoingTraining && (
               <div className="mt-5">
@@ -57,10 +58,10 @@ export default function TrainingPage() {
               </div>
             </section>
           </>
-        ) : (
-          <p className="mt-20 text-center text-sm text-[#BBB8A5]">토론장은 준비 중이에요</p>
         )}
       </div>
+
+      {activeTab === "debate" && <DiscussionPanel />}
     </main>
   );
 }
