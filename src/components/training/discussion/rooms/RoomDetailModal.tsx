@@ -136,6 +136,7 @@ export default function RoomDetailModal({
             <div className="mt-3">
               <JoinRequestButton
                 status={room.joinStatus}
+                visibility={room.visibility}
                 isPending={joinRequest.isPending}
                 onRequest={requestJoin}
                 onEnter={enterRoom}

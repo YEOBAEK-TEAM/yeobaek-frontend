@@ -161,12 +161,18 @@ export const requestJoinRoom = async (roomId: number): Promise<JoinRequestRespon
   if (room.joinStatus === "full") throw new RoomApiError("ROOM_FULL");
   if (room.joinStatus === "closed") throw new RoomApiError("ROOM_CLOSED");
 
+  // 공개방은 바로 참가, 비공개방은 방장 승인 필요
+  if (room.visibility === "public") {
+    rememberJoined(roomId);
+    return { status: "joined" };
+  }
+
   rememberPending(roomId);
 
   return { status: "requested" };
 };
 
-// 초대코드 검증 후 입장 또는 참가 신청
+// 초대코드 검증 후 승인 없이 바로 입장
 export const joinRoomByCode = async (code: string): Promise<JoinByCodeResponse> => {
   await wait(MOCK_DELAY_MS);
 
@@ -175,8 +181,7 @@ export const joinRoomByCode = async (code: string): Promise<JoinByCodeResponse> 
   if (!result) throw new RoomApiError("INVALID_CODE");
   if (typeof result === "string") throw new RoomApiError(result);
 
-  if (result.result === "requested") rememberPending(result.roomId);
-  else rememberJoined(result.roomId);
+  rememberJoined(result.roomId);
 
   return result;
 };

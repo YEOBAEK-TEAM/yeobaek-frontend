@@ -76,6 +76,7 @@ export type RoomSummaryView = {
   coverUrl: string;
   participantText: string;
   tags: string[];
+  visibility: RoomVisibility;
   visibilityLabel: string;
   joinStatus: RoomJoinStatus;
 };
@@ -107,7 +108,7 @@ export type JoinRequestResponse = {
 };
 
 export type JoinByCodeResponse = {
-  result: "entered" | "requested" | "alreadyJoined";
+  result: "entered" | "alreadyJoined";
   roomId: number;
 };
 

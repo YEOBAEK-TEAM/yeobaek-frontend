@@ -247,7 +247,7 @@ export const mockJoinRequestError: RoomErrorCode | null = null;
 // 코드별 입장 결과, 목록에 없는 코드는 잘못된 코드
 export const mockJoinCodeResults: Record<string, JoinByCodeResponse | RoomErrorCode> = {
   ABC123: { result: "entered", roomId: 107 },
-  PENDING1: { result: "requested", roomId: 104 },
+  PRIVATE1: { result: "entered", roomId: 103 },
   JOINED1: { result: "alreadyJoined", roomId: 101 },
   FULL123: "ROOM_FULL",
   EXPIRED1: "EXPIRED_CODE",
