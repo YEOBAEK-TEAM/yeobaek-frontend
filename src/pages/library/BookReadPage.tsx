@@ -6,10 +6,16 @@ import { useBookDetail } from "@/hooks/useBookDetail";
 import { useContentChapter } from "@/hooks/useContentChapter";
 import { useUpdateReadingProgress } from "@/hooks/useUpdateReadingProgress";
 import ContentPageReader from "./components/ContentPageReader";
+import ReaderCoverPage from "./components/ReaderCoverPage";
+import type { BookDetail } from "@/types/book";
+import type { ContentChapterPage } from "@/types/contentPage";
 import ReaderPageDeck from "./components/ReaderPageDeck";
 import ReaderSettingsPanel from "./components/ReaderSettingsPanel";
 import { READER_FONTS, useReaderSettings } from "./utils/useReaderSettings";
 import "./BookReadPage.css";
+
+type ReaderPageItem =
+  { type: "cover"; book: BookDetail | undefined } | { type: "content"; page: ContentChapterPage };
 
 const parseId = (value: string | null) => {
   const id = value && /^\d+$/.test(value) ? Number(value) : NaN;
@@ -32,10 +38,25 @@ export default function BookReadPage() {
       </main>
     );
   }
-  return <ContentBookReader key={bookId} bookId={bookId} pageId={pageId} />;
+  return (
+    <ContentBookReader
+      key={bookId}
+      bookId={bookId}
+      pageId={pageId}
+      onCover={params.get("firstRead") === "true"}
+    />
+  );
 }
 
-function ContentBookReader({ bookId, pageId }: { bookId: number; pageId: number }) {
+function ContentBookReader({
+  bookId,
+  pageId,
+  onCover,
+}: {
+  bookId: number;
+  pageId: number;
+  onCover: boolean;
+}) {
   const [, setParams] = useSearchParams();
   const [anchorId, setAnchorId] = useState(pageId);
   const chapter = useContentChapter(anchorId);
@@ -51,7 +72,14 @@ function ContentBookReader({ bookId, pageId }: { bookId: number; pageId: number 
   const currentPage = pages[index];
   const wrongBook = pages.some((page) => page.bookId !== bookId);
   const ready = !!currentPage && !wrongBook && !chapter.isError;
-  const actualPageId = ready ? currentPage.pageId : undefined;
+  const deckPages: ReaderPageItem[] = [
+    { type: "cover", book: book.data },
+    ...pages.map((page) => ({ type: "content" as const, page })),
+  ];
+  const deckIndex = onCover ? 0 : index + 1;
+  const deckPage = deckPages[deckIndex];
+  const actualPageId = ready && deckPage?.type === "content" ? deckPage.page.pageId : undefined;
+  const deckReady = ready && (!onCover || (!!book.data && !book.isError));
 
   // Browser navigation can point outside the currently loaded window.
   if (!chapter.isPending && !chapter.isPlaceholderData && index < 0 && anchorId !== pageId) {
@@ -97,12 +125,27 @@ function ContentBookReader({ bookId, pageId }: { bookId: number; pageId: number 
   }, [actualPageId, saveProgress, settingsOpen]);
 
   const navigate = (nextIndex: number) => {
-    const next = pages[nextIndex];
-    if (!ready || !next || next.pageId === pageId) return;
+    const item = deckPages[nextIndex];
+    if (!deckReady || !item) return;
+    if (item.type === "cover") {
+      const firstPage = pages[0];
+      if (!firstPage || onCover) return;
+      setParams(
+        { bookId: String(bookId), pageId: String(firstPage.pageId), firstRead: "true" },
+        { replace: true },
+      );
+      return;
+    }
+    const next = item.page;
+    if (!onCover && next.pageId === pageId) return;
     window.getSelection()?.removeAllRanges();
-    setParams({ bookId: String(bookId), pageId: String(next.pageId) }, { replace: true });
+    setParams(
+      { bookId: String(bookId), pageId: String(next.pageId), firstRead: "false" },
+      { replace: true },
+    );
     // Recenter at a known boundary ID, never at an ID inferred from a page number.
-    if (nextIndex === 0 || nextIndex === pages.length - 1) setAnchorId(next.pageId);
+    const contentIndex = nextIndex - 1;
+    if (contentIndex === 0 || contentIndex === pages.length - 1) setAnchorId(next.pageId);
   };
 
   return (
@@ -136,14 +179,14 @@ function ContentBookReader({ bookId, pageId }: { bookId: number; pageId: number 
           aria-label="읽기 설정"
           aria-haspopup="dialog"
           aria-expanded={settingsOpen}
-          className="absolute -right-1 flex h-11 w-11 items-center justify-center !text-base !font-semibold"
+          className="absolute -right-1 flex h-11 w-11 items-center justify-center text-base! font-semibold!"
           onClick={() => setSettingsOpen(true)}
         >
           Aa
         </button>
       </header>
       <div className="book-reader__body">
-        {chapter.isPending ? (
+        {chapter.isPending || (onCover && book.isPending) ? (
           <p role="status" className="book-reader__message">
             책 본문을 불러오는 중입니다.
           </p>
@@ -158,13 +201,48 @@ function ContentBookReader({ bookId, pageId }: { bookId: number; pageId: number 
           <p role="alert" className="book-reader__message">
             요청한 책의 페이지를 찾을 수 없습니다.
           </p>
+        ) : onCover && book.isError ? (
+          <div role="alert" className="book-reader__message">
+            <p>표지 정보를 불러오지 못했습니다.</p>
+            <button type="button" onClick={() => void book.refetch()}>
+              다시 시도
+            </button>
+            <button
+              type="button"
+              className="ml-4"
+              onClick={() =>
+                setParams(
+                  { bookId: String(bookId), pageId: String(pageId), firstRead: "false" },
+                  { replace: true },
+                )
+              }
+            >
+              본문 읽기
+            </button>
+          </div>
         ) : (
           <ReaderPageDeck
             ariaLabel="전자책 본문. 좌우 드래그 또는 방향키로 페이지 이동"
-            pages={pages}
-            index={index}
+            pages={deckPages}
+            index={deckIndex}
             onNavigate={navigate}
-            renderPage={(page) => <ContentPageReader key={page.pageId} page={page} />}
+            renderPage={(item) =>
+              item.type === "cover" ? (
+                item.book ? (
+                  <ReaderCoverPage
+                    title={item.book.title}
+                    author={item.book.author}
+                    coverUrl={item.book.coverImageUrl}
+                  />
+                ) : (
+                  <p role="status" className="book-reader__message">
+                    표지 정보를 준비하고 있습니다.
+                  </p>
+                )
+              ) : (
+                <ContentPageReader key={item.page.pageId} page={item.page} />
+              )
+            }
           />
         )}
       </div>
@@ -178,15 +256,19 @@ function ContentBookReader({ bookId, pageId }: { bookId: number; pageId: number 
           <input
             type="range"
             aria-label="불러온 페이지 범위에서 이동"
-            aria-valuetext={ready ? currentPage.pageNumber + "페이지" : "페이지 준비 중"}
+            aria-valuetext={
+              deckReady ? (onCover ? "표지" : currentPage.pageNumber + "페이지") : "페이지 준비 중"
+            }
             min={0}
-            max={Math.max(0, pages.length - 1)}
-            value={Math.max(0, index)}
-            disabled={!ready || pages.length <= 1}
+            max={Math.max(0, deckPages.length - 1)}
+            value={Math.max(0, deckIndex)}
+            disabled={!deckReady || deckPages.length <= 1}
             style={{ background: "#f7f6f1" }}
             onChange={(event) => navigate(Number(event.target.value))}
           />
-          <span aria-live="polite">{ready ? currentPage.pageNumber + "p" : "—"}</span>
+          <span aria-live="polite">
+            {deckReady ? (onCover ? "표지" : currentPage.pageNumber + "p") : "—"}
+          </span>
         </div>
         <div className="book-reader__actions">
           <button type="button" aria-label="좋아요 (준비 중)" disabled>

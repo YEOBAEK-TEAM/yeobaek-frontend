@@ -42,10 +42,15 @@ export default function LibraryPage() {
 
   const selectedBook =
     libraryBooks.find((book) => book.recordId === selectedRecordId) ?? libraryBooks[0];
+  const isFirstRead =
+    !!selectedBook && !selectedBook.completedAt && selectedBook.lastPageNumber <= 1;
 
   const handleReadBook = () => {
     if (!selectedBook) return;
-    navigate(`/library/read?bookId=${selectedBook.bookId}&pageId=${selectedBook.lastPageId}`);
+
+    navigate(
+      `/library/read?bookId=${selectedBook.bookId}&pageId=${selectedBook.lastPageId}&firstRead=${isFirstRead}`,
+    );
   };
 
   return (
@@ -95,7 +100,7 @@ export default function LibraryPage() {
         {/* 상단 도서 목록 */}
         <section aria-label="서재 도서 목록" className="mt-6">
           <div
-            className={`flex items-end gap-3 overflow-x-auto px-5 pt-1 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pointer-fine:select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
+            className={`flex items-end gap-3 overflow-x-auto px-5 pt-1 pb-2 [scrollbar-none] [&::-webkit-scrollbar]:hidden pointer-fine:select-none ${isDragging ? "cursor-grabbing" : "cursor-grab"}`}
             onPointerDown={(event) => {
               moved.current = false;
               if (event.pointerType !== "mouse" || event.button !== 0 || !event.isPrimary) return;
@@ -192,12 +197,12 @@ export default function LibraryPage() {
             </div>
 
             {/* 독서 진행 정보 */}
-            <p className="mt-2 text-sm font-semibold text-[#555555]">
+            <p className="mt-4 text-sm font-semibold text-[#555555]">
               {selectedBook.completedAt
                 ? "완독"
-                : selectedBook.lastPageNumber > 0
-                  ? `읽는 중 · ${selectedBook.lastPageNumber}p · ${selectedBook.progressRate}%`
-                  : "아직 읽기 전이에요"}
+                : isFirstRead
+                  ? "아직 읽기 전이에요"
+                  : `읽는 중 · ${selectedBook.lastPageNumber}p · ${selectedBook.progressRate}%`}
             </p>
 
             {/* 이어 읽기 버튼 */}
@@ -208,9 +213,9 @@ export default function LibraryPage() {
             >
               {selectedBook.completedAt
                 ? "다시 읽기"
-                : selectedBook.lastPageNumber > 0
-                  ? `${selectedBook.lastPageNumber}p부터 이어 읽기`
-                  : "읽기 시작하기"}
+                : isFirstRead
+                  ? "읽기 시작하기"
+                  : `${selectedBook.lastPageNumber}p부터 이어 읽기`}
             </button>
           </section>
         ) : (
