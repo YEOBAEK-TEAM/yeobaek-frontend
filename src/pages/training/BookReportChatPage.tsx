@@ -3,11 +3,11 @@ import { useNavigate } from "react-router-dom";
 
 import ConfirmModal from "@/components/common/confirmModal/ConfirmModal";
 import Header from "@/components/common/header/Header";
-import ChatActionButtons from "@/components/training/chat/ChatActionButtons";
-import ChatInput from "@/components/training/chat/ChatInput";
-import MessageList from "@/components/training/chat/MessageList";
-import PinnedBookSummary from "@/components/training/chat/PinnedBookSummary";
-import ReportListBottomSheet from "@/components/training/chat/ReportListBottomSheet";
+import ChatActionButtons from "@/components/training/shared/chat/ChatActionButtons";
+import ChatInput from "@/components/training/shared/chat/ChatInput";
+import BookReportMessageList from "@/components/training/bookReport/BookReportMessageList";
+import PinnedBookSummary from "@/components/training/shared/chat/PinnedBookSummary";
+import ReportListBottomSheet from "@/components/training/bookReport/ReportListBottomSheet";
 import {
   BOOK_REPORT_CHAT_TITLE,
   EXIT_BEFORE_START_TEXT,
@@ -64,9 +64,15 @@ export default function BookReportChatPage() {
     <main className="flex h-dvh flex-col">
       <Header title={BOOK_REPORT_CHAT_TITLE} onBack={handleBack} />
 
-      {pinnedReport && <PinnedBookSummary report={pinnedReport} />}
+      {pinnedReport && (
+        <PinnedBookSummary
+          coverUrl={pinnedReport.coverUrl}
+          title={pinnedReport.bookTitle}
+          subtitle={pinnedReport.reportTitle}
+        />
+      )}
 
-      <MessageList
+      <BookReportMessageList
         messages={messages}
         nickname={nickname}
         onQuickReply={handleQuickReply}
@@ -75,9 +81,26 @@ export default function BookReportChatPage() {
 
       {phase.type === "summary" && (
         <ChatActionButtons
-          onApply={applyToReport}
-          onContinue={continueAnotherTopic}
-          onSaveAndStop={saveAndStop}
+          actions={[
+            {
+              id: "apply",
+              label: "독후감에 반영하기",
+              variant: "primary",
+              onClick: () => void applyToReport(),
+            },
+            {
+              id: "continue",
+              label: "다른 주제로 이어가기",
+              variant: "dark",
+              onClick: () => void continueAnotherTopic(),
+            },
+            {
+              id: "save",
+              label: "대화 내용 저장하고 중단하기",
+              variant: "outline",
+              onClick: () => void saveAndStop(),
+            },
+          ]}
         />
       )}
 

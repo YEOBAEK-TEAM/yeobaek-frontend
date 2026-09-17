@@ -1,4 +1,4 @@
-import ChatBubble from "@/components/training/chat/ChatBubble";
+import ChatBubble from "@/components/training/shared/chat/ChatBubble";
 import { SUMMARY_CLOSING_TEXT } from "@/constants/training/bookReportChat";
 
 import type { ThoughtComparison } from "@/types/training/bookReportChat";

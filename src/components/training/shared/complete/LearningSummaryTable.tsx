@@ -1,14 +1,11 @@
 import { LEARNING_SUMMARY_TITLE } from "@/constants/training/bookReportChat";
 
-import type { LearningSummary } from "@/types/training/readingReport";
+export type LearningSummaryRow = {
+  label: string;
+  value: string;
+};
 
-export default function LearningSummaryTable({ summary }: { summary: LearningSummary }) {
-  const rows = [
-    { label: "책", value: summary.bookTitle },
-    { label: "주제", value: summary.topic },
-    { label: "발전 포인트", value: summary.growthPoint },
-  ];
-
+export default function LearningSummaryTable({ rows }: { rows: LearningSummaryRow[] }) {
   return (
     <section className="px-9">
       <h2 className="text-[18px] font-bold text-[#4F4D4E]">{LEARNING_SUMMARY_TITLE}</h2>

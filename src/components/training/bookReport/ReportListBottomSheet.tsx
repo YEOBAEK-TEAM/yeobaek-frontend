@@ -1,5 +1,5 @@
 import BottomSheet from "@/components/common/bottomSheet/BottomSheet";
-import ReportSheetContent from "@/components/training/chat/ReportSheetContent";
+import ReportSheetContent from "@/components/training/bookReport/ReportSheetContent";
 
 import type { ReadingReport } from "@/types/training/readingReport";
 

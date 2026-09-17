@@ -20,19 +20,18 @@ import { myProfile } from "@/mocks/my";
 import { mockThoughtComparison } from "@/mocks/training/bookReportChatScript";
 import { useAuthStore } from "@/stores/auth";
 import { useBookReportChatStore } from "@/stores/training/bookReportChat";
+import { ritiReportCard, ritiThoughtSummary } from "@/utils/training/createBookReportMessage";
 import {
   ritiLoading,
   ritiPlainText,
   ritiQuickReplies,
-  ritiReportCard,
   ritiText,
-  ritiThoughtSummary,
   systemText,
   userText,
 } from "@/utils/training/createChatMessage";
 import { josa } from "@/utils/training/josa";
 
-import type { QuickReply } from "@/types/training/bookReportChat";
+import type { ChatQuickReply } from "@/types/training/chat";
 import type { ReadingReport } from "@/types/training/readingReport";
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -76,9 +75,7 @@ export const useBookReportChat = () => {
       store.setPhase({ type: "empty" });
       store.pushMessage(ritiText(EMPTY_REPORT_TEXT));
       store.pushMessage(
-        ritiQuickReplies([
-          { id: "guide", label: "다른 훈련 안내", action: { type: "guide-other-training" } },
-        ]),
+        ritiQuickReplies([{ id: "guide-other-training", label: "다른 훈련 안내" }]),
       );
 
       return () => store.reset();
@@ -92,12 +89,8 @@ export const useBookReportChat = () => {
     );
     store.pushMessage(
       ritiQuickReplies([
-        {
-          id: "recent",
-          label: recentReport.bookTitle,
-          action: { type: "select-recent-report" },
-        },
-        { id: "list", label: "독후감 목록보기", action: { type: "open-report-list" } },
+        { id: "select-recent-report", label: recentReport.bookTitle },
+        { id: "open-report-list", label: "독후감 목록보기" },
       ]),
     );
 
@@ -123,11 +116,7 @@ export const useBookReportChat = () => {
 
             if (currentTurn !== ANOTHER_VIEW_TURN) return;
 
-            next.pushMessage(
-              ritiQuickReplies([
-                { id: "another-view", label: "다른 관점 보기", action: { type: "another-view" } },
-              ]),
-            );
+            next.pushMessage(ritiQuickReplies([{ id: "another-view", label: "다른 관점 보기" }]));
           },
           onError: () => {
             const next = useBookReportChatStore.getState();
@@ -254,22 +243,25 @@ export const useBookReportChat = () => {
   }, [streamReply]);
 
   const handleQuickReply = useCallback(
-    async (reply: QuickReply) => {
+    async (reply: ChatQuickReply) => {
       const store = useBookReportChatStore.getState();
 
-      if (reply.action.type === "select-recent-report") {
+      if (reply.id === "select-recent-report") {
         if (recentReport) await selectReport(recentReport);
         return;
       }
 
       // 이해력 증진 화면 이동
-      if (reply.action.type === "go-comprehension") return;
+      if (reply.id === "go-comprehension") {
+        navigate("/training/comprehension");
+        return;
+      }
 
       store.pushMessage(userText(reply.label));
 
       await delay(USER_ECHO_DELAY_MS);
 
-      switch (reply.action.type) {
+      switch (reply.id) {
         case "open-report-list":
           setIsSheetOpen(true);
           return;
@@ -283,19 +275,14 @@ export const useBookReportChat = () => {
           next.pushMessage(ritiText(`${nickname}님, ${COMPREHENSION_GUIDE_TEXT}`));
           next.pushMessage(
             ritiQuickReplies([
-              {
-                id: "comprehension",
-                label: "이해력 증진 훈련 받으러가기",
-                action: { type: "go-comprehension" },
-                link: true,
-              },
+              { id: "go-comprehension", label: "이해력 증진 훈련 받으러가기", link: true },
             ]),
           );
           return;
         }
       }
     },
-    [nickname, recentReport, selectReport, showSummary],
+    [navigate, nickname, recentReport, selectReport, showSummary],
   );
 
   return {
