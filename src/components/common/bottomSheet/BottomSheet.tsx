@@ -7,6 +7,7 @@ import type { PointerEvent as ReactPointerEvent, ReactNode } from "react";
 type BottomSheetProps = {
   labelledBy: string;
   onClose: () => void;
+  panelClassName?: string;
   children: ReactNode;
 };
 
@@ -15,7 +16,12 @@ const CLOSE_THRESHOLD_PX = 80;
 const TRANSITION_MS = 280;
 
 // 하단에서 올라오는 공용 바텀시트
-export default function BottomSheet({ labelledBy, onClose, children }: BottomSheetProps) {
+export default function BottomSheet({
+  labelledBy,
+  onClose,
+  panelClassName = "bg-[#FFFEFB]",
+  children,
+}: BottomSheetProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const dragStartYRef = useRef<number | null>(null);
   const afterCloseRef = useRef<(() => void) | null>(null);
@@ -110,7 +116,7 @@ export default function BottomSheet({ labelledBy, onClose, children }: BottomShe
           requestClose();
         }
       }}
-      className={`fixed inset-x-0 top-auto bottom-0 mx-auto max-h-[75dvh] w-full max-w-97.5 overflow-y-auto rounded-t-3xl border-0 bg-[#FFFEFB] p-0 backdrop:transition-colors backdrop:duration-300 ${
+      className={`fixed inset-x-0 top-auto bottom-0 mx-auto max-h-[75dvh] w-full max-w-97.5 overflow-y-auto rounded-t-3xl border-0 p-0 backdrop:transition-colors backdrop:duration-300 ${panelClassName} ${
         entered && !leaving ? "backdrop:bg-black/35" : "backdrop:bg-black/0"
       }`}
     >
@@ -123,7 +129,7 @@ export default function BottomSheet({ labelledBy, onClose, children }: BottomShe
         onPointerCancel={handlePointerUp}
         className="flex cursor-grab touch-none justify-center py-4 outline-none active:cursor-grabbing"
       >
-        <span aria-hidden="true" className="h-1.5 w-24 rounded-full bg-[#4F4D4E]" />
+        <span aria-hidden="true" className="h-2.5 w-20 rounded-full bg-[#4F4D4E]" />
       </div>
 
       <BottomSheetCloseContext.Provider value={requestClose}>
