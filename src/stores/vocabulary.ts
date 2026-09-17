@@ -19,7 +19,7 @@ export const useVocabularyStore = create<VocabularyState>((set) => ({
   words: mockVocabulary,
   sentences: mockSentences,
   activeTab: "word",
-  activeInitial: "ㅅ",
+  activeInitial: "ㄱ",
   setTab: (activeTab) => set({ activeTab }),
   setInitial: (activeInitial) => set({ activeInitial }),
   deleteItem: (type, id) =>

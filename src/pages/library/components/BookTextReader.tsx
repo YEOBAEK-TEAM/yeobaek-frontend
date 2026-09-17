@@ -64,9 +64,15 @@ export default function BookTextReader({
     if (!collected) return;
     const close = (event: Event) => {
       if (event instanceof KeyboardEvent && event.key !== "Escape") return;
-      if (event instanceof PointerEvent && collectedRef.current?.contains(event.target as Node))
+      if (
+        event instanceof PointerEvent &&
+        (collectedRef.current?.contains(event.target as Node) ||
+          menuRef.current?.contains(event.target as Node))
+      )
         return;
       setCollected(null);
+      setEditingId(null);
+      finish();
     };
     document.addEventListener("pointerdown", close);
     document.addEventListener("keydown", close);
@@ -74,7 +80,7 @@ export default function BookTextReader({
       document.removeEventListener("pointerdown", close);
       document.removeEventListener("keydown", close);
     };
-  }, [collected]);
+  }, [collected, finish]);
   useEffect(() => {
     if (active) onSwipeDisabledChange(isSelecting || selectionMenuOpen || !!collected);
   }, [active, isSelecting, selectionMenuOpen, collected, onSwipeDisabledChange]);
@@ -90,8 +96,11 @@ export default function BookTextReader({
   const preview = selection
     ? {
         selection,
-        color:
-          mode === "default" || mode === "word" || mode === "comment" ? "#d1d1d1" : selectedColor,
+        color: collected
+          ? selectedColor
+          : mode === "default" || mode === "word" || mode === "comment"
+            ? "#d1d1d1"
+            : selectedColor,
       }
     : undefined;
 
@@ -109,6 +118,11 @@ export default function BookTextReader({
           );
         }),
     );
+  const closeSelection = () => {
+    setCollected(null);
+    setEditingId(null);
+    finish();
+  };
   const inlineMenu = active && selection && (
     <TextSelectionMenu
       menuRef={menuRef}
@@ -123,7 +137,7 @@ export default function BookTextReader({
           text={selection.text}
           saved={!!savedWord}
           canSave={isDictionaryWord(selection.text)}
-          onComplete={finish}
+          onComplete={closeSelection}
           onSave={() => {
             if (!savedWord && isDictionaryWord(selection.text)) onWord(selection);
           }}
@@ -133,13 +147,13 @@ export default function BookTextReader({
       onColor={(color) => {
         if (editingHighlight) onUpdateHighlight(editingHighlight.id, color);
         else onHighlight(selection, color);
-        finish();
+        if (!collected) finish();
       }}
       onSubmitComment={(text) => {
         onComment(selection, text);
-        finish();
+        closeSelection();
       }}
-      onClose={finish}
+      onClose={closeSelection}
     />
   );
   const openWord = (id: string) => {
@@ -150,6 +164,8 @@ export default function BookTextReader({
     openSelection(word, "word");
   };
   const openCollected = (id: string) => {
+    const highlight = highlights.find((entry) => entry.id === id);
+    if (!highlight) return;
     const container = containerRef.current;
     const article = articleRef.current;
     if (!container || !article) return;
@@ -163,8 +179,10 @@ export default function BookTextReader({
       origin.left;
     const top = Math.min(...rects.map((r) => r.top)) - origin.top;
     finish();
-    setEditingId(null);
-    setCollected({ id, left, top: Math.max(4, top - 44) });
+    setEditingId(id);
+    const { page: pdfPage, start, end, text } = highlight;
+    openSelection({ text, ranges: [{ pdfPage, start, end, text }] });
+    setCollected({ id, left, top });
   };
   const completeSelection = (event: SyntheticEvent) => {
     if ((event.target as Element).closest(".book-reader__selection")) return;
@@ -439,21 +457,17 @@ export default function BookTextReader({
           menuRef={collectedRef}
           left={collected.left}
           top={collected.top}
+          highlightId={collected.id}
+          activeMode={mode === "highlight" ? "color" : "note"}
           onChangeColor={() => {
-            const { page: pdfPage, start, end, text, id } = savedHighlight;
-            setEditingId(id);
-            setCollected(null);
-            openSelection({ text, ranges: [{ pdfPage, start, end, text }] }, "highlight");
+            activate("highlight");
           }}
           onDelete={() => {
             onUpdateHighlight(savedHighlight.id);
-            setCollected(null);
+            closeSelection();
           }}
           onNote={() => {
-            const { page: pdfPage, start, end, text, id } = savedHighlight;
-            setEditingId(id);
-            setCollected(null);
-            openSelection({ text, ranges: [{ pdfPage, start, end, text }] });
+            activate("default");
           }}
         />
       )}
