@@ -34,3 +34,7 @@ export type SentenceHighlightListItemResponse = {
   pageNumber: number;
   chapter: string;
 };
+
+export type SentenceDetailResponse = SentenceHighlightListItemResponse & {
+  memo: string | null;
+};

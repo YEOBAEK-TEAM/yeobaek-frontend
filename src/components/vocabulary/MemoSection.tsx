@@ -16,7 +16,7 @@ export default function MemoSection({ initialMemo, onSave }: Props) {
           onChange={(event) => setMemo(event.target.value)}
           placeholder="이 문장에 대한 생각을 적어보세요"
           aria-describedby="memo-count"
-          className="block h-60 w-full resize-none rounded-xl border border-[#DDD9D4] bg-[#F7F6F1] px-6 pt-7 pb-12 text-[15px] leading-6 placeholder:text-[#808080] focus:outline-2 focus:outline-[#898F72]"
+          className="block h-60 w-full resize-none rounded-xl border border-[#DDD9D4] bg-[#F7F6F1] px-6 pt-7 pb-12 text-[15px] leading-6 placeholder:text-[#808080] focus:outline-2 focus:outline-[#B7BD9E]"
         />
         <span
           id="memo-count"
@@ -30,7 +30,7 @@ export default function MemoSection({ initialMemo, onSave }: Props) {
           type="button"
           disabled={memo.length === 0}
           onClick={() => onSave(memo)}
-          className="h-16 w-full rounded-lg bg-[#4B512F] text-base font-bold text-white disabled:bg-[#858584]"
+          className="h-16 w-full rounded-lg bg-[#B7BD9E] text-base font-bold text-white disabled:bg-[#858584]"
         >
           저장하기
         </button>

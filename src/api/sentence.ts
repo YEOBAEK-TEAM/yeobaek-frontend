@@ -2,6 +2,7 @@ import { api } from "@/api/axios";
 
 import type {
   SentenceHighlightListItemResponse,
+  SentenceDetailResponse,
   HighlightRequest,
   HighlightResponse,
   HighlightColor,
@@ -9,9 +10,10 @@ import type {
 import type { ApiResponse } from "@/types/auth";
 
 export const getSentenceDetail = async (sentenceId: number, signal?: AbortSignal) => {
-  const response = await api.get<
-    ApiResponse<Pick<SentenceHighlightListItemResponse, "content" | "bookTitle" | "pageNumber">>
-  >(`/api/v1/highlights/${sentenceId}`, { signal });
+  const response = await api.get<ApiResponse<SentenceDetailResponse>>(
+    `/api/v1/highlights/${sentenceId}`,
+    { signal },
+  );
   if (!response.data.success) throw new Error(response.data.message);
   return response.data.data;
 };

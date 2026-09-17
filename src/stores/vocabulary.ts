@@ -1,4 +1,4 @@
-﻿import { create } from "zustand";
+import { create } from "zustand";
 import { mockSentences, mockVocabulary } from "@/mocks/vocabulary";
 import type { SentenceItem } from "@/types/sentence";
 import type { DeleteType, WordItem } from "@/types/vocabulary";
@@ -6,6 +6,7 @@ import type { DeleteType, WordItem } from "@/types/vocabulary";
 type VocabularyState = {
   words: WordItem[];
   sentences: SentenceItem[];
+  sentenceMemos: Record<number, string>;
   activeTab: DeleteType;
   activeInitial: string;
   setTab: (tab: DeleteType) => void;
@@ -18,6 +19,7 @@ type VocabularyState = {
 export const useVocabularyStore = create<VocabularyState>((set) => ({
   words: mockVocabulary,
   sentences: mockSentences,
+  sentenceMemos: {},
   activeTab: "word",
   activeInitial: "ㄱ",
   setTab: (activeTab) => set({ activeTab }),
@@ -30,6 +32,7 @@ export const useVocabularyStore = create<VocabularyState>((set) => ({
     ),
   saveMemo: (id, memo) =>
     set((state) => ({
+      sentenceMemos: { ...state.sentenceMemos, [id]: memo.slice(0, 200) },
       sentences: state.sentences.map((sentence) =>
         sentence.id === id ? { ...sentence, memo: memo.slice(0, 200) } : sentence,
       ),

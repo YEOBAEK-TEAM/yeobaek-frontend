@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
@@ -224,10 +224,8 @@ export default function VocabularyPage() {
                   onToggleMenu={() => setMenuId(menuId === item.id ? null : item.id)}
                   onCloseMenu={() => setMenuId(null)}
                   onDetail={() => {
-                    if (activeTab === "sentence" && "bookId" in item) {
-                      navigate(
-                        `/library/read?bookId=${item.bookId}&pageId=${item.pageId}&firstRead=false`,
-                      );
+                    if (activeTab === "sentence") {
+                      navigate(`/vocabulary/sentence/${item.id}`);
                     } else if (activeTab === "word") {
                       navigate(`/vocabulary/word/${item.id}`);
                     }
