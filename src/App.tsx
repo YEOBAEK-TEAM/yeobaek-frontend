@@ -25,6 +25,10 @@ import TrainingCompletePage from "@/pages/training/TrainingCompletePage";
 import ComprehensionSelectPage from "@/pages/training/ComprehensionSelectPage";
 import ComprehensionChatPage from "@/pages/training/ComprehensionChatPage";
 import ComprehensionCompletePage from "@/pages/training/ComprehensionCompletePage";
+import RoomCreatePage from "@/pages/training/RoomCreatePage";
+import RoomCreateCompletePage from "@/pages/training/RoomCreateCompletePage";
+import RoomListPage from "@/pages/training/RoomListPage";
+import DiscussionRoomPage from "@/pages/training/DiscussionRoomPage";
 import VocabularyPage from "@/pages/vocabulary/VocabularyPage";
 import WordDetailPage from "@/pages/vocabulary/WordDetailPage";
 import SentenceDetailPage from "@/pages/vocabulary/SentenceDetailPage";
@@ -56,6 +60,13 @@ export default function App() {
               path="/training/comprehension/complete"
               element={<ComprehensionCompletePage />}
             />
+            <Route path="/training/discussion/create" element={<RoomCreatePage />} />
+            <Route
+              path="/training/discussion/create/complete"
+              element={<RoomCreateCompletePage />}
+            />
+            <Route path="/training/discussion/rooms" element={<RoomListPage />} />
+            <Route path="/training/discussion/rooms/:roomId" element={<DiscussionRoomPage />} />
 
             {/* Footer 있는 페이지 */}
             <Route element={<FooterLayout />}>
