@@ -9,7 +9,7 @@ export type OngoingTraining = {
   bookTitle: string | null;
 };
 
-// 상태값으로 만들어낸 배너 표시용 데이터
+// 배너 표시용 데이터
 export type OngoingTrainingView = {
   label: string | null;
   title: string;

@@ -20,6 +20,8 @@ import BookmarkedPagesPage from "@/pages/my/BookmarkedPagesPage";
 import BookmarkedBookPagesPage from "@/pages/my/BookmarkedBookPagesPage";
 import MyActivityProvider from "@/components/my/MyActivityProvider";
 import TrainingPage from "@/pages/training/TrainingPage";
+import BookReportChatPage from "@/pages/training/BookReportChatPage";
+import TrainingCompletePage from "@/pages/training/TrainingCompletePage";
 import VocabularyPage from "@/pages/vocabulary/VocabularyPage";
 import WordDetailPage from "@/pages/vocabulary/WordDetailPage";
 import SentenceDetailPage from "@/pages/vocabulary/SentenceDetailPage";
@@ -43,6 +45,8 @@ export default function App() {
             <Route path="/my/liked-pages/:bookId" element={<LikedBookPagesPage />} />
             <Route path="/my/bookmarked-pages" element={<BookmarkedPagesPage />} />
             <Route path="/my/bookmarked-pages/:bookId" element={<BookmarkedBookPagesPage />} />
+            <Route path="/training/book-report" element={<BookReportChatPage />} />
+            <Route path="/training/complete" element={<TrainingCompletePage />} />
 
             {/* Footer 있는 페이지 */}
             <Route element={<FooterLayout />}>

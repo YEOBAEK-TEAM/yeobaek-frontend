@@ -2,7 +2,7 @@ import { myProfile } from "@/mocks/my";
 import { useAuthStore } from "@/stores/auth";
 
 export default function TrainingGreeting() {
-  // 로그인 전에는 nickname이 null이라 목데이터로 폴백
+  // 로그인 사용자 닉네임
   const nickname = useAuthStore((state) => state.nickname) ?? myProfile.nickname;
 
   return (

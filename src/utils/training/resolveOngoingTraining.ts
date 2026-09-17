@@ -4,18 +4,12 @@ import {
   ONGOING_TRAINING_LABEL,
 } from "@/constants/training/ongoingTraining";
 
+import { josa } from "@/utils/training/josa";
+
 import type { OngoingTraining, OngoingTrainingView } from "@/types/training/ongoingTraining";
 
-// 책 제목은 모서리 괄호로 감싸 노출
+// 책 제목 모서리 괄호 표기
 const withBracket = (bookTitle: string) => `『${bookTitle}』`;
-
-// 받침 유무에 따른 조사 선택
-const josa = (word: string, withFinal: string, withoutFinal: string) => {
-  const code = word.charCodeAt(word.length - 1) - 0xac00;
-  const isHangul = code >= 0 && code <= 11171;
-
-  return isHangul && code % 28 !== 0 ? withFinal : withoutFinal;
-};
 
 export const resolveOngoingTraining = (training: OngoingTraining): OngoingTrainingView => {
   const { status, programId, bookTitle } = training;
