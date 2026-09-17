@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import ConfirmModal from "@/components/common/confirmModal/ConfirmModal";
 import Header from "@/components/common/header/Header";
@@ -18,15 +17,16 @@ import { myProfile } from "@/mocks/my";
 import { useAuthStore } from "@/stores/auth";
 
 export default function BookReportChatPage() {
-  const navigate = useNavigate();
-
   const nickname = useAuthStore((state) => state.nickname) ?? myProfile.nickname;
 
   const {
     phase,
     messages,
-    reports,
-    isStreaming,
+    pinnedReport,
+    reviews,
+    isReplying,
+    isChatReady,
+    olderMessages,
     isSheetOpen,
     closeSheet,
     selectReport,
@@ -35,30 +35,22 @@ export default function BookReportChatPage() {
     leaveChat,
     handleQuickReply,
     applyToReport,
-    continueAnotherTopic,
     saveAndStop,
   } = useBookReportChat();
 
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
 
   // 뒤로가기 확인 문구 분기
-  const isTrainingStarted =
-    phase.type === "analyzing" || phase.type === "chatting" || phase.type === "summary";
+  const isTrainingStarted = phase.type !== "select" && phase.type !== "empty";
 
   const handleBack = () => {
     if (phase.type === "ended") {
-      navigate(-1);
+      leaveChat();
       return;
     }
 
     setIsExitConfirmOpen(true);
   };
-
-  // 상단 고정 배너 노출 단계
-  const pinnedReport =
-    phase.type === "chatting" || phase.type === "summary" || phase.type === "ended"
-      ? phase.report
-      : null;
 
   return (
     <main className="flex h-dvh flex-col">
@@ -75,6 +67,7 @@ export default function BookReportChatPage() {
       <BookReportMessageList
         messages={messages}
         nickname={nickname}
+        olderMessages={olderMessages}
         onQuickReply={handleQuickReply}
         onRetry={retryMessage}
       />
@@ -86,13 +79,15 @@ export default function BookReportChatPage() {
               id: "apply",
               label: "독후감에 반영하기",
               variant: "primary",
-              onClick: () => void applyToReport(),
+              onClick: applyToReport,
             },
             {
+              // 이어가기 API 준비 전까지 선택 불가
               id: "continue",
               label: "다른 주제로 이어가기",
               variant: "dark",
-              onClick: () => void continueAnotherTopic(),
+              onClick: () => undefined,
+              disabled: true,
             },
             {
               id: "save",
@@ -105,18 +100,28 @@ export default function BookReportChatPage() {
       )}
 
       {phase.type !== "summary" && phase.type !== "ended" && (
-        <ChatInput disabled={isStreaming || phase.type === "analyzing"} onSend={sendMessage} />
+        <ChatInput disabled={!isChatReady || isReplying} onSend={sendMessage} />
       )}
 
       {isSheetOpen && (
-        <ReportListBottomSheet reports={reports} onSelect={selectReport} onClose={closeSheet} />
+        <ReportListBottomSheet
+          reports={reviews.data ?? []}
+          isPending={reviews.isPending}
+          isError={reviews.isError}
+          hasNextPage={reviews.hasNextPage}
+          isFetchingNextPage={reviews.isFetchingNextPage}
+          fetchNextPage={reviews.fetchNextPage}
+          onRetry={() => void reviews.refetch()}
+          onSelect={selectReport}
+          onClose={closeSheet}
+        />
       )}
 
       {isExitConfirmOpen && (
         <ConfirmModal
           onConfirm={() => {
             setIsExitConfirmOpen(false);
-            void leaveChat(isTrainingStarted);
+            leaveChat();
           }}
           onClose={() => setIsExitConfirmOpen(false)}
         >

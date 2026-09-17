@@ -1,5 +1,3 @@
-import type { ReportSortOrder } from "@/types/training/readingReport";
-
 export const BOOK_REPORT_CHAT_TITLE = "독후감으로 훈련하기";
 
 export const CHAT_INPUT_PLACEHOLDER = "채팅을 입력해주세요";
@@ -20,10 +18,19 @@ export const COMPREHENSION_GUIDE_TEXT =
 
 export const REPORT_SHEET_TITLE = "내 독후감 목록";
 
-export const REPORT_SORT_LABEL: Record<ReportSortOrder, string> = {
-  latest: "최신순",
-  oldest: "오래된순",
-};
+export const REPORT_SHEET_EMPTY_TEXT = "작성한 독후감이 없어요";
+
+export const ENTRY_ERROR_TEXT = "훈련 정보를 불러오지 못했어요.\n잠시 후 다시 시도해 주세요.";
+
+export const MESSAGES_ERROR_TEXT = "대화 내용을 불러오지 못했어요.\n잠시 후 다시 시도해 주세요.";
+
+export const START_ERROR_TEXT = "훈련을 시작하지 못했어요. 다시 시도해 주세요";
+
+export const SUMMATION_ERROR_TEXT = "대화를 정리하지 못했어요. 다시 시도해 주세요";
+
+export const REPORT_LOAD_ERROR_TEXT = "독후감을 불러오지 못했어요";
+
+export const RETRY_LABEL = "다시 시도";
 
 export const SUMMARY_CLOSING_TEXT = "이 내용을 바탕으로 독후감을 더 풍부하게\n수정해볼까요?";
 

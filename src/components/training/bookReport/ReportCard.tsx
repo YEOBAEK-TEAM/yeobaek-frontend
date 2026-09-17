@@ -23,7 +23,8 @@ export default function ReportCard({ report, variant, onSelect }: ReportCardProp
       <img
         src={report.coverUrl}
         alt=""
-        className={`shrink-0 rounded-sm object-cover ${isSheet ? "h-19 w-13" : "h-16 w-11"}`}
+        // 표지가 없을 때 빈 자리 배경
+        className={`shrink-0 rounded-sm bg-[#EFEDE7] object-cover ${isSheet ? "h-19 w-13" : "h-16 w-11"}`}
       />
 
       <div className="min-w-0 flex-1">

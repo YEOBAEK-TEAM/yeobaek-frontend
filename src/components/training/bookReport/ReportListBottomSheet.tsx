@@ -1,22 +1,16 @@
 import BottomSheet from "@/components/common/bottomSheet/BottomSheet";
 import ReportSheetContent from "@/components/training/bookReport/ReportSheetContent";
 
-import type { ReadingReport } from "@/types/training/readingReport";
+import type { ReportSheetContentProps } from "@/components/training/bookReport/ReportSheetContent";
 
-type ReportListBottomSheetProps = {
-  reports: ReadingReport[];
-  onSelect: (report: ReadingReport) => void;
+type ReportListBottomSheetProps = ReportSheetContentProps & {
   onClose: () => void;
 };
 
-export default function ReportListBottomSheet({
-  reports,
-  onSelect,
-  onClose,
-}: ReportListBottomSheetProps) {
+export default function ReportListBottomSheet({ onClose, ...props }: ReportListBottomSheetProps) {
   return (
     <BottomSheet labelledBy="report-sheet-title" onClose={onClose}>
-      <ReportSheetContent reports={reports} onSelect={onSelect} />
+      <ReportSheetContent {...props} />
     </BottomSheet>
   );
 }

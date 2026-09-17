@@ -15,6 +15,7 @@ export type ChatPhase =
   | { type: "empty" }
   | { type: "select" }
   | { type: "analyzing"; report: ReadingReport }
-  | { type: "chatting"; report: ReadingReport }
-  | { type: "summary"; report: ReadingReport; thought: ThoughtComparison }
-  | { type: "ended"; report: ReadingReport };
+  | { type: "chatting" }
+  | { type: "summarizing" }
+  | { type: "summary"; thought: ThoughtComparison }
+  | { type: "ended" };

@@ -1,53 +1,62 @@
-import { AlignJustify } from "lucide-react";
-import { useMemo, useState } from "react";
-
 import { useBottomSheetClose } from "@/components/common/bottomSheet/bottomSheetContext";
+import SectionState from "@/components/common/section/SectionState";
 import ReportCard from "@/components/training/bookReport/ReportCard";
-import { REPORT_SHEET_TITLE, REPORT_SORT_LABEL } from "@/constants/training/bookReportChat";
+import { REPORT_SHEET_EMPTY_TEXT, REPORT_SHEET_TITLE } from "@/constants/training/bookReportChat";
+import { useInfiniteSentinel } from "@/hooks/training/discussion/useInfiniteSentinel";
 
-import type { ReadingReport, ReportSortOrder } from "@/types/training/readingReport";
+import type { ReadingReport } from "@/types/training/readingReport";
 
-type ReportSheetContentProps = {
+export type ReportSheetContentProps = {
   reports: ReadingReport[];
+  isPending: boolean;
+  isError: boolean;
+  hasNextPage: boolean;
+  isFetchingNextPage: boolean;
+  fetchNextPage: () => unknown;
+  onRetry: () => void;
   onSelect: (report: ReadingReport) => void;
 };
 
-export default function ReportSheetContent({ reports, onSelect }: ReportSheetContentProps) {
+// 서버 최근순 목록, 끝에 닿으면 다음 페이지 요청
+export default function ReportSheetContent({
+  reports,
+  isPending,
+  isError,
+  hasNextPage,
+  isFetchingNextPage,
+  fetchNextPage,
+  onRetry,
+  onSelect,
+}: ReportSheetContentProps) {
   const requestClose = useBottomSheetClose();
 
-  const [order, setOrder] = useState<ReportSortOrder>("latest");
+  const sentinelRef = useInfiniteSentinel({
+    hasNextPage,
+    isFetchingNextPage,
+    isError,
+    fetchNextPage,
+  });
 
-  const sortedReports = useMemo(
-    () =>
-      [...reports].sort((a, b) =>
-        order === "latest"
-          ? b.createdAt.localeCompare(a.createdAt)
-          : a.createdAt.localeCompare(b.createdAt),
-      ),
-    [reports, order],
-  );
+  const renderReports = () => {
+    if (isError && reports.length === 0) {
+      return <SectionState isError onRetry={onRetry} className="h-40" />;
+    }
 
-  return (
-    <>
-      <div className="flex items-center justify-between px-5 pt-1 pb-5">
-        <h2 id="report-sheet-title" className="text-[17px] font-bold text-[#4F4D4E]">
-          {REPORT_SHEET_TITLE}
-        </h2>
+    if (isPending) {
+      return [0, 1, 2].map((item) => (
+        <div key={item} className="h-25 animate-pulse rounded-2xl bg-[#EFEDE7]" />
+      ));
+    }
 
-        <button
-          type="button"
-          // 정렬 기준 전환
-          onClick={() => setOrder((current) => (current === "latest" ? "oldest" : "latest"))}
-          aria-label={`정렬 기준 ${REPORT_SORT_LABEL[order]}, 눌러서 변경`}
-          className="flex items-center gap-2 text-[15px] text-[#54555A]"
-        >
-          {REPORT_SORT_LABEL[order]}
-          <AlignJustify aria-hidden="true" className="h-5 w-5" />
-        </button>
-      </div>
+    if (reports.length === 0) {
+      return (
+        <p className="py-12 text-center text-[15px] text-[#8F8B85]">{REPORT_SHEET_EMPTY_TEXT}</p>
+      );
+    }
 
-      <ul className="flex flex-col gap-3 px-5 pb-8">
-        {sortedReports.map((report) => (
+    return (
+      <ul className="flex flex-col gap-3">
+        {reports.map((report) => (
           <li key={report.reportId}>
             <ReportCard
               report={report}
@@ -57,7 +66,25 @@ export default function ReportSheetContent({ reports, onSelect }: ReportSheetCon
             />
           </li>
         ))}
+
+        {hasNextPage && (
+          <li>
+            <div ref={sentinelRef} className="h-25 animate-pulse rounded-2xl bg-[#EFEDE7]" />
+          </li>
+        )}
       </ul>
+    );
+  };
+
+  return (
+    <>
+      <div className="px-5 pt-1 pb-5">
+        <h2 id="report-sheet-title" className="text-[17px] font-bold text-[#4F4D4E]">
+          {REPORT_SHEET_TITLE}
+        </h2>
+      </div>
+
+      <div className="flex flex-col gap-3 px-5 pb-8">{renderReports()}</div>
     </>
   );
 }

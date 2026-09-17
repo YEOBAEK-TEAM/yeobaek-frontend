@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import ReadingFinishCharacter from "@/assets/images/Training/ReadingFinishCharacter.png";
 import TrainingCompleteLayout from "@/components/training/shared/complete/TrainingCompleteLayout";
@@ -6,12 +6,18 @@ import {
   TRAINING_COMPLETE_SUBTITLE,
   TRAINING_COMPLETE_TITLE,
 } from "@/constants/training/bookReportChat";
-import { useLearningSummary } from "@/hooks/training/useReadingReports";
+import { useTrainingSummation } from "@/hooks/training/useBookReportTrainingQueries";
+
+const toId = (value: string | null) => {
+  const id = Number(value);
+  return value && Number.isSafeInteger(id) && id > 0 ? id : null;
+};
 
 export default function TrainingCompletePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const { data: summary } = useLearningSummary();
+  const { data: summary } = useTrainingSummation(toId(searchParams.get("trainingRoomId")));
 
   return (
     <TrainingCompleteLayout
