@@ -28,7 +28,12 @@ export default function LibraryPage() {
     tab === "완독" ? "COMPLETED" : "ALL",
     tab !== "독후감",
   );
-  const libraryBooks = tab === "독후감" || isError ? [] : (data?.items ?? []);
+  const libraryBooks =
+    tab === "독후감" || isError
+      ? []
+      : [...(data?.items ?? [])].sort(
+          (a, b) => Date.parse(b.lastReadAt) - Date.parse(a.lastReadAt),
+        );
 
   const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
