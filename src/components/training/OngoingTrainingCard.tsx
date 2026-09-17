@@ -11,13 +11,13 @@ export default function OngoingTrainingCard({ training, onClick }: OngoingTraini
   const { label, title, description, character, characterClassName } =
     resolveOngoingTraining(training);
 
-  // 완료 상태는 제목이 두 줄이라 한 단계 작은 크기
+  // 상태별 제목 크기
   const titleClassName = training.status === "completed" ? "text-[16px]" : "text-[20px]";
 
   return (
     <article
       onClick={onClick}
-      // 외곽선 3px은 시안상 바깥쪽 정렬이라 레이아웃에 영향 없는 outline 사용
+      // 배너 외곽선
       className="relative flex min-h-36 w-full flex-col justify-center overflow-hidden rounded-[10px] bg-[#FBFBFB] px-3 py-4 outline-3 outline-[#E8E9E1]"
     >
       <div className="pr-22">
