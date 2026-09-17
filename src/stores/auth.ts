@@ -17,12 +17,14 @@ type AuthState = {
 };
 
 export const useAuthStore = create<AuthState>((set) => ({
-  userId: null,
-  nickname: null,
+  userId: Number(localStorage.getItem("userId")) || null,
+  nickname: localStorage.getItem("nickname"),
   accessToken: localStorage.getItem("accessToken"),
   refreshToken: localStorage.getItem("refreshToken"),
 
   setAuth: ({ userId, nickname, accessToken, refreshToken }) => {
+    localStorage.setItem("userId", String(userId));
+    localStorage.setItem("nickname", nickname);
     localStorage.setItem("accessToken", accessToken);
     localStorage.setItem("refreshToken", refreshToken);
 
@@ -35,6 +37,8 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: () => {
+    localStorage.removeItem("userId");
+    localStorage.removeItem("nickname");
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
 
