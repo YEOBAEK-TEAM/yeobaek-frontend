@@ -2,6 +2,7 @@
 import { Link, useSearchParams } from "react-router-dom";
 
 import { useSearchBooks } from "@/hooks/useSearchBooks";
+import { usePopularBooks } from "@/hooks/usePopularBooks";
 
 import BookSearchInput from "./components/BookSearchInput";
 import BookSearchList from "./components/BookSearchList";
@@ -12,7 +13,13 @@ export default function BookSearchPage() {
   const keyword = params.get("q") ?? "";
   const [input, setInput] = useState(keyword);
 
-  const { data: results = [], isPending, isError, refetch } = useSearchBooks(keyword);
+  const hasKeyword = keyword.trim().length > 0;
+  const searchQuery = useSearchBooks(keyword);
+  const popularQuery = usePopularBooks(0, 20, !hasKeyword);
+  const { isPending, isError } = hasKeyword ? searchQuery : popularQuery;
+  const results = hasKeyword ? (searchQuery.data ?? []) : (popularQuery.data?.books ?? []);
+  const queryString = params.toString();
+  const fromSearch = queryString ? `/library/search?${queryString}` : "/library/search";
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -32,7 +39,7 @@ export default function BookSearchPage() {
     const normalizedInput = input.trim();
 
     if (normalizedInput === keyword && keyword) {
-      void refetch();
+      void searchQuery.refetch();
       return;
     }
 
@@ -64,19 +71,22 @@ export default function BookSearchPage() {
           <BookSearchInput value={input} onChange={setInput} onSearch={handleSearch} />
         </header>
 
-        {keyword.trim() &&
-          (isPending || isError ? (
-            <p
-              role={isError ? "alert" : "status"}
-              className="border-t border-[#999999] px-4 py-12 text-center text-[#77746D]"
-            >
-              {isError
+        {isPending || isError ? (
+          <p
+            role={isError ? "alert" : "status"}
+            className="border-t border-[#999999] px-4 py-12 text-center text-[#77746D]"
+          >
+            {hasKeyword
+              ? isError
                 ? "도서를 불러오지 못했습니다. 다시 검색해주세요."
-                : "도서를 검색하고 있습니다."}
-            </p>
-          ) : (
-            <BookSearchList books={results} fromSearch={`/library/search?${params}`} />
-          ))}
+                : "도서를 검색하고 있습니다."
+              : isError
+                ? "도서를 불러오지 못했습니다."
+                : "도서를 불러오고 있습니다."}
+          </p>
+        ) : (
+          <BookSearchList books={results} fromSearch={fromSearch} />
+        )}
       </section>
     </main>
   );
