@@ -13,9 +13,16 @@ import {
   toDiscussionGroupViews,
 } from "@/utils/training/discussion/toDiscussionView";
 
-import type { DiscussionGroupListId } from "@/types/training/discussion/discussion";
+import type {
+  DiscussionGroupListId,
+  DiscussionGroupResponse,
+} from "@/types/training/discussion/discussion";
 
 const STALE_TIME = 30_000;
+
+// 이미 참여 중인 방은 추천 목록에서 제외, 승인 반영을 위해 탭 진입마다 재조회
+const selectRecommendGroups = (responses: DiscussionGroupResponse[]) =>
+  toDiscussionGroupViews(responses).filter((group) => group.variant !== "joined");
 
 // 토론장 query key 팩토리
 export const discussionKeys = {
@@ -38,24 +45,28 @@ export const useHotGroups = () =>
   useQuery({
     queryKey: discussionKeys.groups("hot"),
     queryFn: getHotGroups,
-    select: toDiscussionGroupViews,
+    select: selectRecommendGroups,
     staleTime: STALE_TIME,
+    refetchOnMount: "always",
   });
 
 export const useNewGroups = () =>
   useQuery({
     queryKey: discussionKeys.groups("new"),
     queryFn: getNewGroups,
-    select: toDiscussionGroupViews,
+    select: selectRecommendGroups,
     staleTime: STALE_TIME,
+    refetchOnMount: "always",
   });
 
+// 승인되어 옮겨온 방을 바로 보이도록 탭 진입마다 재조회
 export const useMyGroups = () =>
   useQuery({
     queryKey: discussionKeys.groups("joined"),
     queryFn: getMyGroups,
     select: toDiscussionGroupViews,
     staleTime: STALE_TIME,
+    refetchOnMount: "always",
   });
 
 // 승인 결과 알림 연동 전까지 탭 진입마다 재조회
