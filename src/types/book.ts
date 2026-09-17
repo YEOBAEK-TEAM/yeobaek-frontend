@@ -12,3 +12,12 @@ export type BookDetail = Omit<BookSearchResult, "bookId"> & {
   description: string;
   genre: string;
 };
+
+export type PopularBooksPage = {
+  books: BookSearchResult[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
+};
