@@ -15,6 +15,9 @@ type Props = {
   onClose: () => void;
   wordCard?: ReactNode;
   wordSaved?: boolean;
+  collectionDisabled?: boolean;
+  commentDisabled?: boolean;
+  showCloseButton?: boolean;
 };
 
 export default function TextSelectionMenu({
@@ -29,6 +32,9 @@ export default function TextSelectionMenu({
   onClose,
   wordCard,
   wordSaved = false,
+  collectionDisabled = false,
+  commentDisabled = false,
+  showCloseButton = true,
 }: Props) {
   return (
     <div
@@ -40,7 +46,7 @@ export default function TextSelectionMenu({
         if (!(event.target instanceof HTMLInputElement)) event.preventDefault();
       }}
     >
-      {mode !== "comment" && (
+      {showCloseButton && mode !== "comment" && (
         <button
           className="book-reader__selection-close"
           type="button"
@@ -65,6 +71,7 @@ export default function TextSelectionMenu({
                 className={mode === "highlight" ? "is-active" : ""}
                 aria-expanded={mode === "highlight"}
                 onClick={onHighlight}
+                disabled={collectionDisabled}
               >
                 문장 수집
               </button>
@@ -76,7 +83,7 @@ export default function TextSelectionMenu({
               >
                 단어장
               </button>
-              <button type="button" onClick={onComment}>
+              <button type="button" onClick={onComment} disabled={commentDisabled}>
                 댓글쓰기
               </button>
             </div>

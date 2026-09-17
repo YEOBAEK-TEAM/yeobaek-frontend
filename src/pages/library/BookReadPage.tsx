@@ -240,7 +240,7 @@ function ContentBookReader({
             pages={deckPages}
             index={deckIndex}
             onNavigate={navigate}
-            renderPage={(item) =>
+            renderPage={(item, active, onSwipeDisabledChange) =>
               item.type === "cover" ? (
                 item.book ? (
                   <ReaderCoverPage
@@ -254,7 +254,12 @@ function ContentBookReader({
                   </p>
                 )
               ) : (
-                <ContentPageReader key={item.page.pageId} page={item.page} />
+                <ContentPageReader
+                  key={item.page.pageId}
+                  page={item.page}
+                  active={active}
+                  onSwipeDisabledChange={onSwipeDisabledChange}
+                />
               )
             }
           />

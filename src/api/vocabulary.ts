@@ -1,12 +1,35 @@
 import { api } from "@/api/axios";
 
-import type { VocabularyDetailResponse, VocabularyListResponse } from "@/types/vocabulary";
+import type {
+  VocabularyDetailResponse,
+  VocabularyListResponse,
+  WordSearchResponse,
+  AddVocabularyRequest,
+} from "@/types/vocabulary";
+import type { ApiResponse } from "@/types/auth";
 
-type ApiResponse<T> = {
-  success: boolean;
-  code: number;
-  message: string;
-  data: T;
+export const searchWord = async (
+  word: string,
+  sentenceId: number,
+  signal?: AbortSignal,
+): Promise<WordSearchResponse> => {
+  const response = await api.get<ApiResponse<WordSearchResponse>>("/api/v1/words", {
+    params: { word, sentenceId },
+    signal,
+  });
+  if (!response.data.success) throw new Error(response.data.message);
+  return response.data.data;
+};
+
+export const addVocabulary = async (
+  snapshot: AddVocabularyRequest,
+): Promise<VocabularyDetailResponse> => {
+  const response = await api.post<ApiResponse<VocabularyDetailResponse>>(
+    "/api/v1/vocabularies",
+    snapshot,
+  );
+  if (!response.data.success) throw new Error(response.data.message);
+  return response.data.data;
 };
 
 type GetVocabularyListParams = {
