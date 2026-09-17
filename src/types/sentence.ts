@@ -19,10 +19,14 @@ export type SentenceListItem = {
 };
 
 // 수집한 문장 목록 API 응답 항목
+export type HighlightColor = "YELLOW" | "GREEN" | "BLUE" | "PINK" | "GRAY";
+export type HighlightRequest = { sentenceId: number; content: string; color: HighlightColor };
+export type HighlightResponse = HighlightRequest & { createdAt: string };
+
 export type SentenceHighlightListItemResponse = {
   sentenceId: number;
   content: string;
-  color: "YELLOW" | "GREEN" | "BLUE" | "PINK" | "GRAY";
+  color: HighlightColor;
   createdAt: string;
   bookId: number;
   bookTitle: string;

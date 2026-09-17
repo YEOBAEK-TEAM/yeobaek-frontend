@@ -4,15 +4,18 @@ const names = ["민트", "파랑", "보라", "노랑", "회색"];
 export default function HighlightColorPicker({
   selectedColor,
   onSelect,
+  disabled = false,
 }: {
   selectedColor: string;
   onSelect: (color: string) => void;
+  disabled?: boolean;
 }) {
   return (
     <div className="book-reader__palette" role="group" aria-label="형광펜 색상">
       {colors.map((color, index) => (
         <button
           type="button"
+          disabled={disabled}
           key={color}
           style={{ backgroundColor: color }}
           aria-label={`${names[index]} 형광펜으로 문장 수집`}

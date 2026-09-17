@@ -1,4 +1,4 @@
-import type { RefObject } from "react";
+import type { RefObject, ReactNode } from "react";
 import { useLayoutEffect } from "react";
 
 type Props = {
@@ -6,10 +6,13 @@ type Props = {
   left: number;
   top: number;
   highlightId: string;
-  activeMode: "color" | "note";
+  activeMode: "color" | "note" | null;
   onChangeColor: () => void;
   onNote: () => void;
   onDelete: () => void;
+  disabled?: boolean;
+  noteDisabled?: boolean;
+  children?: ReactNode;
 };
 
 export default function CollectedSentenceMenu({
@@ -21,6 +24,9 @@ export default function CollectedSentenceMenu({
   onChangeColor,
   onNote,
   onDelete,
+  disabled = false,
+  noteDisabled = false,
+  children,
 }: Props) {
   useLayoutEffect(() => {
     const menu = menuRef.current;
@@ -85,6 +91,7 @@ export default function CollectedSentenceMenu({
           className={activeMode === "color" ? "is-active" : undefined}
           aria-pressed={activeMode === "color"}
           onClick={onChangeColor}
+          disabled={disabled}
         >
           색 변경
         </button>
@@ -93,13 +100,15 @@ export default function CollectedSentenceMenu({
           className={activeMode === "note" ? "is-active" : undefined}
           aria-pressed={activeMode === "note"}
           onClick={onNote}
+          disabled={disabled || noteDisabled}
         >
           노트꺼내기
         </button>
-        <button type="button" onClick={onDelete}>
+        <button type="button" onClick={onDelete} disabled={disabled}>
           삭제
         </button>
       </div>
+      {children}
     </div>
   );
 }
