@@ -5,12 +5,15 @@ import DeleteConfirmModal from "@/components/vocabulary/DeleteConfirmModal";
 import { TrashIcon } from "@/components/vocabulary/VocabularyIcons";
 import { useVocabularyDetail } from "@/hooks/useVocabularyDetail";
 import { useDeleteVocabulary } from "@/hooks/useDeleteVocabulary";
+import { useContentPage } from "@/hooks/useContentPage";
 
 export default function WordDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const vocabularyId = Number(id);
   const { data: word, isPending, isError } = useVocabularyDetail(vocabularyId);
+  const page = useContentPage(word?.pageId ?? NaN);
+  const sentence = page.data?.sentences.find((sentence) => sentence.sentenceId === word?.sentenceId);
   const [expanded, setExpanded] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const deleting = useRef(false);
@@ -122,9 +125,24 @@ export default function WordDetailPage() {
             )}
           </section>
         )}
-        <p aria-label="저장한 책과 페이지" className="mt-7 text-sm font-semibold text-[#9D938D]">
-          {word.bookTitle} · p{word.pageNumber}
-        </p>
+        {page.isLoading && (
+          <p role="status" className="mt-7 text-sm text-[#9D938D]">
+            책속 예문을 불러오는 중입니다.
+          </p>
+        )}
+        {page.isSuccess && sentence?.content && (
+          <section aria-labelledby="book-example-title" className="mt-7">
+            <h2 id="book-example-title" className="text-base font-bold text-[#51431C]">
+              책속 예문
+            </h2>
+            <blockquote className="mt-4 font-serif text-xl leading-8 break-words text-black">
+              “{sentence.content}”
+            </blockquote>
+            <p className="mt-3 text-sm font-semibold text-[#9D938D]">
+              {word.bookTitle} · p{word.pageNumber}
+            </p>
+          </section>
+        )}
         {remove.isError && (
           <p role="alert" className="mt-3 text-sm text-red-700">
             단어를 삭제하지 못했습니다. 다시 시도해 주세요.

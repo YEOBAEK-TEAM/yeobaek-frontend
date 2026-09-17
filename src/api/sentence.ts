@@ -8,6 +8,14 @@ import type {
 } from "@/types/sentence";
 import type { ApiResponse } from "@/types/auth";
 
+export const getSentenceDetail = async (sentenceId: number, signal?: AbortSignal) => {
+  const response = await api.get<
+    ApiResponse<Pick<SentenceHighlightListItemResponse, "content" | "bookTitle" | "pageNumber">>
+  >(`/api/v1/highlights/${sentenceId}`, { signal });
+  if (!response.data.success) throw new Error(response.data.message);
+  return response.data.data;
+};
+
 export const createHighlight = async (body: HighlightRequest): Promise<HighlightResponse> => {
   const response = await api.post<ApiResponse<HighlightResponse>>("/api/v1/highlights", body);
   if (!response.data.success) throw new Error(response.data.message);
