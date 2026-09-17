@@ -16,6 +16,7 @@ import BookReadPage from "@/pages/library/BookReadPage";
 import BookSearchPage from "@/pages/library/BookSearchPage";
 import BookDetailPage from "@/pages/library/BookDetailPage";
 import ReportEditorPage from "@/pages/library/ReportEditorPage";
+import UnlockQuizPage from "@/pages/library/UnlockQuizPage";
 
 import MyPage from "@/pages/my/MyPage";
 import ReadingCalendarPage from "@/pages/my/ReadingCalendarPage";
@@ -58,6 +59,7 @@ export default function App() {
               <Route path="/library/read" element={<BookReadPage />} />
               <Route path="/library/search" element={<BookSearchPage />} />
               <Route path="/library/books/:bookId" element={<BookDetailPage />} />
+              <Route path="/library/books/:bookId/unlock-quiz" element={<UnlockQuizPage />} />
               <Route path="/library/reports/new" element={<ReportEditorPage />} />
               <Route path="/library/reports/:reportId" element={<ReportEditorPage />} />
 
