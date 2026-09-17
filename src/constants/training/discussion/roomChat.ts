@@ -35,6 +35,8 @@ export const ROOM_END_MESSAGE: Record<RoomEndReason, string> = {
 
 export const ROOM_CHAT_LOAD_ERROR = "토론방을 불러오지 못했어요";
 
+export const ROOM_LEFT_TOAST = "토론방을 나갔어요";
+
 const withQuotes = (title: string) => `“${title}”`;
 
 export const getRoomCreatedNotice = (title: string) =>
