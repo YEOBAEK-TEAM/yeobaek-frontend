@@ -62,6 +62,7 @@ export const REPORT_EDITOR = {
   tempSaveLabel: "임시저장",
   submitLabel: "제출하기",
   savedToast: "임시저장되었어요",
+  submittedToast: "독후감을 제출했어요",
   exitMessage: "임시저장하고 나가시겠습니까?",
   loadErrorText: "독후감을 불러오지 못했어요",
 };

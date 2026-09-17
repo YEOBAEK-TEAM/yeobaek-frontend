@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useId, useState } from "react";
+import { useEffect, useId, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
 import CommonModal from "@/components/common/modal/CommonModal";
 import ReportDateField from "@/components/library/report/editor/ReportDateField";
-import ReportToast from "@/components/library/report/ReportToast";
 import {
   LIBRARY_REPORT_TAB_STATE,
   MODAL_ANSWER,
@@ -14,7 +13,9 @@ import {
   REPORT_SAVE_ERROR_MESSAGE,
   REPORT_TITLE_MAX_LENGTH,
 } from "@/constants/library/report";
+import { useBackGuard } from "@/hooks/common/useBackGuard";
 import { useSaveReportDraft, useSubmitReport } from "@/hooks/library/report/useReportEditor";
+import { useToastStore } from "@/stores/common/toast";
 
 import type { ReportEditorResponse, ReportFormValues } from "@/types/library/report";
 
@@ -46,8 +47,8 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
   const [savedValues, setSavedValues] = useState(values);
 
   const [isExitOpen, setIsExitOpen] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
-  const hideToast = useCallback(() => setToastMessage(null), []);
+
+  const showToast = useToastStore((state) => state.showToast);
 
   const saveDraft = useSaveReportDraft();
   const submit = useSubmitReport();
@@ -57,7 +58,13 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
     values.reportDate !== savedValues.reportDate ||
     values.content !== savedValues.content;
 
+  // 제목이나 본문 중 한 글자라도 있어야 임시저장, 둘 다 있어야 제출
+  const hasAnyContent = values.title.trim().length > 0 || values.content.trim().length > 0;
   const canSubmit = values.title.trim().length > 0 && values.content.trim().length > 0;
+
+  const shouldConfirmExit = isDirty && hasAnyContent;
+
+  const { release } = useBackGuard(shouldConfirmExit, () => setIsExitOpen(true));
 
   // 새로고침·창 닫기 시 브라우저 기본 이탈 경고
   useEffect(() => {
@@ -88,22 +95,29 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
         }
 
         // 새 독후감은 저장된 주소로 교체해 새로고침해도 이어서 작성
-        if (reportId === null) navigate(REPORT_PATH.edit(savedId), { replace: true });
-        setToastMessage(REPORT_EDITOR.savedToast);
+        if (reportId === null) {
+          release(() => navigate(REPORT_PATH.edit(savedId), { replace: true }));
+        }
+        showToast(REPORT_EDITOR.savedToast);
       },
       onError: (error) => {
         setIsExitOpen(false);
-        setToastMessage(toSaveErrorMessage(error));
+        showToast(toSaveErrorMessage(error), "error");
       },
     });
 
-  const handleBack = () => (isDirty ? setIsExitOpen(true) : leave());
+  // 비어 있으면 저장할 내용이 없으므로 확인 없이 나감
+  const handleBack = () => (shouldConfirmExit ? setIsExitOpen(true) : release(leave));
 
   const handleSubmit = () =>
     submit.mutate(request, {
       // 제출 후 작성 화면 기록을 서재 독후감 탭으로 교체
-      onSuccess: () => navigate("/library", { replace: true, state: LIBRARY_REPORT_TAB_STATE }),
-      onError: (error) => setToastMessage(toSaveErrorMessage(error)),
+      onSuccess: () =>
+        release(() => {
+          showToast(REPORT_EDITOR.submittedToast);
+          navigate("/library", { replace: true, state: LIBRARY_REPORT_TAB_STATE });
+        }),
+      onError: (error) => showToast(toSaveErrorMessage(error), "error"),
     });
 
   return (
@@ -151,7 +165,7 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
         <button
           type="button"
           onClick={() => tempSave()}
-          disabled={saveDraft.isPending}
+          disabled={!hasAnyContent || saveDraft.isPending}
           aria-busy={saveDraft.isPending}
           className="h-13.5 rounded-xl bg-[#C1C1C1] text-[18px] font-bold text-[#1E1E1E] disabled:opacity-70"
         >
@@ -174,17 +188,15 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
           message={REPORT_EDITOR.exitMessage}
           onClose={() => setIsExitOpen(false)}
           actions={[
-            { label: MODAL_ANSWER.no, onClick: leave },
+            { label: MODAL_ANSWER.no, onClick: () => release(leave) },
             {
               label: MODAL_ANSWER.yes,
-              onClick: () => tempSave(leave),
+              onClick: () => tempSave(() => release(leave)),
               isPending: saveDraft.isPending,
             },
           ]}
         />
       )}
-
-      {toastMessage && <ReportToast message={toastMessage} onClose={hideToast} />}
     </main>
   );
 }

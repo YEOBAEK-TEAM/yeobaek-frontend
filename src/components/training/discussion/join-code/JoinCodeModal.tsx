@@ -3,9 +3,8 @@ import { useId, useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import DiscussionModal from "@/components/training/discussion/shared/DiscussionModal";
-import NoticeModal from "@/components/training/discussion/shared/NoticeModal";
 import { DISCUSSION_PATH } from "@/constants/training/discussion/discussion";
-import { JOIN_CODE, JOIN_REQUESTED_MESSAGE } from "@/constants/training/discussion/room";
+import { JOIN_CODE } from "@/constants/training/discussion/room";
 import { useJoinByCode } from "@/hooks/training/discussion/useRoomMutations";
 import { getRoomErrorMessage } from "@/utils/training/discussion/getRoomErrorMessage";
 import { normalizeInviteCode } from "@/utils/training/discussion/roomForm";
@@ -31,7 +30,6 @@ export default function JoinCodeModal({ initialCode = "", onClose }: JoinCodeMod
 
   const [code, setCode] = useState(() => normalizeInviteCode(initialCode));
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [isRequested, setIsRequested] = useState(false);
 
   const joinByCode = useJoinByCode();
 
@@ -47,12 +45,7 @@ export default function JoinCodeModal({ initialCode = "", onClose }: JoinCodeMod
     if (!code || joinByCode.isPending) return;
 
     joinByCode.mutate(code, {
-      onSuccess: ({ result, roomId }) => {
-        if (result === "requested") {
-          setIsRequested(true);
-          return;
-        }
-
+      onSuccess: ({ roomId }) => {
         onClose();
         navigate(DISCUSSION_PATH.room(roomId));
       },
@@ -62,8 +55,6 @@ export default function JoinCodeModal({ initialCode = "", onClose }: JoinCodeMod
       },
     });
   };
-
-  if (isRequested) return <NoticeModal message={JOIN_REQUESTED_MESSAGE} onClose={onClose} />;
 
   return (
     <DiscussionModal

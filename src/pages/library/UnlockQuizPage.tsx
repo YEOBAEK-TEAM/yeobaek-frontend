@@ -13,6 +13,7 @@ import UnlockFailView from "@/components/library/unlock-quiz/UnlockFailView";
 import UnlockSuccessView from "@/components/library/unlock-quiz/UnlockSuccessView";
 import { LIBRARY_REPORT_TAB_STATE, MODAL_ANSWER } from "@/constants/library/report";
 import { GRADING_HOLD_MS, GRADING_STEP_MS, UNLOCK_QUIZ } from "@/constants/library/unlockQuiz";
+import { useBackGuard } from "@/hooks/common/useBackGuard";
 import { useReportWriteFlow } from "@/hooks/library/report/useReportWriteFlow";
 import {
   useGradeUnlockQuiz,
@@ -68,6 +69,18 @@ export default function UnlockQuizPage() {
   }, [questionIndex]);
 
   const leave = () => (location.key === "default" ? navigate("/library") : navigate(-1));
+
+  // 헤더 뒤로가기와 폰·브라우저 뒤로가기 공통 동작, 첫 문제에서는 나중에 풀기 확인
+  const handleBack = () => {
+    if (questionIndex > 0) {
+      setQuestionIndex((index) => index - 1);
+      return;
+    }
+
+    setIsExitOpen(true);
+  };
+
+  const { release } = useBackGuard(Boolean(quiz) && phase === "solving", handleBack);
 
   if (!quiz) {
     return (
@@ -127,15 +140,6 @@ export default function UnlockQuizPage() {
 
   const goNext = () => (isLastQuestion ? void submit() : setQuestionIndex((index) => index + 1));
 
-  const handleBack = () => {
-    if (questionIndex > 0) {
-      setQuestionIndex((index) => index - 1);
-      return;
-    }
-
-    setIsExitOpen(true);
-  };
-
   if (phase === "grading") {
     return (
       <GradingView
@@ -143,13 +147,13 @@ export default function UnlockQuizPage() {
         isDone={isGradingDone}
         isError={gradeQuiz.isError}
         onRetry={() => void submit()}
-        onExit={leave}
+        onExit={() => release(leave)}
       />
     );
   }
 
   if (phase === "failed") {
-    return <UnlockFailView onLater={leave} onRetry={() => void retryQuiz()} />;
+    return <UnlockFailView onLater={() => release(leave)} onRetry={() => void retryQuiz()} />;
   }
 
   if (phase === "unlocked") {
@@ -157,11 +161,16 @@ export default function UnlockQuizPage() {
       <>
         <UnlockSuccessView
           bookTitle={quiz.bookTitle}
-          onLater={() => navigate("/library", { replace: true, state: LIBRARY_REPORT_TAB_STATE })}
+          onLater={() =>
+            release(() => navigate("/library", { replace: true, state: LIBRARY_REPORT_TAB_STATE }))
+          }
           onWrite={() =>
-            void writeFlow.writeBook(
-              { bookId, title: quiz.bookTitle },
-              { confirm: false, replace: true },
+            release(
+              () =>
+                void writeFlow.writeBook(
+                  { bookId, title: quiz.bookTitle },
+                  { confirm: false, replace: true },
+                ),
             )
           }
         />
@@ -200,7 +209,7 @@ export default function UnlockQuizPage() {
           onClose={() => setIsExitOpen(false)}
           actions={[
             { label: MODAL_ANSWER.no, onClick: () => setIsExitOpen(false) },
-            { label: MODAL_ANSWER.yes, onClick: leave },
+            { label: MODAL_ANSWER.yes, onClick: () => release(leave) },
           ]}
         />
       )}

@@ -42,6 +42,7 @@ export const toRoomSummaryView = (response: RoomSummaryResponse): RoomSummaryVie
   coverUrl: response.coverUrl,
   participantText: `${response.participantCount}명 참여중`,
   tags: response.tags,
+  visibility: response.visibility,
   visibilityLabel: ROOM_VISIBILITY_LABEL[response.visibility],
   joinStatus: response.joinStatus,
 });

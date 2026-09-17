@@ -10,12 +10,9 @@ import EntryActionSheet from "@/components/training/discussion/entry/EntryAction
 import GroupSearchBar from "@/components/training/discussion/GroupSearchBar";
 import JoinCodeModal from "@/components/training/discussion/join-code/JoinCodeModal";
 import SearchResultContent from "@/components/training/discussion/SearchResultContent";
-import Toast from "@/components/training/discussion/shared/Toast";
 import { DISCUSSION_PATH } from "@/constants/training/discussion/discussion";
-import { ROOM_CREATED } from "@/constants/training/discussion/room";
 import { useActiveDiscussion } from "@/hooks/training/discussion/useDiscussionQueries";
 import { useGroupSearch } from "@/hooks/training/discussion/useGroupSearch";
-import { useRoomCreateStore } from "@/stores/training/discussion/roomCreate";
 
 export default function DiscussionPanel() {
   const navigate = useNavigate();
@@ -29,9 +26,6 @@ export default function DiscussionPanel() {
 
   // 초대 링크로 들어온 코드가 있으면 값이 채워진 입력 모달 오픈
   const inviteCode = params.get("code");
-
-  const isCreatedToastPending = useRoomCreateStore((state) => state.isCreatedToastPending);
-  const clearCreatedToast = useRoomCreateStore((state) => state.clearCreatedToast);
 
   const [isEntrySheetOpen, setIsEntrySheetOpen] = useState(false);
   const [isJoinCodeOpen, setIsJoinCodeOpen] = useState(false);
@@ -89,10 +83,6 @@ export default function DiscussionPanel() {
 
       {(isJoinCodeOpen || inviteCode !== null) && (
         <JoinCodeModal initialCode={inviteCode ?? ""} onClose={closeJoinCode} />
-      )}
-
-      {isCreatedToastPending && (
-        <Toast message={ROOM_CREATED.toastText} onClose={clearCreatedToast} />
       )}
     </div>
   );

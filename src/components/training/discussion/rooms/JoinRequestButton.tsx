@@ -3,10 +3,11 @@ import { LoaderCircle } from "lucide-react";
 import { PENDING_STATUS_LABEL } from "@/constants/training/discussion/discussion";
 import { JOIN_BUTTON_LABEL, JOIN_UNAVAILABLE_LABEL } from "@/constants/training/discussion/room";
 
-import type { RoomJoinStatus } from "@/types/training/discussion/room";
+import type { RoomJoinStatus, RoomVisibility } from "@/types/training/discussion/room";
 
 type JoinRequestButtonProps = {
   status: RoomJoinStatus;
+  visibility: RoomVisibility;
   isPending: boolean;
   onRequest: () => void;
   onEnter: () => void;
@@ -18,6 +19,7 @@ const BASE_CLASS =
 // 서버 참가 상태별 버튼·상태 표시 분기
 export default function JoinRequestButton({
   status,
+  visibility,
   isPending,
   onRequest,
   onEnter,
@@ -60,7 +62,13 @@ export default function JoinRequestButton({
           className="h-5 w-5 animate-spin motion-reduce:animate-none"
         />
       )}
-      {isPending ? JOIN_BUTTON_LABEL.requesting : JOIN_BUTTON_LABEL.request}
+      {visibility === "public"
+        ? isPending
+          ? JOIN_BUTTON_LABEL.joining
+          : JOIN_BUTTON_LABEL.join
+        : isPending
+          ? JOIN_BUTTON_LABEL.requesting
+          : JOIN_BUTTON_LABEL.request}
     </button>
   );
 }

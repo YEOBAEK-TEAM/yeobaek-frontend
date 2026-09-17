@@ -16,6 +16,7 @@ import {
   ROOM_CREATE_TITLE,
   ROOM_CREATE_TOTAL_STEPS,
 } from "@/constants/training/discussion/room";
+import { useBackGuard } from "@/hooks/common/useBackGuard";
 import { useCreateStep } from "@/hooks/training/discussion/useCreateStep";
 import { useCreateRoom } from "@/hooks/training/discussion/useRoomMutations";
 import { useRoomCreateStore } from "@/stores/training/discussion/roomCreate";
@@ -31,6 +32,11 @@ export default function RoomCreatePage() {
   const createRoom = useCreateRoom();
 
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
+
+  // 입력한 내용이 있는 1단계에서만 폰·브라우저 뒤로가기도 이탈 확인
+  const { release } = useBackGuard(step === 1 && hasRoomCreateInput(form), () =>
+    setIsExitConfirmOpen(true),
+  );
 
   // 완료 후 뒤로가기로 돌아온 경우 폼 대신 훈련 페이지로 이동
   const [isAlreadyCreated] = useState(() => useRoomCreateStore.getState().createdRoom !== null);
@@ -58,8 +64,10 @@ export default function RoomCreatePage() {
 
   const exit = () => {
     setIsExitConfirmOpen(false);
-    form.reset();
-    goBack();
+    release(() => {
+      form.reset();
+      goBack();
+    });
   };
 
   const submit = () => {
@@ -100,7 +108,11 @@ export default function RoomCreatePage() {
       )}
 
       {step === 1 ? (
-        <FunnelFooterButton label={NEXT_STEP_LABEL} disabled={!form.topic} onClick={goNext} />
+        <FunnelFooterButton
+          label={NEXT_STEP_LABEL}
+          disabled={!form.topic}
+          onClick={() => release(goNext)}
+        />
       ) : (
         <FunnelFooterButton
           label={CREATE_ROOM_LABEL}

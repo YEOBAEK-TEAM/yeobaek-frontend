@@ -7,6 +7,7 @@ import RoomCreatedHero from "@/components/training/discussion/create/RoomCreated
 import { DISCUSSION_PATH } from "@/constants/training/discussion/discussion";
 import { ROOM_CREATED } from "@/constants/training/discussion/room";
 import { useDiscussionTabStore } from "@/stores/training/discussion/discussionTab";
+import { useToastStore } from "@/stores/common/toast";
 import { useRoomCreateStore } from "@/stores/training/discussion/roomCreate";
 import { useTrainingStore } from "@/stores/training/trainingTab";
 
@@ -15,7 +16,7 @@ export default function RoomCreateCompletePage() {
 
   const createdRoom = useRoomCreateStore((state) => state.createdRoom);
   const clearForm = useRoomCreateStore((state) => state.clearForm);
-  const requestCreatedToast = useRoomCreateStore((state) => state.requestCreatedToast);
+  const showToast = useToastStore((state) => state.showToast);
   const setActiveTab = useTrainingStore((state) => state.setActiveTab);
   const setActiveSubTab = useDiscussionTabStore((state) => state.setActiveSubTab);
 
@@ -35,7 +36,7 @@ export default function RoomCreateCompletePage() {
   const goHome = () => {
     setActiveTab("debate");
     setActiveSubTab("joined");
-    requestCreatedToast();
+    showToast(ROOM_CREATED.toastText);
     navigate("/training", { replace: true });
   };
 

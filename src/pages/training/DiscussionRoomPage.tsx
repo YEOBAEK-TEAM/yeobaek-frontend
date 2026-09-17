@@ -14,6 +14,7 @@ import {
   getLeaveConfirmMessage,
   ROOM_CHAT_LOAD_ERROR,
   ROOM_END_MESSAGE,
+  ROOM_LEFT_TOAST,
 } from "@/constants/training/discussion/roomChat";
 import { useRoomChat } from "@/hooks/training/discussion/useRoomChat";
 import {
@@ -22,6 +23,7 @@ import {
   useRoomChatSession,
   useRoomMessages,
 } from "@/hooks/training/discussion/useRoomChatQueries";
+import { useToastStore } from "@/stores/common/toast";
 import { useTrainingStore } from "@/stores/training/trainingTab";
 import { RoomApiError } from "@/api/training/discussion/room";
 import { getRoomErrorMessage } from "@/utils/training/discussion/getRoomErrorMessage";
@@ -39,6 +41,7 @@ export default function DiscussionRoomPage() {
   const roomId = Number(roomIdParam);
 
   const setActiveTab = useTrainingStore((state) => state.setActiveTab);
+  const showToast = useToastStore((state) => state.showToast);
 
   const sessionQuery = useRoomChatSession(roomId);
   const session = sessionQuery.data;
@@ -90,7 +93,12 @@ export default function DiscussionRoomPage() {
     if (!dialog) return;
 
     if (dialog.type === "leave") {
-      leaveRoom.mutate(roomId, { onSuccess: goDiscussionTab });
+      leaveRoom.mutate(roomId, {
+        onSuccess: () => {
+          showToast(ROOM_LEFT_TOAST);
+          goDiscussionTab();
+        },
+      });
       return;
     }
 
