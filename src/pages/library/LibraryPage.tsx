@@ -3,8 +3,7 @@ import type { PointerEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
-import { books } from "@/mocks/books";
-import { useLibrary } from "./utils/useLibrary";
+import { useReadingRecords } from "@/hooks/useReadingRecords";
 
 const tabs = ["전체", "완독", "독후감"] as const;
 
@@ -22,16 +21,13 @@ export default function LibraryPage() {
   }, [navigate, showAddedNotice]);
 
   const [tab, setTab] = useState<(typeof tabs)[number]>("전체");
-  const addedBookIds = useLibrary((state) => state.addedBookIds);
-  const libraryBooks = books
-    .filter(
-      (book) =>
-        (book.isInLibrary || addedBookIds.includes(book.id)) &&
-        (tab === "전체" || (tab === "완독" ? book.status === "completed" : book.hasReview)),
-    )
-    .sort((a, b) => Number(a.id === 1) - Number(b.id === 1));
+  const { data, isPending, isError } = useReadingRecords(
+    tab === "완독" ? "COMPLETED" : "ALL",
+    tab !== "독후감",
+  );
+  const libraryBooks = tab === "독후감" || isError ? [] : (data?.items ?? []);
 
-  const [selectedBookId, setSelectedBookId] = useState(2);
+  const [selectedRecordId, setSelectedRecordId] = useState<number | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const drag = useRef<{ pointerId: number; startX: number; scrollLeft: number } | null>(null);
   const moved = useRef(false);
@@ -44,10 +40,8 @@ export default function LibraryPage() {
     }
   };
 
-  const selectedBook = libraryBooks.find((book) => book.id === selectedBookId) ?? libraryBooks[0];
-
-  const currentPage = selectedBook?.currentPage ?? 0;
-  const totalPages = selectedBook?.totalPages ?? 0;
+  const selectedBook =
+    libraryBooks.find((book) => book.recordId === selectedRecordId) ?? libraryBooks[0];
 
   const handleReadBook = () => {
     navigate("/library/read");
@@ -88,7 +82,7 @@ export default function LibraryPage() {
             aria-controls="library-books"
             onClick={() => {
               setTab(item);
-              setSelectedBookId(-1);
+              setSelectedRecordId(null);
             }}
             className={`flex-1 border-b-4 py-3 text-base font-bold ${tab === item ? "border-[#4F4D4E] text-[#4F4D4E]" : "border-[#C4C4C4] text-[#C4C4C4]"}`}
           >
@@ -139,14 +133,14 @@ export default function LibraryPage() {
             }}
           >
             {libraryBooks.map((book) => {
-              const isSelected = book.id === selectedBook?.id;
+              const isSelected = book.recordId === selectedBook?.recordId;
 
               return (
                 <button
-                  key={book.id}
+                  key={book.recordId}
                   type="button"
                   aria-pressed={isSelected}
-                  onClick={() => setSelectedBookId(book.id)}
+                  onClick={() => setSelectedRecordId(book.recordId)}
                   className={`${isSelected ? "w-22" : "w-18"} shrink-0 cursor-inherit`}
                 >
                   {/* 책 표지 */}
@@ -156,8 +150,8 @@ export default function LibraryPage() {
                     }`}
                   >
                     <img
-                      src={book.coverUrl}
-                      alt={`${book.title} 표지`}
+                      src={book.coverImageUrl}
+                      alt={`${book.bookTitle} 표지`}
                       draggable={false}
                       className="h-full w-full object-cover"
                     />
@@ -169,7 +163,7 @@ export default function LibraryPage() {
                       isSelected ? "font-bold text-[#555555]" : "font-semibold text-[#8B8B8B]"
                     }`}
                   >
-                    {book.title}
+                    {book.bookTitle}
                   </p>
                 </button>
               );
@@ -190,23 +184,20 @@ export default function LibraryPage() {
 
               {/* 대표 책 */}
               <img
-                src={selectedBook.coverUrl}
-                alt={`${selectedBook.title} 표지`}
+                src={selectedBook.coverImageUrl}
+                alt={`${selectedBook.bookTitle} 표지`}
                 className="relative z-10 h-61 w-43 border border-[#555555] object-cover shadow-md"
               />
             </div>
 
             {/* 독서 진행 정보 */}
-            {totalPages > 0 ? (
-              <>
-                <p className="mt-2 text-sm font-semibold text-[#555555]">
-                  {selectedBook.status === "completed" ? "완독" : "읽는 중"} · {currentPage} /{" "}
-                  {totalPages}p
-                </p>
-              </>
-            ) : (
-              <p className="mt-2 text-sm font-semibold text-[#555555]">아직 읽기 전이에요</p>
-            )}
+            <p className="mt-2 text-sm font-semibold text-[#555555]">
+              {selectedBook.completedAt
+                ? "완독"
+                : selectedBook.lastPageNumber > 0
+                  ? `읽는 중 · ${selectedBook.lastPageNumber}p · ${selectedBook.progressRate}%`
+                  : "아직 읽기 전이에요"}
+            </p>
 
             {/* 이어 읽기 버튼 */}
             <button
@@ -214,20 +205,27 @@ export default function LibraryPage() {
               onClick={handleReadBook}
               className="mt-2 flex h-14 w-full cursor-pointer items-center justify-center bg-[#4F4D4E] text-base font-bold text-white"
             >
-              {selectedBook.status === "completed"
-                ? `${(selectedBook.readCount ?? 1) + 1}회독 하러가기`
-                : currentPage > 0
-                  ? `${currentPage}p부터 이어 읽기`
+              {selectedBook.completedAt
+                ? "다시 읽기"
+                : selectedBook.lastPageNumber > 0
+                  ? `${selectedBook.lastPageNumber}p부터 이어 읽기`
                   : "읽기 시작하기"}
             </button>
           </section>
         ) : (
-          <p role="status" className="px-5 py-16 text-center text-sm text-[#8B8B8B]">
-            {tab === "완독"
-              ? "아직 완독한 도서가 없습니다."
-              : tab === "독후감"
-                ? "아직 독후감이 있는 도서가 없습니다."
-                : "검색에서 첫 도서를 추가해 보세요."}
+          <p
+            role={tab !== "독후감" && isError ? "alert" : "status"}
+            className="px-5 py-16 text-center text-sm text-[#8B8B8B]"
+          >
+            {tab === "독후감"
+              ? "아직 독후감이 있는 도서가 없습니다."
+              : isPending
+                ? "서재를 불러오는 중입니다."
+                : isError
+                  ? "서재를 불러오지 못했습니다."
+                  : tab === "완독"
+                    ? "아직 완독한 도서가 없습니다."
+                    : "검색에서 첫 도서를 추가해 보세요."}
           </p>
         )}
       </div>
