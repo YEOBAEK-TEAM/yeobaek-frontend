@@ -14,7 +14,7 @@ export default function TrainingProgramCard({ program, onClick }: TrainingProgra
       onClick={onClick}
       className={`relative flex h-28 w-full items-center overflow-hidden rounded-[20px] text-left ${program.cardClassName}`}
     >
-      {/* 좌측 영역 가로 중앙, 카드 하단선에 맞춘 배치 */}
+      {/* 훈련 캐릭터 */}
       <span className="absolute bottom-0 left-0 flex w-25 justify-center">
         <img src={program.character} alt="" className="h-23 w-auto object-contain" />
       </span>
@@ -22,7 +22,7 @@ export default function TrainingProgramCard({ program, onClick }: TrainingProgra
       <div className="ml-25 min-w-0 flex-1 pr-7">
         <h3 className="text-[15px] leading-tight font-bold text-[#4F4D4E]">{program.title}</h3>
 
-        {/* 12px 유지하며 두 줄에 맞추기 위한 자간 조정 */}
+        {/* 훈련 설명 */}
         <p className="mt-1 text-[12px] leading-4 font-medium tracking-[-0.03em] break-keep whitespace-pre-line text-[#54555A]">
           {program.description}
         </p>

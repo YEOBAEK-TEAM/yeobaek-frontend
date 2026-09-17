@@ -3,7 +3,7 @@ import ComprehensiveingCharacter from "@/assets/images/Training/Comprehensiveing
 import NothingcCharcter from "@/assets/images/Training/NothingcCharcter.png";
 import TrainingCharacter from "@/assets/images/Training/TrainingCharacter.png";
 
-// 이미지마다 여백과 비율이 달라 크기/위치를 상태별로 지정
+// 상태별 캐릭터 이미지와 배치
 export const ONGOING_TRAINING_CHARACTER = {
   bookReport: { src: TrainingCharacter, className: "h-36 -right-4 bottom-0" },
   comprehension: { src: ComprehensiveingCharacter, className: "h-36 -right-4 bottom-0" },
