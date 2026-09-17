@@ -1,5 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { getDictionaryEntry } from "../../../mocks/dictionary";
+import type { WordSearchResponse } from "@/types/vocabulary";
 
 type Props = {
   text: string;
@@ -7,19 +8,40 @@ type Props = {
   canSave: boolean;
   onSave: () => void;
   onComplete: () => void;
+  apiEntry?: WordSearchResponse;
+  saving?: boolean;
+  saveError?: boolean;
 };
 
-export default function WordMeaningCard({ text, saved, canSave, onSave, onComplete }: Props) {
+export default function WordMeaningCard({
+  text,
+  saved,
+  canSave,
+  onSave,
+  onComplete,
+  apiEntry,
+  saving = false,
+  saveError = false,
+}: Props) {
   const [meaningsOpen, setMeaningsOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
-  const [completed, setCompleted] = useState(false);
+  const [legacyCompleted, setCompleted] = useState(false);
+  const completed = apiEntry ? saved : legacyCompleted;
   useEffect(() => {
     if (!completed) return;
     const timer = window.setTimeout(onComplete, 1800);
     return () => window.clearTimeout(timer);
   }, [completed, onComplete]);
   const id = useId();
-  const entry = getDictionaryEntry(text);
+  const entry = apiEntry
+    ? {
+        word: apiEntry.word,
+        partOfSpeech: apiEntry.pos,
+        currentMeaning: apiEntry.senses[0]?.definition ?? "등록된 뜻이 없습니다.",
+        otherMeanings: apiEntry.senses.slice(1).map((sense) => sense.definition),
+        examples: apiEntry.senses.flatMap((sense) => sense.examples),
+      }
+    : getDictionaryEntry(text);
   return (
     <section
       className={`book-reader__word-card${completed ? " is-saved" : ""}`}
@@ -80,15 +102,15 @@ export default function WordMeaningCard({ text, saved, canSave, onSave, onComple
             type="button"
             className={completed ? "is-active" : undefined}
             onClick={() => {
-              if (saved || completed || !canSave) return;
+              if (saved || completed || saving || !canSave) return;
               setMeaningsOpen(false);
               setExamplesOpen(false);
-              setCompleted(true);
+              if (!apiEntry) setCompleted(true);
               onSave();
             }}
-            disabled={!canSave || completed}
+            disabled={!canSave || completed || saving}
           >
-            단어장에 담기
+            {saving ? "저장 중…" : "단어장에 담기"}
           </button>
         )}
         <button
@@ -119,7 +141,12 @@ export default function WordMeaningCard({ text, saved, canSave, onSave, onComple
           단어 저장 완료!
         </div>
       )}
-      {!saved && !canSave && (
+      {saveError && (
+        <p className="book-reader__word-hint" role="alert">
+          단어를 저장하지 못했습니다. 다시 시도해 주세요.
+        </p>
+      )}
+      {!apiEntry && !saved && !canSave && (
         <p className="book-reader__word-hint" role="status">
           단어 하나를 선택하면 단어장에 담을 수 있습니다.
         </p>

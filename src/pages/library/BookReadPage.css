@@ -156,6 +156,18 @@
 .book-reader__text p + p {
   margin-top: 0.45em;
 }
+.book-reader__viewport .book-reader__text[data-page-id],
+.book-reader__viewport.is-selection-mode .book-reader__text[data-page-id] {
+  touch-action: pan-y pinch-zoom;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: grab;
+}
+.book-reader__viewport .book-reader__text[data-page-id][data-native-selection="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+}
 .book-reader__text ::selection {
   background: #d1d1d1;
   color: #595854;
@@ -274,6 +286,9 @@
   display: flex;
   gap: 7px;
   padding: 4px 0;
+}
+.book-reader__text[data-page-id] .book-reader__selection {
+  background: transparent;
 }
 .book-reader__text-container.has-inline-menu {
   overflow-y: auto;

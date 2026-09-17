@@ -58,6 +58,15 @@ export type WordSenseResponse = {
   examples: string[];
 };
 
+export type WordSearchResponse = {
+  targetCode: string;
+  word: string;
+  pos: string;
+  senses: WordSenseResponse[];
+};
+
+export type AddVocabularyRequest = WordSearchResponse & { sentenceId: number };
+
 // 단어 상세 API 응답
 export type VocabularyDetailResponse = {
   vocabularyId: number;
