@@ -245,7 +245,6 @@
 .book-reader__actions {
   display: flex;
   align-items: center;
-  gap: 16px;
 }
 .book-reader__actions button {
   display: flex;

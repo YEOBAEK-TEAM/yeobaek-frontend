@@ -1,4 +1,4 @@
-﻿export type MyProfile = {
+export type MyProfile = {
   userId: number;
   nickname: string;
   consecutiveDays: number;
@@ -17,14 +17,6 @@ export type ReadingSession = MyBook & {
   createdAt: string;
 };
 export type ReadingDay = { date: string; sessions: ReadingSession[] };
-export type LikedPage = MyBook & {
-  id: string;
-  userId: number;
-  page: number;
-  content: string;
-  createdAt: string;
-  liked: boolean;
-};
 export type LikedComment = MyBook & {
   id: string;
   commentId: string;

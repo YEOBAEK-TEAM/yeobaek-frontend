@@ -15,6 +15,7 @@ export const useTogglePageBookmark = () => {
       queryClient.setQueryData<ContentPage>(queryKey, (page) =>
         page ? { ...page, bookmarked: !bookmarked } : page,
       );
+      await queryClient.invalidateQueries({ queryKey: ["activity", "bookmarked-pages"] });
     },
   });
 };

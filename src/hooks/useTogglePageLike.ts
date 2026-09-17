@@ -15,6 +15,7 @@ export const useTogglePageLike = () => {
       queryClient.setQueryData<ContentPage>(queryKey, (page) =>
         page ? { ...page, liked: !liked } : page,
       );
+      await queryClient.invalidateQueries({ queryKey: ["activity", "liked-pages"] });
     },
   });
 };
