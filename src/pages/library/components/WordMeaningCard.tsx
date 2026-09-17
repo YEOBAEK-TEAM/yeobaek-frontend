@@ -11,6 +11,10 @@ type Props = {
   apiEntry?: WordSearchResponse;
   saving?: boolean;
   saveError?: boolean;
+  saveCompleted?: boolean;
+  compact?: boolean;
+  concealMeaning?: boolean;
+  onRevealMeaning?: () => void;
 };
 
 export default function WordMeaningCard({
@@ -22,11 +26,15 @@ export default function WordMeaningCard({
   apiEntry,
   saving = false,
   saveError = false,
+  saveCompleted,
+  compact = false,
+  concealMeaning = false,
+  onRevealMeaning,
 }: Props) {
   const [meaningsOpen, setMeaningsOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
   const [legacyCompleted, setCompleted] = useState(false);
-  const completed = apiEntry ? saved : legacyCompleted;
+  const completed = apiEntry ? (saveCompleted ?? saved) : legacyCompleted;
   useEffect(() => {
     if (!completed) return;
     const timer = window.setTimeout(onComplete, 1800);
@@ -42,6 +50,36 @@ export default function WordMeaningCard({
         examples: apiEntry.senses.flatMap((sense) => sense.examples),
       }
     : getDictionaryEntry(text);
+  if (compact)
+    return (
+      <section
+        className="book-reader__word-card book-reader__saved-meaning"
+        aria-label={`${entry.word} 뜻`}
+        onDoubleClick={onRevealMeaning}
+      >
+        <header className="book-reader__word-heading">
+          <h2>{entry.word}</h2>
+          <span className="book-reader__part-of-speech">{entry.partOfSpeech}</span>
+        </header>
+        <p
+          className={concealMeaning ? "book-reader__meaning-concealed" : undefined}
+          aria-hidden={concealMeaning || undefined}
+        >
+          {entry.currentMeaning}
+        </p>
+        {concealMeaning && (
+          <button
+            type="button"
+            className="book-reader__reveal-hint"
+            onClick={(event) => {
+              if (event.detail === 0) onRevealMeaning?.();
+            }}
+          >
+            더블 클릭시 뜻을 볼 수 있습니다
+          </button>
+        )}
+      </section>
+    );
   return (
     <section
       className={`book-reader__word-card${completed ? " is-saved" : ""}`}
@@ -144,6 +182,11 @@ export default function WordMeaningCard({
       {saveError && (
         <p className="book-reader__word-hint" role="alert">
           단어를 저장하지 못했습니다. 다시 시도해 주세요.
+        </p>
+      )}
+      {apiEntry && saved && !completed && (
+        <p className="book-reader__word-hint" role="status">
+          이미 단어장에 저장된 단어입니다.
         </p>
       )}
       {!apiEntry && !saved && !canSave && (

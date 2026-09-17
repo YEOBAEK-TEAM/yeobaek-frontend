@@ -35,16 +35,38 @@ export function contentWordRange(root: HTMLElement, x: number, y: number): Range
     node.nodeType !== Node.TEXT_NODE
   )
     return null;
-  const text = node.textContent ?? "";
+  const sentence = sentenceElement(root, node)!;
+  const prefix = document.createRange();
+  prefix.selectNodeContents(sentence);
+  prefix.setEnd(node, offset);
+  const sentenceOffset = prefix.toString().length;
+  // A saved highlight can split one word across plain text and a mark node.
+  const text = sentence.textContent ?? "";
   const part = [...new Intl.Segmenter("ko", { granularity: "word" }).segment(text)].find(
     (segment) =>
       segment.isWordLike &&
-      offset >= segment.index &&
-      offset < segment.index + segment.segment.length,
+      sentenceOffset >= segment.index &&
+      sentenceOffset < segment.index + segment.segment.length,
   );
   if (!part) return null;
   const range = document.createRange();
-  range.setStart(node, part.index);
-  range.setEnd(node, part.index + part.segment.length);
-  return range;
+  const walker = document.createTreeWalker(sentence, NodeFilter.SHOW_TEXT);
+  let current = walker.nextNode();
+  let position = 0;
+  let started = false;
+  while (current) {
+    const end = position + (current.textContent?.length ?? 0);
+    if (!started && part.index < end) {
+      range.setStart(current, part.index - position);
+      started = true;
+    }
+    const wordEnd = part.index + part.segment.length;
+    if (started && wordEnd <= end) {
+      range.setEnd(current, wordEnd - position);
+      return range;
+    }
+    position = end;
+    current = walker.nextNode();
+  }
+  return null;
 }

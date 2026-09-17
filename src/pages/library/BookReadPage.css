@@ -217,7 +217,7 @@
   width: calc(100% + 40px);
   max-width: 390px;
   padding: 9px 16px calc(5px + env(safe-area-inset-bottom));
-  background: #4f4d4e;
+  background: rgb(79 77 78 / 0.8);
   font:
     14px system-ui,
     sans-serif;
@@ -287,7 +287,7 @@
   gap: 7px;
   padding: 4px 0;
 }
-.book-reader__text[data-page-id] .book-reader__selection {
+.book-reader__text[data-page-id] .book-reader__selection:not(.book-reader__collected) {
   background: transparent;
 }
 .book-reader__text-container.has-inline-menu {
@@ -307,73 +307,85 @@
   max-width: calc(100% - 8px);
   transform: translateX(-50%);
 
-  border: 1px solid rgb(255 255 255 / 0.42);
+  border: 1px solid rgb(255 255 255 / 0.3);
   border-radius: 999px;
 
-  /* 핵심: 회색을 훨씬 더 투명하게 */
-  background: rgb(70 70 70 / 0.38);
+  /* 80% fill with a subtle diagonal glass reflection. */
+  background-color: rgb(79 77 78 / 0.8);
+  background-image: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.14),
+    rgb(255 255 255 / 0.02) 45%,
+    transparent 60%,
+    rgb(255 255 255 / 0.06)
+  );
+  color: #fff;
 
-  color: white;
-
-  /* 뒤에 있는 본문을 흐리게 */
-  backdrop-filter: blur(14px) saturate(160%);
-  -webkit-backdrop-filter: blur(14px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
 
   box-shadow:
-    0 4px 14px rgb(0 0 0 / 0.18),
-    inset 0 1px 0 rgb(255 255 255 / 0.42);
+    0 4px 12px rgb(0 0 0 / 0.18),
+    inset 0 1px 1px rgb(255 255 255 / 0.32),
+    inset 0 -1px 1px rgb(0 0 0 / 0.16);
 
   overflow: hidden;
   user-select: none;
-  isolation: isolate;
 }
 
+/* 기존 강한 gradient 제거 */
 .book-reader__collected::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-
-  border-radius: inherit;
-
-  /* 유리 위쪽에 빛이 맺힌 느낌 */
-  background: linear-gradient(
-    180deg,
-    rgb(255 255 255 / 0.18) 0%,
-    rgb(255 255 255 / 0.04) 45%,
-    transparent 100%
-  );
-
-  pointer-events: none;
+  display: none;
 }
 
 .book-reader__collected-actions {
-  position: relative;
-  z-index: 1;
-
   display: flex;
   align-items: center;
-  padding: 7px 6px;
+  padding: 7px 7px;
 }
+
 .book-reader__collected-actions button {
-  padding: 4px 11px;
+  position: relative;
+
+  padding: 7px 10px;
+  border: 0;
   border-radius: 999px;
-  color: rgb(255 255 255 / 0.95);
+
+  background: transparent;
+  color: #fff;
+
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+
   white-space: nowrap;
 }
 
+/* 버튼 사이 세로선 */
 .book-reader__collected-actions button + button {
-  border-left: 1px solid rgb(255 255 255 / 0.28);
+  margin-left: 6px;
 }
 
+.book-reader__collected-actions button + button::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  width: 1px;
+  height: 26px;
+  background: rgb(255 255 255 / 0.85);
+  transform: translate(-50%, -50%);
+}
+
+/* 현재 선택된 버튼 */
 .book-reader__collected-actions button.is-active {
-  background: rgb(255 255 255 / 0.32);
+  background: rgb(255 255 255 / 0.38);
   color: #fff;
   font-weight: 600;
 
   box-shadow:
-    inset 0 1px 0 rgb(255 255 255 / 0.35),
-    0 1px 4px rgb(0 0 0 / 0.08);
+    inset 0 1px 0 rgb(255 255 255 / 0.25),
+    0 1px 1px rgb(0 0 0 / 0.06);
 }
 .book-reader__collected .book-reader__palette {
   padding: 10px 14px 14px;
@@ -736,4 +748,25 @@
   background: #b8be9f;
   margin-top: 8px;
   border-radius: 4px;
+}
+
+/* Saved vocabulary UI uses the existing collected-menu and meaning-card styles. */
+.book-reader__saved-menu {
+  transform: none;
+}
+.book-reader__saved-interaction {
+  user-select: none;
+}
+.book-reader__saved-meaning .book-reader__word-heading {
+  margin-bottom: 12px;
+}
+.book-reader__saved-meaning .book-reader__meaning-concealed {
+  filter: blur(4px);
+  user-select: none;
+}
+.book-reader__reveal-hint {
+  display: block;
+  margin: 10px 0 0 auto;
+  color: #aaa;
+  font-size: 12px;
 }

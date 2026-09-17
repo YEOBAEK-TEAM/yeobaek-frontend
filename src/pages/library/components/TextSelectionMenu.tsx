@@ -18,6 +18,7 @@ type Props = {
   collectionDisabled?: boolean;
   commentDisabled?: boolean;
   showCloseButton?: boolean;
+  colorDisabled?: boolean;
 };
 
 export default function TextSelectionMenu({
@@ -35,6 +36,7 @@ export default function TextSelectionMenu({
   collectionDisabled = false,
   commentDisabled = false,
   showCloseButton = true,
+  colorDisabled = false,
 }: Props) {
   return (
     <div
@@ -90,7 +92,11 @@ export default function TextSelectionMenu({
           )}
           {mode === "word" && wordCard}
           {mode === "highlight" && (
-            <HighlightColorPicker selectedColor={selectedColor} onSelect={onColor} />
+            <HighlightColorPicker
+              selectedColor={selectedColor}
+              onSelect={onColor}
+              disabled={colorDisabled}
+            />
           )}
         </>
       )}

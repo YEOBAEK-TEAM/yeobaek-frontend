@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
@@ -63,8 +63,12 @@ export default function VocabularyPage() {
     isError: isSentenceError,
   } = useSentenceList(activeTab === "sentence");
 
-  const sentences: SentenceListItem[] = (sentenceData ?? []).map((item) => ({
+  const sentences: (SentenceListItem & { bookId: number; pageId: number })[] = (
+    sentenceData ?? []
+  ).map((item) => ({
     id: item.sentenceId,
+    bookId: item.bookId,
+    pageId: item.pageId,
     content: item.content,
     bookTitle: item.bookTitle,
     page: item.pageNumber,
@@ -219,7 +223,13 @@ export default function VocabularyPage() {
                   menuOpen={menuId === item.id}
                   onToggleMenu={() => setMenuId(menuId === item.id ? null : item.id)}
                   onCloseMenu={() => setMenuId(null)}
-                  onDetail={() => navigate(`/vocabulary/${activeTab}/${item.id}`)}
+                  onDetail={() => {
+                    if (activeTab === "sentence") {
+                      navigate(`/vocabulary/sentence/${item.id}`);
+                    } else if (activeTab === "word") {
+                      navigate(`/vocabulary/word/${item.id}`);
+                    }
+                  }}
                   onDelete={() => {
                     setMenuId(null);
                     setDeleteId(item.id);
