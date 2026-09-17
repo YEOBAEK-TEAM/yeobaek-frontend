@@ -12,7 +12,9 @@ import { useContentTextSelection } from "../utils/useContentTextSelection";
 import TextSelectionMenu from "./TextSelectionMenu";
 import ContentWordMeaningCard from "./ContentWordMeaningCard";
 import CollectedSentenceMenu from "./CollectedSentenceMenu";
-import HighlightColorPicker from "./HighlightColorPicker";
+import { useSavedVocabularyWords } from "@/hooks/useSavedVocabularyWords";
+import { savedWordRanges } from "../utils/contentSavedWords";
+import SavedWordText from "./SavedWordText";
 
 export default function ContentPageReader({
   page,
@@ -35,14 +37,20 @@ export default function ContentPageReader({
     nativeSelection,
   } = useContentTextSelection(active, onSwipeDisabledChange);
   const highlights = useSentenceList(active, page.bookId);
+  const vocabulary = useSavedVocabularyWords(active);
+  const [savedWordSelection, setSavedWordSelection] = useState<ContentTextSelection | null>(null);
+  const lookupSelection = savedWordSelection ?? wordSelection;
   const mutation = useHighlightMutation();
   const pending = useRef(false);
   const savedMenuRef = useRef<HTMLDivElement>(null);
+  const savedInlineMenuRef = useRef<HTMLDivElement>(null);
   const savedClick = useRef<number | undefined>(undefined);
   const [collecting, setCollecting] = useState<ContentTextSelection | null>(null);
-  const [savedMenu, setSavedMenu] = useState<{ sentenceId: number; colorOpen: boolean } | null>(
-    null,
-  );
+  const [savedMenu, setSavedMenu] = useState<{
+    sentenceId: number;
+    activeMode: "color" | "note" | null;
+    wordOpen?: boolean;
+  } | null>(null);
   const savedHighlight = highlights.data?.find((item) => item.sentenceId === savedMenu?.sentenceId);
   const collectingNow = !!selection && collecting === selection;
 
@@ -51,7 +59,11 @@ export default function ContentPageReader({
     if (!active || !savedMenu) return;
     onSwipeDisabledChange(true);
     const outside = (event: PointerEvent) => {
-      if (!savedMenuRef.current?.contains(event.target as Node)) setSavedMenu(null);
+      if (
+        !savedMenuRef.current?.contains(event.target as Node) &&
+        !savedInlineMenuRef.current?.contains(event.target as Node)
+      )
+        setSavedMenu(null);
     };
     const escape = (event: KeyboardEvent) => {
       if (event.key === "Escape") setSavedMenu(null);
@@ -90,7 +102,22 @@ export default function ContentPageReader({
   return (
     <article
       ref={articleRef}
-      onPointerDown={onPointerDown}
+      onPointerDown={(event) => {
+        if ((event.target as Element).closest("[data-sentence-id]")) setSavedWordSelection(null);
+        onPointerDown(event);
+      }}
+      onDoubleClick={(event) => {
+        const word = (event.target as Element).closest<HTMLElement>("[data-saved-word]");
+        const sentence = word?.closest<HTMLElement>("[data-sentence-id]");
+        if (!active || !word?.dataset.savedWord || !sentence) return;
+        window.clearTimeout(savedClick.current);
+        savedClick.current = undefined;
+        setCollecting(null);
+        setSavedWordSelection({
+          text: word.dataset.savedWord,
+          sentenceId: Number(sentence.dataset.sentenceId),
+        });
+      }}
       onPointerMove={onPointerMove}
       data-native-selection={nativeSelection || undefined}
       className="book-reader__text relative h-full overflow-y-auto overscroll-contain"
@@ -105,10 +132,11 @@ export default function ContentPageReader({
             (item) => item.sentenceId === sentence.sentenceId,
           );
           const parts = highlightTextParts(sentence.content, highlight?.content);
+          const wordRanges = savedWordRanges(sentence.content, vocabulary.words);
           return (
             <Fragment key={sentence.sentenceId}>
               <p data-sentence-id={sentence.sentenceId} className="whitespace-pre-wrap">
-                {parts.before}
+                <SavedWordText text={parts.before} offset={0} ranges={wordRanges} />
                 {highlight && parts.marked && (
                   <mark
                     data-highlight-id={highlight.sentenceId}
@@ -128,7 +156,7 @@ export default function ContentPageReader({
                         savedClick.current = undefined;
                         close();
                         mutation.reset();
-                        setSavedMenu({ sentenceId: highlight.sentenceId, colorOpen: false });
+                        setSavedMenu({ sentenceId: highlight.sentenceId, activeMode: null });
                       }, 350);
                     }}
                     onKeyDown={(event) => {
@@ -136,20 +164,28 @@ export default function ContentPageReader({
                         event.preventDefault();
                         close();
                         mutation.reset();
-                        setSavedMenu({ sentenceId: highlight.sentenceId, colorOpen: false });
+                        setSavedMenu({ sentenceId: highlight.sentenceId, activeMode: null });
                       }
                     }}
                   >
-                    {parts.marked}
+                    <SavedWordText
+                      text={parts.marked}
+                      offset={parts.before.length}
+                      ranges={wordRanges}
+                    />
                   </mark>
                 )}
-                {parts.after}
+                <SavedWordText
+                  text={parts.after}
+                  offset={parts.before.length + parts.marked.length}
+                  ranges={wordRanges}
+                />
               </p>
               {active && selection?.sentenceId === sentence.sentenceId && (
                 <TextSelectionMenu
                   showCloseButton={false}
                   menuRef={menuRef}
-                  mode={collectingNow ? "highlight" : wordSelection ? "word" : "default"}
+                  mode={collectingNow ? "highlight" : lookupSelection ? "word" : "default"}
                   selectedColor={highlight ? HIGHLIGHT_COLORS[highlight.color] : ""}
                   collectionDisabled={mutation.isPending}
                   colorDisabled={mutation.isPending}
@@ -172,20 +208,69 @@ export default function ContentPageReader({
                   onSubmitComment={() => {}}
                   onWord={() => {
                     setCollecting(null);
+                    setSavedWordSelection(null);
                     openWord();
                   }}
                   onClose={close}
                   wordCard={
-                    wordSelection && (
+                    lookupSelection && (
                       <ContentWordMeaningCard
-                        key={`${wordSelection.sentenceId}:${wordSelection.text}`}
-                        selection={wordSelection}
+                        key={`${lookupSelection.sentenceId}:${lookupSelection.text}`}
+                        selection={lookupSelection}
+                        savedWords={vocabulary.words}
+                        savedWordsReady={vocabulary.ready}
                         onClose={close}
                       />
                     )
                   }
                 />
               )}
+              {active &&
+                savedMenu?.sentenceId === sentence.sentenceId &&
+                savedMenu.activeMode &&
+                savedHighlight && (
+                  <TextSelectionMenu
+                    menuRef={savedInlineMenuRef}
+                    showCloseButton={false}
+                    mode={
+                      savedMenu.activeMode === "color"
+                        ? "highlight"
+                        : savedMenu.wordOpen
+                          ? "word"
+                          : "default"
+                    }
+                    selectedColor={HIGHLIGHT_COLORS[savedHighlight.color]}
+                    collectionDisabled={mutation.isPending}
+                    colorDisabled={mutation.isPending}
+                    commentDisabled
+                    onHighlight={() => setSavedMenu({ ...savedMenu, activeMode: "color" })}
+                    onWord={() =>
+                      setSavedMenu({ ...savedMenu, activeMode: "note", wordOpen: true })
+                    }
+                    onComment={() => {}}
+                    onColor={(css) => {
+                      const color = highlightColorFromCss(css);
+                      if (color)
+                        run({ type: "color", sentenceId: savedHighlight.sentenceId, color });
+                    }}
+                    onSubmitComment={() => {}}
+                    onClose={() => setSavedMenu(null)}
+                    wordCard={
+                      savedMenu.wordOpen && (
+                        <ContentWordMeaningCard
+                          key={`${savedHighlight.sentenceId}:${savedHighlight.content}`}
+                          selection={{
+                            sentenceId: savedHighlight.sentenceId,
+                            text: savedHighlight.content,
+                          }}
+                          savedWords={vocabulary.words}
+                          savedWordsReady={vocabulary.ready}
+                          onClose={() => setSavedMenu(null)}
+                        />
+                      )
+                    }
+                  />
+                )}
             </Fragment>
           );
         })}
@@ -193,6 +278,14 @@ export default function ContentPageReader({
         <p role="alert" className="book-reader__word-hint">
           하이라이트를 불러오지 못했습니다.
           <button type="button" onClick={() => void highlights.refetch()}>
+            다시 시도
+          </button>
+        </p>
+      )}
+      {active && vocabulary.isError && (
+        <p role="alert" className="book-reader__word-hint">
+          저장된 단어를 확인하지 못했습니다.
+          <button type="button" onClick={() => void vocabulary.retry()}>
             다시 시도
           </button>
         </p>
@@ -208,24 +301,12 @@ export default function ContentPageReader({
           left={0}
           top={0}
           highlightId={String(savedHighlight.sentenceId)}
-          activeMode={savedMenu.colorOpen ? "color" : null}
+          activeMode={savedMenu.activeMode}
           disabled={mutation.isPending}
-          noteDisabled
-          onNote={() => {}}
-          onChangeColor={() => setSavedMenu({ ...savedMenu, colorOpen: true })}
+          onNote={() => setSavedMenu({ ...savedMenu, activeMode: "note", wordOpen: false })}
+          onChangeColor={() => setSavedMenu({ ...savedMenu, activeMode: "color" })}
           onDelete={() => run({ type: "delete", sentenceId: savedHighlight.sentenceId })}
-        >
-          {savedMenu.colorOpen && (
-            <HighlightColorPicker
-              selectedColor={HIGHLIGHT_COLORS[savedHighlight.color]}
-              disabled={mutation.isPending}
-              onSelect={(css) => {
-                const color = highlightColorFromCss(css);
-                if (color) run({ type: "color", sentenceId: savedHighlight.sentenceId, color });
-              }}
-            />
-          )}
-        </CollectedSentenceMenu>
+        />
       )}
     </article>
   );
