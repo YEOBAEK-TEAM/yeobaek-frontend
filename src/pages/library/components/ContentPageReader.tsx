@@ -13,8 +13,9 @@ import TextSelectionMenu from "./TextSelectionMenu";
 import ContentWordMeaningCard from "./ContentWordMeaningCard";
 import CollectedSentenceMenu from "./CollectedSentenceMenu";
 import { useSavedVocabularyWords } from "@/hooks/useSavedVocabularyWords";
-import { savedWordRanges } from "../utils/contentSavedWords";
+import { normalizeSavedWord, savedWordRanges } from "../utils/contentSavedWords";
 import SavedWordText from "./SavedWordText";
+import SavedVocabularyInteraction from "./SavedVocabularyInteraction";
 
 export default function ContentPageReader({
   page,
@@ -38,8 +39,13 @@ export default function ContentPageReader({
   } = useContentTextSelection(active, onSwipeDisabledChange);
   const highlights = useSentenceList(active, page.bookId);
   const vocabulary = useSavedVocabularyWords(active);
-  const [savedWordSelection, setSavedWordSelection] = useState<ContentTextSelection | null>(null);
-  const lookupSelection = savedWordSelection ?? wordSelection;
+  const lookupSelection = wordSelection;
+  const [savedWord, setSavedWord] = useState<{
+    vocabularyId: number;
+    sentenceId: number;
+    anchor: HTMLElement;
+  } | null>(null);
+  const wordPress = useRef<{ x: number; y: number } | null>(null);
   const mutation = useHighlightMutation();
   const pending = useRef(false);
   const savedMenuRef = useRef<HTMLDivElement>(null);
@@ -103,19 +109,31 @@ export default function ContentPageReader({
     <article
       ref={articleRef}
       onPointerDown={(event) => {
-        if ((event.target as Element).closest("[data-sentence-id]")) setSavedWordSelection(null);
+        if (!nativeSelection && (event.target as Element).closest("[data-saved-word]")) {
+          wordPress.current = { x: event.clientX, y: event.clientY };
+          return;
+        }
+        wordPress.current = null;
         onPointerDown(event);
       }}
-      onDoubleClick={(event) => {
-        const word = (event.target as Element).closest<HTMLElement>("[data-saved-word]");
-        const sentence = word?.closest<HTMLElement>("[data-sentence-id]");
-        if (!active || !word?.dataset.savedWord || !sentence) return;
-        window.clearTimeout(savedClick.current);
-        savedClick.current = undefined;
-        setCollecting(null);
-        setSavedWordSelection({
-          text: word.dataset.savedWord,
+      onClickCapture={(event) => {
+        const anchor = (event.target as Element).closest<HTMLElement>("[data-saved-word]");
+        if (!active || nativeSelection || !anchor) return;
+        event.stopPropagation();
+        const press = wordPress.current;
+        if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 5) return;
+        const sentence = anchor.closest<HTMLElement>("[data-sentence-id]");
+        const item = vocabulary.items.find(
+          (item) => normalizeSavedWord(item.word) === anchor.dataset.savedWord,
+        );
+        if (!sentence || !item) return;
+        if (savedWord?.anchor === anchor) return;
+        close();
+        setSavedMenu(null);
+        setSavedWord({
+          vocabularyId: item.vocabularyId,
           sentenceId: Number(sentence.dataset.sentenceId),
+          anchor,
         });
       }}
       onPointerMove={onPointerMove}
@@ -208,7 +226,6 @@ export default function ContentPageReader({
                   onSubmitComment={() => {}}
                   onWord={() => {
                     setCollecting(null);
-                    setSavedWordSelection(null);
                     openWord();
                   }}
                   onClose={close}
@@ -271,6 +288,16 @@ export default function ContentPageReader({
                     }
                   />
                 )}
+              {active && savedWord?.sentenceId === sentence.sentenceId && (
+                <SavedVocabularyInteraction
+                  key={savedWord.vocabularyId + ":" + savedWord.sentenceId}
+                  vocabularyId={savedWord.vocabularyId}
+                  sentenceId={savedWord.sentenceId}
+                  anchor={savedWord.anchor}
+                  onClose={() => setSavedWord(null)}
+                  onSwipeDisabledChange={onSwipeDisabledChange}
+                />
+              )}
             </Fragment>
           );
         })}

@@ -1,5 +1,6 @@
 export const normalizeSavedWord = (word: string) =>
-  word.normalize("NFC").trim().toLocaleLowerCase();
+  // Dictionary headwords may include punctuation absent from the printed text (뒷-마당).
+  word.normalize("NFC").replace(/\p{P}/gu, "").trim().toLocaleLowerCase();
 
 export type SavedWordRange = { start: number; end: number; word: string };
 

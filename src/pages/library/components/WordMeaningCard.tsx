@@ -12,6 +12,9 @@ type Props = {
   saving?: boolean;
   saveError?: boolean;
   saveCompleted?: boolean;
+  compact?: boolean;
+  concealMeaning?: boolean;
+  onRevealMeaning?: () => void;
 };
 
 export default function WordMeaningCard({
@@ -24,6 +27,9 @@ export default function WordMeaningCard({
   saving = false,
   saveError = false,
   saveCompleted,
+  compact = false,
+  concealMeaning = false,
+  onRevealMeaning,
 }: Props) {
   const [meaningsOpen, setMeaningsOpen] = useState(false);
   const [examplesOpen, setExamplesOpen] = useState(false);
@@ -44,6 +50,36 @@ export default function WordMeaningCard({
         examples: apiEntry.senses.flatMap((sense) => sense.examples),
       }
     : getDictionaryEntry(text);
+  if (compact)
+    return (
+      <section
+        className="book-reader__word-card book-reader__saved-meaning"
+        aria-label={`${entry.word} 뜻`}
+        onDoubleClick={onRevealMeaning}
+      >
+        <header className="book-reader__word-heading">
+          <h2>{entry.word}</h2>
+          <span className="book-reader__part-of-speech">{entry.partOfSpeech}</span>
+        </header>
+        <p
+          className={concealMeaning ? "book-reader__meaning-concealed" : undefined}
+          aria-hidden={concealMeaning || undefined}
+        >
+          {entry.currentMeaning}
+        </p>
+        {concealMeaning && (
+          <button
+            type="button"
+            className="book-reader__reveal-hint"
+            onClick={(event) => {
+              if (event.detail === 0) onRevealMeaning?.();
+            }}
+          >
+            더블 클릭시 뜻을 볼 수 있습니다
+          </button>
+        )}
+      </section>
+    );
   return (
     <section
       className={`book-reader__word-card${completed ? " is-saved" : ""}`}

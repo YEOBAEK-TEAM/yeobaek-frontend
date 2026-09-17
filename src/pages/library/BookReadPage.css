@@ -749,3 +749,24 @@
   margin-top: 8px;
   border-radius: 4px;
 }
+
+/* Saved vocabulary UI uses the existing collected-menu and meaning-card styles. */
+.book-reader__saved-menu {
+  transform: none;
+}
+.book-reader__saved-interaction {
+  user-select: none;
+}
+.book-reader__saved-meaning .book-reader__word-heading {
+  margin-bottom: 12px;
+}
+.book-reader__saved-meaning .book-reader__meaning-concealed {
+  filter: blur(4px);
+  user-select: none;
+}
+.book-reader__reveal-hint {
+  display: block;
+  margin: 10px 0 0 auto;
+  color: #aaa;
+  font-size: 12px;
+}

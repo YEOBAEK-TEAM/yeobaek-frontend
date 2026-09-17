@@ -18,6 +18,7 @@ export function useSavedVocabularyWords(active: boolean) {
     [query.data],
   );
   return {
+    items: query.data?.pages.flatMap((page) => page.items) ?? [],
     words,
     ready: query.isSuccess && !hasNextPage && !isFetching,
     isError,

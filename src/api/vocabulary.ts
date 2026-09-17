@@ -44,11 +44,13 @@ export const getVocabularyList = async ({
 }: GetVocabularyListParams): Promise<VocabularyListResponse> => {
   const response = await api.get<ApiResponse<VocabularyListResponse>>("/api/v1/vocabularies", {
     params: {
-      choseong,
+      // Omit the initial filter when the reader requests all saved words.
+      choseong: choseong || undefined,
       page,
     },
   });
 
+  if (!response.data.success) throw new Error(response.data.message);
   return response.data.data;
 };
 
