@@ -3,6 +3,7 @@ import type { PointerEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
+import ReportTabPanel from "@/components/library/report/ReportTabPanel";
 import { useReadingRecords } from "@/hooks/useReadingRecords";
 
 const tabs = ["전체", "완독", "독후감"] as const;
@@ -20,7 +21,9 @@ export default function LibraryPage() {
     return () => window.clearTimeout(timeout);
   }, [navigate, showAddedNotice]);
 
-  const [tab, setTab] = useState<(typeof tabs)[number]>("전체");
+  const [tab, setTab] = useState<(typeof tabs)[number]>(
+    tabs.find((item) => item === location.state?.tab) ?? "전체",
+  );
   const { data, isPending, isError } = useReadingRecords(
     tab === "완독" ? "COMPLETED" : "ALL",
     tab !== "독후감",
@@ -54,10 +57,7 @@ export default function LibraryPage() {
   };
 
   return (
-    <main
-      className="flex-1 pb-2 text-[#4F4D4E]"
-      style={{ fontFamily: "Arial, 'Malgun Gothic', sans-serif" }}
-    >
+    <main className="flex-1 pb-2 text-[#4F4D4E]">
       {showAddedNotice && (
         <div
           role="status"
@@ -76,7 +76,12 @@ export default function LibraryPage() {
           서재에 추가되었습니다
         </div>
       )}
-      <Header title="서재" action="search" onActionClick={() => navigate("/library/search")} />
+      <Header
+        title="서재"
+        // 독후감 탭에서는 검색 아이콘 숨김
+        action={tab === "독후감" ? undefined : "search"}
+        onActionClick={() => navigate("/library/search")}
+      />
       <div role="tablist" aria-label="서재 도서 분류" className="mx-5 mt-4 flex">
         {tabs.map((item) => (
           <button
@@ -97,6 +102,8 @@ export default function LibraryPage() {
         ))}
       </div>
       <div id="library-books" role="tabpanel" aria-labelledby={`library-tab-${tab}`}>
+        {tab === "독후감" && <ReportTabPanel />}
+
         {/* 상단 도서 목록 */}
         <section aria-label="서재 도서 목록" className="mt-6">
           <div
@@ -220,6 +227,8 @@ export default function LibraryPage() {
           </section>
         ) : (
           <p
+            // 독후감 탭은 독후감 패널이 대신 표시
+            hidden={tab === "독후감"}
             role={tab !== "독후감" && isError ? "alert" : "status"}
             className="px-5 py-16 text-center text-sm text-[#8B8B8B]"
           >
