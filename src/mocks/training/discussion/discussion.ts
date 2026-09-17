@@ -42,7 +42,13 @@ const toGroup = (
   base: DiscussionBaseResponse,
   membership: GroupMembership,
   createdAt: string,
-): DiscussionGroupResponse => ({ ...base, groupId: base.roomId, membership, createdAt });
+): DiscussionGroupResponse => ({
+  ...base,
+  groupId: base.roomId,
+  membership,
+  isHost: false,
+  createdAt,
+});
 
 const shellRoom = toBase(101, "양면의 조개껍데기", "오지우", "https://i.pravatar.cc/80?img=47", 26);
 const lightSpeedRoom = toBase(102, "우리가 빛의 속도로 갈 수 없다면", "한도윤", null, 14);
