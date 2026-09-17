@@ -1,22 +1,23 @@
 import { useState } from "react";
+import { isAxiosError } from "axios";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useBookDetail } from "@/hooks/useBookDetail";
+import { useAddReadingRecord } from "@/hooks/useAddReadingRecord";
 import BookCover from "./components/BookCover";
 
 import { ArrowIcon } from "./components/LibraryIcons";
-import { useLibrary } from "./utils/useLibrary";
 
 export default function BookDetailPage() {
   const { bookId } = useParams();
   const navigate = useNavigate();
-  const [saveError, setSaveError] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const numericBookId = bookId && /^\d+$/.test(bookId) ? Number(bookId) : NaN;
   const validBookId = Number.isSafeInteger(numericBookId) && numericBookId > 0;
   const { data: book, isPending, isError } = useBookDetail(numericBookId);
 
-  const addBook = useLibrary((state) => state.addBook);
+  const { mutateAsync: addReadingRecord, isPending: isAdding } = useAddReadingRecord();
 
   if (!validBookId || isPending || isError || !book) {
     return (
@@ -102,21 +103,28 @@ export default function BookDetailPage() {
       {/* 내 서재에 추가 */}
       <button
         type="button"
-        onClick={() => {
+        disabled={isAdding}
+        onClick={async () => {
+          if (isAdding) return;
+          setSaveError(null);
           try {
-            addBook(numericBookId);
+            await addReadingRecord(numericBookId);
             navigate("/library", { state: { bookAdded: true } });
-          } catch {
-            setSaveError(true);
+          } catch (error) {
+            setSaveError(
+              isAxiosError(error) && error.response?.status === 409
+                ? "이미 내 서재에 추가된 도서입니다."
+                : "서재에 저장하지 못했습니다. 다시 시도해주세요.",
+            );
           }
         }}
         className="mt-auto h-14 w-full rounded-lg bg-[#BEC5A5] text-base font-semibold text-[#4F4D4E]"
       >
-        내 서재에 추가
+        {isAdding ? "추가 중..." : "내 서재에 추가"}
       </button>
       {saveError && (
         <p role="alert" className="mt-2 text-sm text-[#4F4D4E]">
-          서재에 저장하지 못했습니다. 다시 시도해주세요.
+          {saveError}
         </p>
       )}
     </main>
