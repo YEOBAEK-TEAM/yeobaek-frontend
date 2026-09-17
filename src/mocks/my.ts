@@ -1,12 +1,5 @@
-﻿import { books } from "@/mocks/books";
-import type {
-  LikedComment,
-  LikedPage,
-  MyBook,
-  MyProfile,
-  ReadingCategory,
-  ReadingDay,
-} from "@/types/my";
+import { books } from "@/mocks/books";
+import type { LikedComment, MyBook, MyProfile, ReadingCategory, ReadingDay } from "@/types/my";
 
 export const myProfile: MyProfile = {
   userId: 1,
@@ -27,71 +20,6 @@ function getBook(bookId: number): MyBook {
   return myBooks.find((book) => book.bookId === bookId)!;
 }
 
-export const mockLikedPages: LikedPage[] = [
-  {
-    id: "page-1",
-    ...getBook(9),
-    userId: 1,
-    page: 34,
-    content: "지나쳐서 빠르게 튀어나오는 대답에 과연 진심으로 한 말일까",
-    createdAt: "2026-09-16T09:00:00+09:00",
-    liked: true,
-  },
-  {
-    id: "page-2",
-    ...getBook(9),
-    userId: 1,
-    page: 58,
-    content: "그럼에도 내가 여전히 고민하는 듯하자 아카리는 다시금 말을 건넸다.",
-    createdAt: "2026-09-16T08:00:00+09:00",
-    liked: true,
-  },
-  {
-    id: "page-3",
-    ...getBook(6),
-    userId: 1,
-    page: 24,
-    content: "우리는 서로의 세계에 조금씩 가까워지고 있었다.",
-    createdAt: "2026-09-15T09:00:00+09:00",
-    liked: true,
-  },
-  {
-    id: "page-4",
-    ...getBook(7),
-    userId: 1,
-    page: 38,
-    content: "기억 속의 장면이 천천히 모습을 드러냈다.",
-    createdAt: "2026-09-14T09:00:00+09:00",
-    liked: true,
-  },
-  {
-    id: "page-5",
-    ...getBook(8),
-    userId: 1,
-    page: 65,
-    content: "물결이 지나간 자리에 고요가 남았다.",
-    createdAt: "2026-09-13T09:00:00+09:00",
-    liked: true,
-  },
-  {
-    id: "page-6",
-    ...getBook(5),
-    userId: 1,
-    page: 72,
-    content: "삶의 모순을 이해하는 데에는 시간이 필요했다.",
-    createdAt: "2026-09-12T09:00:00+09:00",
-    liked: true,
-  },
-  {
-    id: "page-7",
-    ...getBook(1),
-    userId: 1,
-    page: 12,
-    content: "마음으로 바라보면 비로소 보이는 것들이 있다.",
-    createdAt: "2026-09-11T09:00:00+09:00",
-    liked: true,
-  },
-];
 export const mockLikedComments: LikedComment[] = [
   {
     id: "comment-1",

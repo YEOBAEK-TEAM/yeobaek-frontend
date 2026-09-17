@@ -16,6 +16,8 @@ import ReadingCalendarPage from "@/pages/my/ReadingCalendarPage";
 import LikedCommentsPage from "@/pages/my/LikedCommentsPage";
 import LikedPagesPage from "@/pages/my/LikedPagesPage";
 import LikedBookPagesPage from "@/pages/my/LikedBookPagesPage";
+import BookmarkedPagesPage from "@/pages/my/BookmarkedPagesPage";
+import BookmarkedBookPagesPage from "@/pages/my/BookmarkedBookPagesPage";
 import MyActivityProvider from "@/components/my/MyActivityProvider";
 import TrainingPage from "@/pages/training/TrainingPage";
 import BookReportChatPage from "@/pages/training/BookReportChatPage";
@@ -41,6 +43,8 @@ export default function App() {
             <Route path="/my/liked-comments" element={<LikedCommentsPage />} />
             <Route path="/my/liked-pages" element={<LikedPagesPage />} />
             <Route path="/my/liked-pages/:bookId" element={<LikedBookPagesPage />} />
+            <Route path="/my/bookmarked-pages" element={<BookmarkedPagesPage />} />
+            <Route path="/my/bookmarked-pages/:bookId" element={<BookmarkedBookPagesPage />} />
             <Route path="/training/book-report" element={<BookReportChatPage />} />
             <Route path="/training/complete" element={<TrainingCompletePage />} />
 

@@ -4,6 +4,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import { Bookmark, Heart, MessageSquare } from "lucide-react";
 import { useBookDetail } from "@/hooks/useBookDetail";
 import { useContentChapter } from "@/hooks/useContentChapter";
+import { useContentPage } from "@/hooks/useContentPage";
+import { useTogglePageLike } from "@/hooks/useTogglePageLike";
+import { useTogglePageBookmark } from "@/hooks/useTogglePageBookmark";
 import { useUpdateReadingProgress } from "@/hooks/useUpdateReadingProgress";
 import ContentPageReader from "./components/ContentPageReader";
 import ReaderCoverPage from "./components/ReaderCoverPage";
@@ -77,9 +80,20 @@ function ContentBookReader({
     ...pages.map((page) => ({ type: "content" as const, page })),
   ];
   const deckIndex = onCover ? 0 : index + 1;
+  const progressPercent = deckPages.length > 1 ? (deckIndex / (deckPages.length - 1)) * 100 : 0;
   const deckPage = deckPages[deckIndex];
   const actualPageId = ready && deckPage?.type === "content" ? deckPage.page.pageId : undefined;
   const deckReady = ready && (!onCover || (!!book.data && !book.isError));
+  const pageDetail = useContentPage(actualPageId ?? NaN);
+  const likeMutation = useTogglePageLike();
+  const bookmarkMutation = useTogglePageBookmark();
+  const actionsReady =
+    !!actualPageId && pageDetail.isSuccess && pageDetail.data.pageId === actualPageId;
+  const liked = actionsReady && pageDetail.data.liked;
+  const bookmarked = actionsReady && pageDetail.data.bookmarked;
+  const likeError = likeMutation.isError && likeMutation.variables?.pageId === actualPageId;
+  const bookmarkError =
+    bookmarkMutation.isError && bookmarkMutation.variables?.pageId === actualPageId;
 
   // Browser navigation can point outside the currently loaded window.
   if (!chapter.isPending && !chapter.isPlaceholderData && index < 0 && anchorId !== pageId) {
@@ -252,6 +266,20 @@ function ContentBookReader({
         </p>
       )}
       <footer className="book-reader__footer">
+        {actualPageId && (pageDetail.isError || likeError || bookmarkError) && (
+          <p role="alert" className="book-reader__notice">
+            {pageDetail.isError
+              ? "좋아요와 북마크 상태를 불러오지 못했습니다."
+              : likeError
+                ? "좋아요를 변경하지 못했습니다. 다시 시도해 주세요."
+                : "북마크를 변경하지 못했습니다. 다시 시도해 주세요."}
+            {pageDetail.isError && (
+              <button type="button" onClick={() => void pageDetail.refetch()}>
+                다시 시도
+              </button>
+            )}
+          </p>
+        )}
         <div className="book-reader__progress">
           <input
             type="range"
@@ -263,7 +291,9 @@ function ContentBookReader({
             max={Math.max(0, deckPages.length - 1)}
             value={Math.max(0, deckIndex)}
             disabled={!deckReady || deckPages.length <= 1}
-            style={{ background: "#f7f6f1" }}
+            style={{
+              background: `linear-gradient(to right, #B7BD9E 0%, #B7BD9E ${progressPercent}%, #F7F6F1 ${progressPercent}%, #F7F6F1 100%)`,
+            }}
             onChange={(event) => navigate(Number(event.target.value))}
           />
           <span aria-live="polite">
@@ -271,8 +301,17 @@ function ContentBookReader({
           </span>
         </div>
         <div className="book-reader__actions">
-          <button type="button" aria-label="좋아요 (준비 중)" disabled>
-            <Heart size={24} strokeWidth={1.5} />
+          <button
+            type="button"
+            aria-label="좋아요"
+            aria-pressed={liked}
+            disabled={!actionsReady || likeMutation.isPending}
+            onClick={() => {
+              if (!actionsReady || likeMutation.isPending) return;
+              likeMutation.mutate({ pageId: actualPageId, liked });
+            }}
+          >
+            <Heart size={24} strokeWidth={1.5} fill={liked ? "currentColor" : "none"} />
           </button>
           <button type="button" aria-label="댓글 (준비 중)" disabled>
             <MessageSquare size={24} strokeWidth={1.5} />
@@ -280,10 +319,15 @@ function ContentBookReader({
           <button
             type="button"
             className="book-reader__bookmark"
-            aria-label="북마크 (준비 중)"
-            disabled
+            aria-label="북마크"
+            aria-pressed={bookmarked}
+            disabled={!actionsReady || bookmarkMutation.isPending}
+            onClick={() => {
+              if (!actionsReady || bookmarkMutation.isPending) return;
+              bookmarkMutation.mutate({ pageId: actualPageId, bookmarked });
+            }}
           >
-            <Bookmark size={24} strokeWidth={1.5} />
+            <Bookmark size={24} strokeWidth={1.5} fill={bookmarked ? "currentColor" : "none"} />
           </button>
         </div>
       </footer>
