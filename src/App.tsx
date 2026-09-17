@@ -18,6 +18,8 @@ import LikedPagesPage from "@/pages/my/LikedPagesPage";
 import LikedBookPagesPage from "@/pages/my/LikedBookPagesPage";
 import MyActivityProvider from "@/components/my/MyActivityProvider";
 import TrainingPage from "@/pages/training/TrainingPage";
+import BookReportChatPage from "@/pages/training/BookReportChatPage";
+import TrainingCompletePage from "@/pages/training/TrainingCompletePage";
 import VocabularyPage from "@/pages/vocabulary/VocabularyPage";
 import WordDetailPage from "@/pages/vocabulary/WordDetailPage";
 import SentenceDetailPage from "@/pages/vocabulary/SentenceDetailPage";
@@ -39,6 +41,8 @@ export default function App() {
             <Route path="/my/liked-comments" element={<LikedCommentsPage />} />
             <Route path="/my/liked-pages" element={<LikedPagesPage />} />
             <Route path="/my/liked-pages/:bookId" element={<LikedBookPagesPage />} />
+            <Route path="/training/book-report" element={<BookReportChatPage />} />
+            <Route path="/training/complete" element={<TrainingCompletePage />} />
 
             {/* Footer 있는 페이지 */}
             <Route element={<FooterLayout />}>

@@ -1,3 +1,5 @@
+import { useNavigate } from "react-router-dom";
+
 import Header from "@/components/common/header/Header";
 import { useOngoingTraining } from "@/hooks/training/useOngoingTraining";
 import OngoingTrainingCard from "@/components/training/OngoingTrainingCard";
@@ -8,16 +10,18 @@ import { TRAINING_PROGRAMS } from "@/constants/training/trainingPrograms";
 import { useTrainingStore } from "@/stores/training/trainingTab";
 
 export default function TrainingPage() {
+  const navigate = useNavigate();
+
   const activeTab = useTrainingStore((state) => state.activeTab);
 
   const { data: ongoingTraining } = useOngoingTraining();
 
   return (
     <main className="flex-1">
-      {/* 기본 className은 h-17에 py-10이라 본문과 겹쳐 훈련 페이지 간격으로 재지정 */}
+      {/* 상단 헤더 */}
       <Header title="훈련" action="bell" className="px-5 pt-8 pb-5" />
 
-      {/* 배너 폭 352px에 맞춘 본문 컬럼 */}
+      {/* 본문 컬럼 */}
       <div className="mx-auto w-88">
         <TrainingGreeting />
 
@@ -38,7 +42,15 @@ export default function TrainingPage() {
 
               <div className="mt-4 flex flex-col gap-4">
                 {TRAINING_PROGRAMS.map((program) => (
-                  <TrainingProgramCard key={program.id} program={program} />
+                  <TrainingProgramCard
+                    key={program.id}
+                    program={program}
+                    onClick={
+                      program.id === "book-report"
+                        ? () => navigate("/training/book-report")
+                        : undefined
+                    }
+                  />
                 ))}
               </div>
             </section>
