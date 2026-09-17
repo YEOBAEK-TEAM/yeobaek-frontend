@@ -31,7 +31,7 @@ const toMyReport = (
   };
 };
 
-const toUnlockedBook = (title: string, completedAt: string): UnlockedBookResponse => {
+const toUnlockedBook = (title: string, unlockedAt: string): UnlockedBookResponse => {
   const book = findBook(title);
 
   return {
@@ -39,7 +39,7 @@ const toUnlockedBook = (title: string, completedAt: string): UnlockedBookRespons
     bookTitle: title,
     author: book?.author ?? "",
     coverUrl: book?.coverUrl ?? "",
-    completedAt,
+    unlockedAt,
   };
 };
 
@@ -85,7 +85,7 @@ export const mockMyReportStates = {
 
 export const mockUnlockedBookStates = {
   filled: [
-    toUnlockedBook("어린 왕자", "2026-09-06"),
+    toUnlockedBook("수족관", "2026-09-06"),
     toUnlockedBook("투명한 나선", "2026-09-04"),
     toUnlockedBook("양면의 조개껍데기", "2026-09-02"),
     toUnlockedBook("궤도", "2026-09-01"),

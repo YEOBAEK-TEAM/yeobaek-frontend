@@ -59,13 +59,13 @@ export const toUnlockedBookViews = (responses: UnlockedBookResponse[]): Unlocked
     title: response.bookTitle,
     author: response.author,
     coverUrl: response.coverUrl,
-    completedAt: response.completedAt,
-    completedLabel: formatReportDate(response.completedAt),
+    unlockedAt: response.unlockedAt,
+    unlockedLabel: formatReportDate(response.unlockedAt),
   }));
 
 export const sortUnlockedBooks = (books: UnlockedBookView[], order: UnlockedBookSortOrder) =>
   [...books].sort((a, b) =>
     order === "latest"
-      ? Date.parse(b.completedAt) - Date.parse(a.completedAt)
-      : Date.parse(a.completedAt) - Date.parse(b.completedAt),
+      ? Date.parse(b.unlockedAt) - Date.parse(a.unlockedAt)
+      : Date.parse(a.unlockedAt) - Date.parse(b.unlockedAt),
   );
