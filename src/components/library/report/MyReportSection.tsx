@@ -1,13 +1,13 @@
 import { ChevronRight } from "lucide-react";
-import { useCallback, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import SectionState from "@/components/common/section/SectionState";
 import MyReportCard from "@/components/library/report/MyReportCard";
-import ReportToast from "@/components/library/report/ReportToast";
 import { MY_REPORT_SECTION, REPORT_LIKE_ERROR_TEXT } from "@/constants/library/report";
 import { useMyReports } from "@/hooks/library/report/useReportQueries";
 import { useStableOrder } from "@/hooks/library/report/useStableOrder";
 import { useToggleReportLike } from "@/hooks/library/report/useToggleReportLike";
+import { useToastStore } from "@/stores/common/toast";
 import { sortReportsByLike } from "@/utils/library/report/sortReportsByLike";
 import { toMyReportView } from "@/utils/library/report/toReportView";
 
@@ -25,10 +25,9 @@ const getReportId = (report: MyReportResponse) => report.reportId;
 export default function MyReportSection({ onWrite, onOpenReport }: MyReportSectionProps) {
   const { data, isPending, isError, refetch } = useMyReports();
 
-  const [isLikeErrorVisible, setIsLikeErrorVisible] = useState(false);
-  const hideLikeError = useCallback(() => setIsLikeErrorVisible(false), []);
+  const showToast = useToastStore((state) => state.showToast);
 
-  const toggleLike = useToggleReportLike(() => setIsLikeErrorVisible(true));
+  const toggleLike = useToggleReportLike(() => showToast(REPORT_LIKE_ERROR_TEXT, "error"));
 
   const sortedReports = useMemo(() => (data ? sortReportsByLike(data) : undefined), [data]);
 
@@ -91,10 +90,6 @@ export default function MyReportSection({ onWrite, onOpenReport }: MyReportSecti
       </div>
 
       <div className="mt-2">{renderList()}</div>
-
-      {isLikeErrorVisible && (
-        <ReportToast message={REPORT_LIKE_ERROR_TEXT} onClose={hideLikeError} />
-      )}
     </section>
   );
 }
