@@ -6,6 +6,7 @@ export type ReadingRecordItem = {
   bookTitle: string;
   coverImageUrl: string;
   progressRate: number;
+  lastPageId: number;
   lastPageNumber: number;
   startedAt: string;
   completedAt: string | null;
@@ -24,4 +25,15 @@ export type ReadingRecordParams = {
   status?: ReadingRecordStatus;
   cursor?: number;
   size?: number;
+};
+
+export type UpdateReadingProgressRequest = {
+  pageId: number;
+};
+
+export type UpdateReadingProgressResponse = {
+  recordId: number;
+  lastPageNumber: number;
+  progressRate: number;
+  lastReadAt: string;
 };

@@ -5,7 +5,22 @@ import type {
   AddReadingRecordResponse,
   ReadingRecordList,
   ReadingRecordParams,
+  UpdateReadingProgressRequest,
+  UpdateReadingProgressResponse,
 } from "@/types/readingRecord";
+
+export const updateReadingProgress = async (
+  bookId: number,
+  pageId: number,
+): Promise<UpdateReadingProgressResponse> => {
+  const body: UpdateReadingProgressRequest = { pageId };
+  const response = await api.patch<ApiResponse<UpdateReadingProgressResponse>>(
+    `/api/v1/reading-records/${bookId}/progress`,
+    body,
+  );
+  if (!response.data.success) throw new Error(response.data.message);
+  return response.data.data;
+};
 
 export const addReadingRecord = async (bookId: number): Promise<AddReadingRecordResponse> => {
   const response = await api.post<ApiResponse<AddReadingRecordResponse>>(

@@ -1,205 +1,151 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { Bookmark, Heart, MessageSquare } from "lucide-react";
+import { useBookDetail } from "@/hooks/useBookDetail";
+import { useContentChapter } from "@/hooks/useContentChapter";
+import { useUpdateReadingProgress } from "@/hooks/useUpdateReadingProgress";
+import ContentPageReader from "./components/ContentPageReader";
+import ReaderCoverPage from "./components/ReaderCoverPage";
+import type { BookDetail } from "@/types/book";
+import type { ContentChapterPage } from "@/types/contentPage";
+import ReaderPageDeck from "./components/ReaderPageDeck";
 import ReaderSettingsPanel from "./components/ReaderSettingsPanel";
 import { READER_FONTS, useReaderSettings } from "./utils/useReaderSettings";
-import { Document, pdfjs } from "react-pdf";
-import type { PDFDocumentProxy } from "pdfjs-dist";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import Header from "@/components/common/header/Header";
-import type { Book } from "@/mocks/books";
-
-import { books } from "../../mocks/books";
-import ReaderCoverPage from "./components/ReaderCoverPage";
-import type { DeckPage } from "./components/ReaderPageDeck";
-import BookTextReader from "./components/BookTextReader";
-import ReaderCommentsSheet from "./components/ReaderCommentsSheet";
-import ReaderPageDeck from "./components/ReaderPageDeck";
-
-import { useReaderData } from "./utils/useReaderData";
-import { useReaderPagination } from "./utils/useReaderPagination";
-import { readerPageContainsAnchor } from "./utils/paginateReaderText";
-import { getCommentReaderPageIndex } from "./utils/readerComments";
-
-import { readerUser } from "../../mocks/readerUser";
-
 import "./BookReadPage.css";
 
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  "pdfjs-dist/build/pdf.worker.min.mjs",
-  import.meta.url,
-).toString();
+type ReaderPageItem =
+  { type: "cover"; book: BookDetail | undefined } | { type: "content"; page: ContentChapterPage };
 
-const pdfOptions = { wasmUrl: "/wasm/" };
-
-function Icon({
-  name,
-  filled = false,
-}: {
-  name: "heart" | "comment" | "bookmark";
-  filled?: boolean;
-}) {
-  const paths = {
-    heart: "M12 20S3 14.5 3 8.5C3 3.5 9 2.5 12 7c3-4.5 9-3.5 9 1.5C21 14.5 12 20 12 20Z",
-    comment:
-      "M5 3.5h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2h-3v4l-5-4H5a2 2 0 0 1-2-2v-10a2 2 0 0 1 2-2Z",
-    bookmark: "M6 3h12v18l-6-4-6 4V3Z",
-  };
-
-  return (
-    <svg
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill={filled ? "currentColor" : "none"}
-      stroke="currentColor"
-      strokeWidth="1.5"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d={paths[name]} />
-    </svg>
-  );
-}
+const parseId = (value: string | null) => {
+  const id = value && /^\d+$/.test(value) ? Number(value) : NaN;
+  return Number.isSafeInteger(id) && id > 0 ? id : NaN;
+};
 
 export default function BookReadPage() {
   const [params] = useSearchParams();
-  const navigateBack = useNavigate();
-  const bookId = Number(params.get("bookId") ?? 1);
-  const book = books.find((entry) => entry.id === bookId);
-  const requestedPage = Number(params.get("page") ?? 1);
-  const initialPage = Number.isInteger(requestedPage) && requestedPage > 0 ? requestedPage : 1;
-  const commentId = params.get("commentId");
-
-  if (!book?.pdfUrl) {
+  const bookId = parseId(params.get("bookId"));
+  const pageId = parseId(params.get("pageId"));
+  if (!Number.isSafeInteger(bookId) || !Number.isSafeInteger(pageId)) {
     return (
-      <main>
-        <Header title={book?.title ?? "책 읽기"} onBack={() => navigateBack(-1)} />
-        <p className="px-6 py-16 text-center text-sm text-[#888]">
-          {book ? "이 책의 본문은 아직 준비되지 않았습니다." : "책을 찾을 수 없습니다."}
+      <main className="book-reader">
+        <header className="book-reader__header">
+          <Link to="/library">서재로 돌아가기</Link>
+        </header>
+        <p role="alert" className="book-reader__message">
+          책 정보를 불러올 수 없습니다.
         </p>
       </main>
     );
   }
-
   return (
-    <BookReader
-      key={`${book.id}:${initialPage}:${commentId ?? ""}`}
-      book={book}
-      initialPage={initialPage}
-      openComment={!!commentId}
+    <ContentBookReader
+      key={bookId}
+      bookId={bookId}
+      pageId={pageId}
+      onCover={params.get("firstRead") === "true"}
     />
   );
 }
 
-function BookReader({
-  book,
-  initialPage,
-  openComment,
+function ContentBookReader({
+  bookId,
+  pageId,
+  onCover,
 }: {
-  book: Book;
-  initialPage: number;
-  openComment: boolean;
+  bookId: number;
+  pageId: number;
+  onCover: boolean;
 }) {
-  const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
-  const bodyRef = useRef<HTMLDivElement>(null);
-  const { settings, updateSettings, storageError: settingsStorageError } = useReaderSettings();
+  const [, setParams] = useSearchParams();
+  const [anchorId, setAnchorId] = useState(pageId);
+  const chapter = useContentChapter(anchorId);
+  const book = useBookDetail(bookId);
+  const { settings, updateSettings, storageError } = useReaderSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const { mutate: saveProgress, isError: saveError } = useUpdateReadingProgress(bookId);
+  const lastSaved = useRef<{ pageId: number; at: number } | null>(null);
+  const pages = [
+    ...new Map((chapter.data?.pages ?? []).map((page) => [page.pageId, page])).values(),
+  ].sort((a, b) => a.pageNumber - b.pageNumber);
+  const index = pages.findIndex((page) => page.pageId === pageId);
+  const currentPage = pages[index];
+  const wrongBook = pages.some((page) => page.bookId !== bookId);
+  const ready = !!currentPage && !wrongBook && !chapter.isError;
+  const deckPages: ReaderPageItem[] = [
+    { type: "cover", book: book.data },
+    ...pages.map((page) => ({ type: "content" as const, page })),
+  ];
+  const deckIndex = onCover ? 0 : index + 1;
+  const deckPage = deckPages[deckIndex];
+  const actualPageId = ready && deckPage?.type === "content" ? deckPage.page.pageId : undefined;
+  const deckReady = ready && (!onCover || (!!book.data && !book.isError));
 
-  const {
-    readerPages,
-    pageIndex,
-    loading,
-    error,
-    prepared,
-    goToPage: navigate,
-  } = useReaderPagination(
-    pdf,
-    bodyRef,
-    `${settings.fontSize}:${settings.lineHeight}:${settings.fontFamily}`,
-  );
-
-  const [onCover, setOnCover] = useState(initialPage === 1 && !openComment);
-  const deckPages: DeckPage[] = [{ id: "cover" }, ...readerPages];
-  const deckIndex = onCover ? 0 : pageIndex + 1;
-  const pageNumber = deckIndex + 1;
-  const currentPage = readerPages[pageIndex];
-  const pdfPage = currentPage?.pdfPage ?? 1;
-
-  const ready = !!currentPage && !loading && !error;
-
-  const { data, setData, storageError } = useReaderData();
-
-  const [commentOpen, setCommentOpen] = useState(openComment);
-  const [notice, setNotice] = useState("");
-  const initialLocationApplied = useRef(false);
-
-  useEffect(() => {
-    if (!ready || initialLocationApplied.current) return;
-    const timer = window.setTimeout(() => {
-      initialLocationApplied.current = true;
-      if (initialPage > 1) navigate(initialPage - 2);
-    }, 0);
-    return () => window.clearTimeout(timer);
-  }, [ready, initialPage, navigate]);
+  // Browser navigation can point outside the currently loaded window.
+  if (!chapter.isPending && !chapter.isPlaceholderData && index < 0 && anchorId !== pageId) {
+    setAnchorId(pageId);
+  }
 
   useEffect(() => {
     const elements = [document.documentElement, document.body];
-
     const previous = elements.map((element) => element.style.overflow);
-
     elements.forEach((element) => {
       element.style.overflow = "hidden";
     });
-
     return () =>
-      elements.forEach((element, index) => {
-        element.style.overflow = previous[index];
+      elements.forEach((element, i) => {
+        element.style.overflow = previous[i];
       });
   }, []);
 
   useEffect(() => {
-    if (!notice) return;
+    if (!actualPageId || settingsOpen) return;
+    let timer: number | undefined;
+    const schedule = () => {
+      window.clearTimeout(timer);
+      if (document.visibilityState !== "visible") return;
+      timer = window.setTimeout(() => {
+        const previous = lastSaved.current;
+        if (previous?.pageId === actualPageId && Date.now() - previous.at < 30_000) return;
+        const attempt = { pageId: actualPageId, at: Date.now() };
+        lastSaved.current = attempt;
+        saveProgress(actualPageId, {
+          onError: () => {
+            if (lastSaved.current === attempt) lastSaved.current = null;
+          },
+        });
+      }, 3000);
+    };
+    schedule();
+    document.addEventListener("visibilitychange", schedule);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener("visibilitychange", schedule);
+    };
+  }, [actualPageId, saveProgress, settingsOpen]);
 
-    const timeout = window.setTimeout(() => setNotice(""), 2500);
-
-    return () => window.clearTimeout(timeout);
-  }, [notice]);
-
-  const goToPage = (nextPage: number) => {
-    if (!ready) return;
-
-    setOnCover(nextPage === 1);
-    if (nextPage > 1) navigate(nextPage - 2);
-    setCommentOpen(false);
-    setNotice("");
-
+  const navigate = (nextIndex: number) => {
+    const item = deckPages[nextIndex];
+    if (!deckReady || !item) return;
+    if (item.type === "cover") {
+      const firstPage = pages[0];
+      if (!firstPage || onCover) return;
+      setParams(
+        { bookId: String(bookId), pageId: String(firstPage.pageId), firstRead: "true" },
+        { replace: true },
+      );
+      return;
+    }
+    const next = item.page;
+    if (!onCover && next.pageId === pageId) return;
     window.getSelection()?.removeAllRanges();
-  };
-
-  // 현재 reader page의 원댓글만 가져오기
-  const comments = data.comments.filter(
-    (comment) =>
-      !onCover &&
-      !comment.parentCommentId &&
-      !comment.replyTo &&
-      comment.type !== "reply" &&
-      getCommentReaderPageIndex(comment, readerPages) === pageIndex,
-  );
-
-  const bookmarks =
-    data.readerBookmarks ??
-    data.bookmarks.map((page) => ({
-      pdfPage: page,
-      start: 0,
-    }));
-
-  const bookmarked =
-    !onCover &&
-    !!currentPage &&
-    bookmarks.some((bookmark) => readerPageContainsAnchor(currentPage, bookmark));
-
-  const openComments = () => {
-    setCommentOpen(true);
+    setParams(
+      { bookId: String(bookId), pageId: String(next.pageId), firstRead: "false" },
+      { replace: true },
+    );
+    // Recenter at a known boundary ID, never at an ID inferred from a page number.
+    const contentIndex = nextIndex - 1;
+    if (contentIndex === 0 || contentIndex === pages.length - 1) setAnchorId(next.pageId);
   };
 
   return (
@@ -207,7 +153,7 @@ function BookReader({
       className="book-reader"
       style={
         {
-          "--reader-font-size": `${settings.fontSize}px`,
+          "--reader-font-size": settings.fontSize + "px",
           "--reader-line-height": settings.lineHeight,
           "--reader-font-family": READER_FONTS[settings.fontFamily],
           "--reader-background": settings.backgroundColor,
@@ -215,7 +161,6 @@ function BookReader({
         } as CSSProperties
       }
     >
-      {/* Header */}
       <header className="book-reader__header">
         <Link to="/library" aria-label="서재로 돌아가기" className="book-reader__back">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -228,390 +173,120 @@ function BookReader({
             />
           </svg>
         </Link>
-
-        <h1>{book.title}</h1>
+        <h1>{book.data?.title ?? "책 읽기"}</h1>
         <button
           type="button"
           aria-label="읽기 설정"
           aria-haspopup="dialog"
           aria-expanded={settingsOpen}
-          className="absolute -right-1 flex h-11 w-11 items-center justify-center !text-base !font-semibold"
+          className="absolute -right-1 flex h-11 w-11 items-center justify-center text-base! font-semibold!"
           onClick={() => setSettingsOpen(true)}
         >
           Aa
         </button>
       </header>
-
-      {/* Reader */}
-      <div className="book-reader__body" ref={bodyRef}>
-        <Document
-          className="book-reader__document"
-          file={book.pdfUrl}
-          options={pdfOptions}
-          onLoadSuccess={setPdf}
-          loading={
-            <p role="status" className="book-reader__message">
-              책을 불러오고 있습니다.
-            </p>
-          }
-          error={
-            <p role="alert" className="book-reader__message">
-              PDF를 불러오지 못했습니다. 새로고침해 주세요.
-            </p>
-          }
-        >
-          {pdf && loading && (
-            <p role="status" className="book-reader__message">
-              독서 페이지를 준비하고 있습니다. ({prepared}/{pdf.numPages})
-            </p>
-          )}
-
-          {error && (
-            <p role="alert" className="book-reader__message">
-              {error}
-            </p>
-          )}
-
-          {ready && (
-            <ReaderPageDeck
-              key={onCover ? "cover" : currentPage.id}
-              pages={deckPages}
-              index={deckIndex}
-              onNavigate={(index) => goToPage(index + 1)}
-              renderPage={(page, active, onSwipeDisabledChange) =>
-                page.pdfPage === undefined ? (
-                  <ReaderCoverPage title={book.title} coverUrl={book.coverUrl} />
-                ) : (
-                  <BookTextReader
-                    key={page.id}
-                    page={page}
-                    active={active}
-                    onSwipeDisabledChange={onSwipeDisabledChange}
-                    highlights={data.highlights}
-                    words={data.words}
-                    comments={data.comments}
-                    onUpdateHighlight={(id, color) => {
-                      setData((current) => ({
-                        ...current,
-                        highlights: color
-                          ? current.highlights.map((entry) =>
-                              entry.id === id
-                                ? {
-                                    ...entry,
-                                    color,
-                                  }
-                                : entry,
-                            )
-                          : current.highlights.filter((entry) => entry.id !== id),
-                      }));
-
-                      setNotice("변경사항이 저장됐습니다");
-                    }}
-                    onHighlight={(selection, color) => {
-                      setData((current) => ({
-                        ...current,
-                        highlights: [
-                          ...current.highlights,
-                          ...selection.ranges.map(({ pdfPage, ...range }) => ({
-                            ...range,
-                            color,
-                            page: pdfPage,
-                            id: crypto.randomUUID(),
-                          })),
-                        ],
-                      }));
-
-                      setNotice("문장을 수집했습니다.");
-                    }}
-                    onWord={(word) => {
-                      setData((current) => ({
-                        ...current,
-                        words: current.words.some(
-                          (entry) => JSON.stringify(entry.ranges) === JSON.stringify(word.ranges),
-                        )
-                          ? current.words
-                          : [
-                              ...current.words,
-                              {
-                                ...word,
-                                id: crypto.randomUUID(),
-                              },
-                            ],
-                      }));
-                    }}
-                    onComment={(selection, text) => {
-                      if (!text.trim()) return;
-
-                      setData((current) => ({
-                        ...current,
-                        comments: [
-                          ...current.comments,
-                          {
-                            id: crypto.randomUUID(),
-                            type: "sentence",
-                            user: readerUser,
-                            createdAt: new Date().toISOString(),
-                            page: selection.ranges[0].pdfPage,
-                            pages: [...new Set(selection.ranges.map((range) => range.pdfPage))],
-                            ranges: selection.ranges,
-                            quote: selection.text,
-                            text: text.trim(),
-                          },
-                        ],
-                      }));
-
-                      setNotice("댓글 작성 완료!");
-                    }}
-                  />
+      <div className="book-reader__body">
+        {chapter.isPending || (onCover && book.isPending) ? (
+          <p role="status" className="book-reader__message">
+            책 본문을 불러오는 중입니다.
+          </p>
+        ) : chapter.isError ? (
+          <div role="alert" className="book-reader__message">
+            <p>책 본문을 불러오지 못했습니다.</p>
+            <button type="button" onClick={() => void chapter.refetch()}>
+              다시 시도
+            </button>
+          </div>
+        ) : !ready ? (
+          <p role="alert" className="book-reader__message">
+            요청한 책의 페이지를 찾을 수 없습니다.
+          </p>
+        ) : onCover && book.isError ? (
+          <div role="alert" className="book-reader__message">
+            <p>표지 정보를 불러오지 못했습니다.</p>
+            <button type="button" onClick={() => void book.refetch()}>
+              다시 시도
+            </button>
+            <button
+              type="button"
+              className="ml-4"
+              onClick={() =>
+                setParams(
+                  { bookId: String(bookId), pageId: String(pageId), firstRead: "false" },
+                  { replace: true },
                 )
               }
-            />
-          )}
-        </Document>
-      </div>
-
-      {/* Reader Notice */}
-      {(notice || storageError || settingsStorageError) && (
-        <p
-          role="status"
-          className={`book-reader__notice${
-            notice === "댓글 작성 완료!" && !storageError ? " book-reader__notice--comment" : ""
-          }`}
-        >
-          {notice === "댓글 작성 완료!" && !storageError && (
-            <svg
-              className="h-5 w-5 shrink-0"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              aria-hidden="true"
             >
-              <path d="m4 12 5 5L20 6" />
-            </svg>
-          )}
-
-          {storageError || settingsStorageError
-            ? "기기에 저장할 수 없어 이번 방문 동안만 유지됩니다."
-            : notice}
+              본문 읽기
+            </button>
+          </div>
+        ) : (
+          <ReaderPageDeck
+            ariaLabel="전자책 본문. 좌우 드래그 또는 방향키로 페이지 이동"
+            pages={deckPages}
+            index={deckIndex}
+            onNavigate={navigate}
+            renderPage={(item) =>
+              item.type === "cover" ? (
+                item.book ? (
+                  <ReaderCoverPage
+                    title={item.book.title}
+                    author={item.book.author}
+                    coverUrl={item.book.coverImageUrl}
+                  />
+                ) : (
+                  <p role="status" className="book-reader__message">
+                    표지 정보를 준비하고 있습니다.
+                  </p>
+                )
+              ) : (
+                <ContentPageReader key={item.page.pageId} page={item.page} />
+              )
+            }
+          />
+        )}
+      </div>
+      {(saveError || storageError) && (
+        <p role="alert" className="book-reader__notice">
+          {saveError ? "독서 진행률을 저장하지 못했습니다." : "읽기 설정을 저장하지 못했습니다."}
         </p>
       )}
-
-      {/* Footer */}
       <footer className="book-reader__footer">
         <div className="book-reader__progress">
           <input
             type="range"
-            aria-label="독서 페이지 선택"
+            aria-label="불러온 페이지 범위에서 이동"
             aria-valuetext={
-              ready ? `${deckPages.length}페이지 중 ${pageNumber}페이지` : "독서 페이지 준비 중"
+              deckReady ? (onCover ? "표지" : currentPage.pageNumber + "페이지") : "페이지 준비 중"
             }
-            min={1}
-            max={deckPages.length || 1}
-            value={pageNumber}
-            disabled={!ready || deckPages.length <= 1}
-            style={{
-              background: `linear-gradient(to right, #b7bd9e ${
-                ready && deckPages.length > 1 ? (deckIndex / (deckPages.length - 1)) * 100 : 0
-              }%, #f7f6f1 0)`,
-            }}
-            onChange={(event) => goToPage(Number(event.target.value))}
+            min={0}
+            max={Math.max(0, deckPages.length - 1)}
+            value={Math.max(0, deckIndex)}
+            disabled={!deckReady || deckPages.length <= 1}
+            style={{ background: "#f7f6f1" }}
+            onChange={(event) => navigate(Number(event.target.value))}
           />
-
-          <span aria-live="polite">{ready ? `${pageNumber}/${deckPages.length}` : "—/—"}</span>
+          <span aria-live="polite">
+            {deckReady ? (onCover ? "표지" : currentPage.pageNumber + "p") : "—"}
+          </span>
         </div>
-
         <div className="book-reader__actions">
-          {/* 좋아요 */}
-          <button
-            type="button"
-            aria-label="좋아요"
-            aria-pressed={data.liked}
-            onClick={() =>
-              setData((current) => ({
-                ...current,
-                liked: !current.liked,
-              }))
-            }
-          >
-            <Icon name="heart" filled={data.liked} />
-
-            <span>{data.liked ? 1 : 0}</span>
+          <button type="button" aria-label="좋아요 (준비 중)" disabled>
+            <Heart size={24} strokeWidth={1.5} />
           </button>
-
-          {/* 댓글 */}
-          <button
-            type="button"
-            aria-label={`이 페이지 댓글 ${comments.length}개`}
-            disabled={!ready || onCover}
-            onClick={openComments}
-          >
-            <Icon name="comment" />
-            <span>{comments.length}</span>
+          <button type="button" aria-label="댓글 (준비 중)" disabled>
+            <MessageSquare size={24} strokeWidth={1.5} />
           </button>
-
-          {/* 북마크 */}
           <button
             type="button"
             className="book-reader__bookmark"
-            aria-label={`${pageNumber}페이지 북마크`}
-            aria-pressed={bookmarked}
-            disabled={!ready || onCover}
-            onClick={() =>
-              setData((current) => ({
-                ...current,
-                readerBookmarks: bookmarked
-                  ? bookmarks.filter((bookmark) => !readerPageContainsAnchor(currentPage, bookmark))
-                  : [
-                      ...bookmarks,
-                      {
-                        pdfPage,
-                        start: currentPage.start,
-                      },
-                    ],
-              }))
-            }
+            aria-label="북마크 (준비 중)"
+            disabled
           >
-            <Icon name="bookmark" filled={bookmarked} />
+            <Bookmark size={24} strokeWidth={1.5} />
           </button>
         </div>
       </footer>
-
-      {/* Comments */}
-      {commentOpen && ready && !onCover && (
-        <ReaderCommentsSheet
-          replies={data.comments.filter(
-            (comment) => !!(comment.parentCommentId || comment.replyTo),
-          )}
-          comments={comments}
-          pageNumber={pageNumber}
-          reportedCommentIds={data.reportedCommentIds ?? []}
-          onEdit={(id, text) => {
-            if (!text.trim() || text.length > 200) {
-              return;
-            }
-
-            setData((current) => ({
-              ...current,
-              comments: current.comments.map((comment) =>
-                comment.id === id
-                  ? {
-                      ...comment,
-                      text: text.trim(),
-                    }
-                  : comment,
-              ),
-            }));
-          }}
-          onReport={(id) =>
-            setData((current) => ({
-              ...current,
-              reportedCommentIds: [...new Set([...(current.reportedCommentIds ?? []), id])],
-            }))
-          }
-          onClose={() => setCommentOpen(false)}
-          onSubmit={(text, replyTo) => {
-            if (!text.trim() || (replyTo && text.length > 200)) {
-              return;
-            }
-
-            const parent = replyTo ? comments.find((comment) => comment.id === replyTo) : undefined;
-
-            if (replyTo && !parent) return;
-
-            setData((current) => ({
-              ...current,
-              comments: [
-                ...current.comments,
-                {
-                  id: crypto.randomUUID(),
-
-                  type: parent ? "reply" : "page",
-
-                  user: readerUser,
-
-                  createdAt: new Date().toISOString(),
-
-                  page: parent?.page ?? pdfPage,
-
-                  readerAnchor: parent?.readerAnchor ??
-                    parent?.ranges?.[0] ?? {
-                      pdfPage,
-                      start: currentPage.start,
-                    },
-
-                  text: text.trim(),
-
-                  ...(parent
-                    ? {
-                        parentCommentId: parent.id,
-                      }
-                    : {}),
-                },
-              ],
-            }));
-          }}
-          onVote={(id, vote) =>
-            setData((current) => ({
-              ...current,
-
-              comments: current.comments.map((comment) => {
-                if (comment.id !== id) {
-                  return comment;
-                }
-
-                const myVote = comment.myVote === vote ? undefined : vote;
-
-                return {
-                  ...comment,
-
-                  myVote,
-
-                  likes: Math.max(
-                    0,
-                    (comment.likes ?? 0) -
-                      Number(comment.myVote === "like") +
-                      Number(myVote === "like"),
-                  ),
-
-                  dislikes: Math.max(
-                    0,
-                    (comment.dislikes ?? 0) -
-                      Number(comment.myVote === "dislike") +
-                      Number(myVote === "dislike"),
-                  ),
-                };
-              }),
-            }))
-          }
-
-          // 댓글/답글 삭제
-          onDelete={(id) =>
-            setData((current) => {
-              const target = current.comments.find((comment) => comment.id === id);
-
-              const isReply = Boolean(target?.parentCommentId || target?.replyTo);
-
-              return {
-                ...current,
-
-                comments: current.comments.filter((comment) => {
-                  // 답글이면 해당 답글만 삭제
-                  if (isReply) {
-                    return comment.id !== id;
-                  }
-
-                  // 원댓글이면
-                  // 원댓글 + 연결된 답글 삭제
-                  return (
-                    comment.id !== id && comment.parentCommentId !== id && comment.replyTo !== id
-                  );
-                }),
-              };
-            })
-          }
-        />
-      )}
       {settingsOpen && (
         <ReaderSettingsPanel
           settings={settings}
