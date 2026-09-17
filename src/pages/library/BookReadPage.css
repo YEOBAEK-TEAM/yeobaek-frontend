@@ -382,7 +382,7 @@
   min-height: 36px;
   padding: 5px 13px;
   border: 1px solid #595854;
-  background: #f7f6f1;
+  background: transparent;
   white-space: nowrap;
 }
 .book-reader__selection-actions button.is-active {
