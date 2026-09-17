@@ -80,6 +80,7 @@ function ContentBookReader({
     ...pages.map((page) => ({ type: "content" as const, page })),
   ];
   const deckIndex = onCover ? 0 : index + 1;
+  const progressPercent = deckPages.length > 1 ? (deckIndex / (deckPages.length - 1)) * 100 : 0;
   const deckPage = deckPages[deckIndex];
   const actualPageId = ready && deckPage?.type === "content" ? deckPage.page.pageId : undefined;
   const deckReady = ready && (!onCover || (!!book.data && !book.isError));
@@ -290,7 +291,9 @@ function ContentBookReader({
             max={Math.max(0, deckPages.length - 1)}
             value={Math.max(0, deckIndex)}
             disabled={!deckReady || deckPages.length <= 1}
-            style={{ background: "#f7f6f1" }}
+            style={{
+              background: `linear-gradient(to right, #B7BD9E 0%, #B7BD9E ${progressPercent}%, #F7F6F1 ${progressPercent}%, #F7F6F1 100%)`,
+            }}
             onChange={(event) => navigate(Number(event.target.value))}
           />
           <span aria-live="polite">
