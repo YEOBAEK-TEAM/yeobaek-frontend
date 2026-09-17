@@ -1,10 +1,10 @@
 import { ArrowRight } from "lucide-react";
 
-import type { QuickReply } from "@/types/training/bookReportChat";
+import type { ChatQuickReply } from "@/types/training/chat";
 
 type QuickReplyButtonProps = {
-  reply: QuickReply;
-  onSelect: (reply: QuickReply) => void | Promise<void>;
+  reply: ChatQuickReply;
+  onSelect: (reply: ChatQuickReply) => void | Promise<void>;
 };
 
 export default function QuickReplyButton({ reply, onSelect }: QuickReplyButtonProps) {

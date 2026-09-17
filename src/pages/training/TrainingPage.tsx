@@ -45,10 +45,12 @@ export default function TrainingPage() {
                   <TrainingProgramCard
                     key={program.id}
                     program={program}
-                    onClick={
-                      program.id === "book-report"
-                        ? () => navigate("/training/book-report")
-                        : undefined
+                    onClick={() =>
+                      navigate(
+                        program.id === "book-report"
+                          ? "/training/book-report"
+                          : "/training/comprehension",
+                      )
                     }
                   />
                 ))}

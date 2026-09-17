@@ -22,6 +22,9 @@ import MyActivityProvider from "@/components/my/MyActivityProvider";
 import TrainingPage from "@/pages/training/TrainingPage";
 import BookReportChatPage from "@/pages/training/BookReportChatPage";
 import TrainingCompletePage from "@/pages/training/TrainingCompletePage";
+import ComprehensionSelectPage from "@/pages/training/ComprehensionSelectPage";
+import ComprehensionChatPage from "@/pages/training/ComprehensionChatPage";
+import ComprehensionCompletePage from "@/pages/training/ComprehensionCompletePage";
 import VocabularyPage from "@/pages/vocabulary/VocabularyPage";
 import WordDetailPage from "@/pages/vocabulary/WordDetailPage";
 import SentenceDetailPage from "@/pages/vocabulary/SentenceDetailPage";
@@ -47,6 +50,12 @@ export default function App() {
             <Route path="/my/bookmarked-pages/:bookId" element={<BookmarkedBookPagesPage />} />
             <Route path="/training/book-report" element={<BookReportChatPage />} />
             <Route path="/training/complete" element={<TrainingCompletePage />} />
+            <Route path="/training/comprehension" element={<ComprehensionSelectPage />} />
+            <Route path="/training/comprehension/chat" element={<ComprehensionChatPage />} />
+            <Route
+              path="/training/comprehension/complete"
+              element={<ComprehensionCompletePage />}
+            />
 
             {/* Footer 있는 페이지 */}
             <Route element={<FooterLayout />}>

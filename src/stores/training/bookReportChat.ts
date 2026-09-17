@@ -1,15 +1,15 @@
 import { create } from "zustand";
 
-import type { ChatMessage, ChatPhase } from "@/types/training/bookReportChat";
+import type { BookReportMessage, ChatPhase } from "@/types/training/bookReportChat";
 
 type BookReportChatState = {
   phase: ChatPhase;
-  messages: ChatMessage[];
+  messages: BookReportMessage[];
   // 대화 차례
   turn: number;
 
   setPhase: (phase: ChatPhase) => void;
-  pushMessage: (message: ChatMessage) => void;
+  pushMessage: (message: BookReportMessage) => void;
   removeMessage: (id: string) => void;
   clearMessages: () => void;
   appendText: (id: string, text: string) => void;
@@ -21,7 +21,7 @@ type BookReportChatState = {
 
 const initialState = {
   phase: { type: "select" } as ChatPhase,
-  messages: [] as ChatMessage[],
+  messages: [] as BookReportMessage[],
   turn: 0,
 };
 
@@ -56,7 +56,9 @@ export const useBookReportChatStore = create<BookReportChatState>((set) => ({
   markFailed: (id, failed) =>
     set((state) => ({
       messages: state.messages.map((message) =>
-        message.id === id && message.kind === "text" ? { ...message, failed } : message,
+        message.id === id && message.kind === "text"
+          ? { ...message, status: failed ? ("failed" as const) : ("sent" as const) }
+          : message,
       ),
     })),
 

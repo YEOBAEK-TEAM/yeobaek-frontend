@@ -2,7 +2,7 @@ import { AlignJustify } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { useBottomSheetClose } from "@/components/common/bottomSheet/bottomSheetContext";
-import ReportCard from "@/components/training/chat/ReportCard";
+import ReportCard from "@/components/training/bookReport/ReportCard";
 import { REPORT_SHEET_TITLE, REPORT_SORT_LABEL } from "@/constants/training/bookReportChat";
 
 import type { ReadingReport, ReportSortOrder } from "@/types/training/readingReport";

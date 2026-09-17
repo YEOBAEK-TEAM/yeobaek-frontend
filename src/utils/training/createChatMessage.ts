@@ -1,5 +1,4 @@
-import type { ChatMessage, QuickReply, ThoughtComparison } from "@/types/training/bookReportChat";
-import type { ReadingReport } from "@/types/training/readingReport";
+import type { ChatBaseMessage, ChatQuickReply } from "@/types/training/chat";
 
 let sequence = 0;
 
@@ -8,7 +7,7 @@ export const createMessageId = () => {
   return `chat-${sequence}`;
 };
 
-export const ritiText = (text: string, streaming = false): ChatMessage => ({
+export const ritiText = (text: string, streaming = false): ChatBaseMessage => ({
   id: createMessageId(),
   role: "riti",
   kind: "text",
@@ -16,7 +15,7 @@ export const ritiText = (text: string, streaming = false): ChatMessage => ({
   streaming,
 });
 
-export const ritiPlainText = (text: string): ChatMessage => ({
+export const ritiPlainText = (text: string): ChatBaseMessage => ({
   id: createMessageId(),
   role: "riti",
   kind: "text",
@@ -24,41 +23,31 @@ export const ritiPlainText = (text: string): ChatMessage => ({
   hideAvatar: true,
 });
 
-export const userText = (text: string): ChatMessage => ({
+export const userText = (text: string): ChatBaseMessage => ({
   id: createMessageId(),
   role: "user",
   kind: "text",
   text,
 });
 
-export const ritiLoading = (): ChatMessage => ({
+export const ritiLoading = (): ChatBaseMessage => ({
   id: createMessageId(),
   role: "riti",
   kind: "loading",
 });
 
-export const ritiReportCard = (report: ReadingReport): ChatMessage => ({
-  id: createMessageId(),
-  role: "riti",
-  kind: "reportCard",
-  report,
-});
-
-export const ritiQuickReplies = (replies: QuickReply[]): ChatMessage => ({
+export const ritiQuickReplies = (
+  replies: ChatQuickReply[],
+  direction: "row" | "column" = "row",
+): ChatBaseMessage => ({
   id: createMessageId(),
   role: "riti",
   kind: "quickReplies",
   replies,
+  direction,
 });
 
-export const ritiThoughtSummary = (thought: ThoughtComparison): ChatMessage => ({
-  id: createMessageId(),
-  role: "riti",
-  kind: "thoughtSummary",
-  thought,
-});
-
-export const systemText = (text: string): ChatMessage => ({
+export const systemText = (text: string): ChatBaseMessage => ({
   id: createMessageId(),
   role: "system",
   kind: "system",

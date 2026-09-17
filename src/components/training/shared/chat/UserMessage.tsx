@@ -1,4 +1,4 @@
-import ChatBubble from "@/components/training/chat/ChatBubble";
+import ChatBubble from "@/components/training/shared/chat/ChatBubble";
 
 type UserMessageProps = {
   text: string;
