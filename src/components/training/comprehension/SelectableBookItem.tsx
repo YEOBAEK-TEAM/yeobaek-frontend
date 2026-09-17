@@ -9,6 +9,7 @@ type SelectableBookItemProps = {
   title: ReactNode;
   author: string;
   onSelect: () => void;
+  showRadio?: boolean;
 };
 
 export default function SelectableBookItem({
@@ -20,6 +21,7 @@ export default function SelectableBookItem({
   title,
   author,
   onSelect,
+  showRadio = false,
 }: SelectableBookItemProps) {
   return (
     <label
@@ -44,6 +46,15 @@ export default function SelectableBookItem({
         <p className="truncate text-[16px] font-bold text-[#2C2A2B]">{title}</p>
         <p className="truncate text-[14px] text-[#4F4D4E]">{author}</p>
       </div>
+
+      {showRadio && (
+        <span
+          aria-hidden="true"
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#4F4D4E] bg-white"
+        >
+          {checked && <span className="h-3 w-3 rounded-full bg-[#4F4D4E]" />}
+        </span>
+      )}
     </label>
   );
 }

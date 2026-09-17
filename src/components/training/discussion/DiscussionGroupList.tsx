@@ -1,8 +1,10 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import SectionState from "@/components/common/section/SectionState";
 import DiscussionGroupCard from "@/components/training/discussion/DiscussionGroupCard";
 import EmptyMessage from "@/components/training/discussion/EmptyMessage";
+import RoomJoinFlow from "@/components/training/discussion/rooms/RoomJoinFlow";
 import { DISCUSSION_PATH } from "@/constants/training/discussion/discussion";
 
 import type {
@@ -51,6 +53,8 @@ export default function DiscussionGroupList({
 }: DiscussionGroupListProps) {
   const navigate = useNavigate();
 
+  const [detailRoomId, setDetailRoomId] = useState<number | null>(null);
+
   const layoutClass = LAYOUT_CLASS[layout];
 
   if (isError) {
@@ -65,34 +69,39 @@ export default function DiscussionGroupList({
     return <EmptyMessage text={emptyText} className={layoutClass.empty} />;
   }
 
+  // 내 그룹은 토론방 입장, 그 외는 토론방 상세 모달
   const handleAction = (group: DiscussionGroupView) =>
-    navigate(
-      group.variant === "joined"
-        ? DISCUSSION_PATH.room(group.roomId)
-        : DISCUSSION_PATH.groupDetail(group.groupId),
-    );
+    group.variant === "joined"
+      ? navigate(DISCUSSION_PATH.room(group.roomId))
+      : setDetailRoomId(group.roomId);
 
   return (
-    <ul className={layoutClass.list} aria-busy={isPending}>
-      {isPending
-        ? SKELETON_ITEMS.map((item) => (
-            <li key={item} className={layoutClass.item}>
-              <div className="h-[159px] animate-pulse rounded-2xl bg-[#EFEDE7]" />
-            </li>
-          ))
-        : groups.map((group) => {
-            const cardGroup = variant ? { ...group, variant } : group;
-
-            return (
-              <li key={group.groupId} className={layoutClass.item}>
-                <DiscussionGroupCard
-                  group={cardGroup}
-                  badge={badge}
-                  onAction={() => handleAction(cardGroup)}
-                />
+    <>
+      <ul className={layoutClass.list} aria-busy={isPending}>
+        {isPending
+          ? SKELETON_ITEMS.map((item) => (
+              <li key={item} className={layoutClass.item}>
+                <div className="h-[159px] animate-pulse rounded-2xl bg-[#EFEDE7]" />
               </li>
-            );
-          })}
-    </ul>
+            ))
+          : groups.map((group) => {
+              const cardGroup = variant ? { ...group, variant } : group;
+
+              return (
+                <li key={group.groupId} className={layoutClass.item}>
+                  <DiscussionGroupCard
+                    group={cardGroup}
+                    badge={badge}
+                    onAction={() => handleAction(cardGroup)}
+                  />
+                </li>
+              );
+            })}
+      </ul>
+
+      {detailRoomId !== null && (
+        <RoomJoinFlow roomId={detailRoomId} onClose={() => setDetailRoomId(null)} />
+      )}
+    </>
   );
 }
