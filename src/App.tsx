@@ -15,6 +15,7 @@ import LibraryPage from "@/pages/library/LibraryPage";
 import BookReadPage from "@/pages/library/BookReadPage";
 import BookSearchPage from "@/pages/library/BookSearchPage";
 import BookDetailPage from "@/pages/library/BookDetailPage";
+import ReportEditorPage from "@/pages/library/ReportEditorPage";
 
 import MyPage from "@/pages/my/MyPage";
 import ReadingCalendarPage from "@/pages/my/ReadingCalendarPage";
@@ -57,6 +58,8 @@ export default function App() {
               <Route path="/library/read" element={<BookReadPage />} />
               <Route path="/library/search" element={<BookSearchPage />} />
               <Route path="/library/books/:bookId" element={<BookDetailPage />} />
+              <Route path="/library/reports/new" element={<ReportEditorPage />} />
+              <Route path="/library/reports/:reportId" element={<ReportEditorPage />} />
 
               {/* 단어장 상세 */}
               <Route path="/vocabulary/word/:id" element={<WordDetailPage />} />
