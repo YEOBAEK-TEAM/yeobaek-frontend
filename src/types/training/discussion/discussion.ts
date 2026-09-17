@@ -23,6 +23,8 @@ export type ActiveDiscussionResponse = DiscussionBaseResponse & {
 export type DiscussionGroupResponse = DiscussionBaseResponse & {
   groupId: number;
   membership: GroupMembership;
+  // 내가 만든 방 여부
+  isHost: boolean;
   createdAt: string;
 };
 
@@ -50,6 +52,7 @@ export type GroupCardVariant = "recommend" | "joined" | "pending";
 export type DiscussionGroupView = DiscussionBookView & {
   groupId: number;
   variant: GroupCardVariant;
+  isHost: boolean;
 };
 
 export type GroupListLayout = "carousel" | "stack";

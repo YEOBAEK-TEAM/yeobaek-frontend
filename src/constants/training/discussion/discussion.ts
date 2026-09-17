@@ -11,6 +11,9 @@ export const DISCUSSION_PATH = {
   room: (roomId: number) => `/training/discussion/rooms/${roomId}`,
   groupDetail: (groupId: number) => `/training/discussion/groups/${groupId}`,
   createGroup: "/training/discussion/groups/new",
+  create: "/training/discussion/create",
+  createComplete: "/training/discussion/create/complete",
+  roomList: "/training/discussion/rooms",
 };
 
 export const ACTIVE_DISCUSSION_EMPTY_TEXT = "아직 속해있는 토론장이 없습니다";
@@ -39,6 +42,10 @@ export const HOT_BADGE_LABEL = "HOT";
 
 export const MY_GROUP_EMPTY_TEXT = "아직 속해있는 그룹이 없습니다";
 
+export const CREATED_GROUP_SECTION_TITLE = "생성한 방";
+
+export const JOINED_GROUP_SECTION_TITLE = "참여한 방";
+
 export const PENDING_GROUP_EMPTY_TEXT = "아직 신청한 그룹이 없습니다";
 
 export const PENDING_STATUS_LABEL = "방장 승인 기다리는중...";
@@ -50,4 +57,4 @@ export const GROUP_ACTION_LABEL: Record<Exclude<GroupCardVariant, "pending">, st
 
 export const getSearchEmptyText = (keyword: string) => `'${keyword}'에 맞는 그룹이 없습니다`;
 
-export const DEFAULT_PROFILE_IMAGE = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#dedad0"/><circle cx="14" cy="10" r="5" fill="#8c8580"/><path d="M4 25c0-6 4-9 10-9s10 3 10 9" fill="#8c8580"/></svg>')}`;
+export const DEFAULT_PROFILE_IMAGE = `data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 28 28"><circle cx="14" cy="14" r="14" fill="#a5a5a5"/><circle cx="14" cy="10" r="5" fill="#f7f8fa"/><path d="M5 24.5c1.8-4.6 5-6.9 9-6.9s7.2 2.3 9 6.9A13.9 13.9 0 0 1 5 24.5" fill="#f7f8fa"/></svg>')}`;

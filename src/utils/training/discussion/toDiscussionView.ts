@@ -58,4 +58,5 @@ export const toDiscussionGroupViews = (
     ...toBookView(response),
     groupId: response.groupId,
     variant: MEMBERSHIP_VARIANT[response.membership],
+    isHost: response.isHost,
   }));
