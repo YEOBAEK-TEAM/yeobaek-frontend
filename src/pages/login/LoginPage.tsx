@@ -44,13 +44,7 @@ export default function LoginPage() {
   };
 
   return (
-    <main
-      className="mx-auto min-h-dvh w-full max-w-97.5 bg-[#F7F6F1] px-11"
-      style={{
-        fontFamily:
-          '"Pretendard", "Noto Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", sans-serif',
-      }}
-    >
+    <main className="mx-auto min-h-dvh w-full max-w-97.5 bg-[#F7F6F1] px-11">
       {/* LOGIN 이미지 */}
       <div className="flex justify-center pt-[18.5vh]">
         <img src={loginIcon} alt="Login" draggable={false} className="w-28 object-contain" />

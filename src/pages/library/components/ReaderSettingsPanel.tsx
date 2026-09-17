@@ -25,7 +25,7 @@ export default function ReaderSettingsPanel({
     <dialog
       ref={dialogRef}
       aria-labelledby="reader-settings-title"
-      className="fixed inset-x-0 top-auto bottom-0 m-0 mx-auto w-full max-w-[390px] max-h-[90dvh] overflow-y-auto rounded-t-2xl border-0 bg-[#f7f6f1] p-0 text-black [font-family:system-ui,sans-serif] backdrop:bg-black/35"
+      className="fixed inset-x-0 top-auto bottom-0 m-0 mx-auto w-full max-w-[390px] max-h-[90dvh] overflow-y-auto rounded-t-2xl border-0 bg-[#f7f6f1] p-0 text-black backdrop:bg-black/35"
       onCancel={(event) => {
         event.preventDefault();
         onClose();
