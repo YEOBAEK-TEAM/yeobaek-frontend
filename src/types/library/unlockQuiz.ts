@@ -1,27 +1,32 @@
-export type ReportUnlockStatusResponse = {
-  bookId: number;
-  isCompleted: boolean;
-  isUnlocked: boolean;
-  hasReport: boolean;
-  quizQuestionCount: number;
+// 정답 정보는 응답에 포함하지 않음
+export type UnlockQuizQuestionResponse = {
+  quizId: number;
+  questionOrder: number;
+  question: string;
+  choices: string[];
 };
 
-// 다 읽었지만 퀴즈를 아직 통과하지 못한 책
-export type PendingUnlockBookResponse = {
+export type UnlockQuizResponse = {
+  questions: UnlockQuizQuestionResponse[];
+};
+
+export type SubmitUnlockQuizRequest = {
+  // 선택지 번호는 1부터 시작
+  answers: { quizId: number; selectedIndex: number }[];
+};
+
+export type SubmitUnlockQuizResponse = {
+  passed: boolean;
+  correctCount: number;
+  totalCount: number;
+};
+
+export type CompleteReadingResponse = {
+  recordId: number;
   bookId: number;
   bookTitle: string;
-  author: string;
-  coverUrl: string;
+  progressRate: number;
   completedAt: string;
-};
-
-export type PendingUnlockBookView = {
-  bookId: number;
-  title: string;
-  author: string;
-  coverUrl: string;
-  completedAt: string;
-  completedLabel: string;
 };
 
 export type UnlockQuizChoice = {
@@ -29,29 +34,15 @@ export type UnlockQuizChoice = {
   text: string;
 };
 
-// 정답 정보는 응답에 포함하지 않음
 export type UnlockQuizQuestion = {
   questionId: string;
   text: string;
   choices: UnlockQuizChoice[];
 };
 
-export type UnlockQuizResponse = {
-  quizId: string;
-  bookId: number;
-  bookTitle: string;
+export type UnlockQuizView = {
   questions: UnlockQuizQuestion[];
 };
 
 // 문제 id별 선택한 보기 id
 export type UnlockQuizAnswers = Record<string, string>;
-
-export type GradeUnlockQuizRequest = {
-  quizId: string;
-  bookId: number;
-  answers: UnlockQuizAnswers;
-};
-
-export type GradeUnlockQuizResponse = {
-  result: "unlocked" | "failed";
-};

@@ -16,13 +16,19 @@ import { GRADING_HOLD_MS, GRADING_STEP_MS, UNLOCK_QUIZ } from "@/constants/libra
 import { useBackGuard } from "@/hooks/common/useBackGuard";
 import { useReportWriteFlow } from "@/hooks/library/report/useReportWriteFlow";
 import {
-  useGradeUnlockQuiz,
+  useSubmitUnlockQuiz,
   useUnlockQuiz,
 } from "@/hooks/library/unlock-quiz/useUnlockQuizQueries";
 import { useUnlockQuizStore } from "@/stores/library/unlockQuiz";
+import { getApiErrorMessage } from "@/utils/common/getApiErrorMessage";
 import { wait, withMinimumDelay } from "@/utils/common/withMinimumDelay";
+import { toSubmitUnlockQuizRequest } from "@/utils/library/unlock-quiz/toUnlockQuizView";
 
 type QuizPhase = "solving" | "grading" | "unlocked" | "failed";
+
+type UnlockQuizLocationState = {
+  bookTitle?: string;
+} | null;
 
 const SLIDE_IN_KEYFRAMES: Keyframe[] = [
   { opacity: 0, transform: "translateX(20px)" },
@@ -37,6 +43,9 @@ export default function UnlockQuizPage() {
 
   const bookId = Number(bookIdParam);
 
+  // 퀴즈 응답에 책 제목이 없어 진입 화면에서 넘긴 제목 사용
+  const bookTitle = (location.state as UnlockQuizLocationState)?.bookTitle ?? "";
+
   const quizQuery = useUnlockQuiz(bookId);
   const quiz = quizQuery.data;
 
@@ -44,7 +53,7 @@ export default function UnlockQuizPage() {
   const selectAnswer = useUnlockQuizStore((state) => state.selectAnswer);
   const resetAnswers = useUnlockQuizStore((state) => state.reset);
 
-  const gradeQuiz = useGradeUnlockQuiz();
+  const gradeQuiz = useSubmitUnlockQuiz();
   const writeFlow = useReportWriteFlow();
 
   const [phase, setPhase] = useState<QuizPhase>("solving");
@@ -93,7 +102,11 @@ export default function UnlockQuizPage() {
             onRetry={() => void quizQuery.refetch()}
             className="h-96"
           />
-          {quizQuery.isError && <p className="sr-only">{UNLOCK_QUIZ.loadErrorText}</p>}
+          {quizQuery.isError && (
+            <p role="alert" className="mt-3 text-center text-[14px] break-keep text-[#8F8F8F]">
+              {getApiErrorMessage(quizQuery.error, UNLOCK_QUIZ.loadErrorText)}
+            </p>
+          )}
         </div>
       </main>
     );
@@ -109,15 +122,15 @@ export default function UnlockQuizPage() {
     setIsGradingDone(false);
 
     try {
-      const { result } = await withMinimumDelay(
-        gradeQuiz.mutateAsync({ quizId: quiz.quizId, bookId, answers }),
+      const { passed } = await withMinimumDelay(
+        gradeQuiz.mutateAsync({ bookId, body: toSubmitUnlockQuizRequest(answers) }),
         GRADING_STEP_MS * questions.length,
       );
 
       setIsGradingDone(true);
       await wait(GRADING_HOLD_MS);
 
-      if (result === "unlocked") {
+      if (passed) {
         setPhase("unlocked");
         return;
       }
@@ -129,7 +142,7 @@ export default function UnlockQuizPage() {
     }
   };
 
-  // 새 문제를 받아 첫 문제부터 다시 풀기
+  // 같은 문제를 다시 받아 첫 문제부터 풀기
   const retryQuiz = async () => {
     await quizQuery.refetch();
     gradeQuiz.reset();
@@ -160,7 +173,7 @@ export default function UnlockQuizPage() {
     return (
       <>
         <UnlockSuccessView
-          bookTitle={quiz.bookTitle}
+          bookTitle={bookTitle}
           onLater={() =>
             release(() => navigate("/library", { replace: true, state: LIBRARY_REPORT_TAB_STATE }))
           }
@@ -168,7 +181,7 @@ export default function UnlockQuizPage() {
             release(
               () =>
                 void writeFlow.writeBook(
-                  { bookId, title: quiz.bookTitle },
+                  { bookId, title: bookTitle },
                   { confirm: false, replace: true },
                 ),
             )
@@ -181,7 +194,10 @@ export default function UnlockQuizPage() {
 
   return (
     <main className="flex min-h-dvh flex-col pb-[calc(2rem+env(safe-area-inset-bottom,0px))]">
-      <Header title={UNLOCK_QUIZ.getTitle(quiz.bookTitle)} onBack={handleBack} />
+      <Header
+        title={bookTitle ? UNLOCK_QUIZ.getTitle(bookTitle) : UNLOCK_QUIZ.defaultTitle}
+        onBack={handleBack}
+      />
 
       <StepProgressBar step={questionIndex + 1} totalSteps={questions.length} variant="quiz" />
 

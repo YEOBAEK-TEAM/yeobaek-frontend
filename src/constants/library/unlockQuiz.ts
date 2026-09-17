@@ -22,10 +22,10 @@ export const UNLOCK_GUIDE_RULES = [
 
 export const UNLOCK_QUIZ = {
   getTitle: (bookTitle: string) => `${bookTitle}에 대해서`,
+  defaultTitle: "독후감 퀴즈",
   nextLabel: "다음문제",
   submitLabel: "제출하기",
-  exitMessage:
-    "문제를 나중에 푸시겠어요?\n서재 > 독후감 쓰기 > 해금 예정에서\n언제든 다시 풀 수 있어요.",
+  exitMessage: "문제를 나중에 푸시겠어요?\n책 뷰어의 독후감 아이콘에서\n언제든 다시 풀 수 있어요.",
   loadErrorText: "문제를 불러오지 못했어요",
 };
 
