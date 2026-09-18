@@ -178,13 +178,7 @@ export default function UnlockQuizPage() {
             release(() => navigate("/library", { replace: true, state: LIBRARY_REPORT_TAB_STATE }))
           }
           onWrite={() =>
-            release(
-              () =>
-                void writeFlow.writeBook(
-                  { bookId, title: bookTitle },
-                  { confirm: false, replace: true },
-                ),
-            )
+            release(() => writeFlow.writeBook({ bookId, title: bookTitle }, { replace: true }))
           }
         />
         <ReportWriteFlowModals writeFlow={writeFlow} />

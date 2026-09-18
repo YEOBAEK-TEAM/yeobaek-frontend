@@ -1,6 +1,8 @@
 import { queryOptions, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { getBookReviews, getLatestBookReview, getUnlockedBooks } from "@/api/library/report";
+
+import type { ReportStatusTab } from "@/constants/library/report";
 import {
   toLatestReportView,
   toMyReportView,
@@ -14,6 +16,7 @@ export const libraryReportKeys = {
   all: ["library", "reports"] as const,
   latest: () => [...libraryReportKeys.all, "latest"] as const,
   mine: () => [...libraryReportKeys.all, "mine"] as const,
+  mineByStatus: (status: ReportStatusTab) => [...libraryReportKeys.mine(), status] as const,
   detail: (reviewId: number) => [...libraryReportKeys.all, "detail", reviewId] as const,
   unlockedBooks: () => [...libraryReportKeys.all, "unlocked-books"] as const,
   pendingUnlockBooks: () => [...libraryReportKeys.all, "pending-unlock-books"] as const,
@@ -31,13 +34,16 @@ export const useLatestReport = () =>
     select: toLatestReportView,
   });
 
-export const useMyReports = () =>
+export const useMyReports = (status: ReportStatusTab) =>
   useInfiniteQuery({
-    queryKey: libraryReportKeys.mine(),
-    queryFn: ({ pageParam, signal }) => getBookReviews(pageParam, signal),
+    queryKey: libraryReportKeys.mineByStatus(status),
+    queryFn: ({ pageParam, signal }) => getBookReviews({ page: pageParam, status, signal }),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.page + 1 : undefined),
-    select: (data) => data.pages.flatMap((page) => page.items.map(toMyReportView)),
+    select: (data) => ({
+      reports: data.pages.flatMap((page) => page.items.map(toMyReportView)),
+      totalCount: data.pages[0]?.totalCount ?? 0,
+    }),
     staleTime: STALE_TIME,
   });
 

@@ -1,4 +1,4 @@
-import { DRAFT_REPORT, MY_REPORT_SECTION } from "@/constants/library/report";
+import { REPORT_STATUS_TABS, REPORT_UNTITLED } from "@/constants/library/report";
 import { formatReportDate } from "@/utils/training/formatReportDate";
 
 import type {
@@ -12,7 +12,7 @@ import type {
   UnlockedBookView,
 } from "@/types/library/report";
 
-const toQuote = (title: string | null) => (title ? `“${title}”` : MY_REPORT_SECTION.untitled);
+const toQuote = (title: string | null) => (title ? `“${title}”` : REPORT_UNTITLED);
 
 // 작성 중이면 완독일, 작성 완료면 작성완료 표시
 export const toLatestReportView = (
@@ -20,21 +20,15 @@ export const toLatestReportView = (
 ): LatestReportView | null => {
   if (!response) return null;
 
-  const isDraft = response.status === "DRAFT";
-
   return {
     reportId: response.reviewId,
-    isDraft,
+    isDraft: response.status === "DRAFT",
     title: response.bookTitle,
     // 저자와 장르를 이어 붙인 책 소개 한 줄
     subtitle: [response.author, response.genre].filter(Boolean).join(" "),
     coverUrl: response.coverImageUrl ?? "",
-    quote: isDraft ? undefined : toQuote(response.title),
-    completedLabel: isDraft
-      ? response.completedAt
-        ? `${DRAFT_REPORT.completedPrefix} ${formatReportDate(response.completedAt)}`
-        : ""
-      : DRAFT_REPORT.reportCompletedLabel,
+    quote: toQuote(response.title),
+    completedAt: response.completedAt,
   };
 };
 
@@ -42,9 +36,9 @@ export const toMyReportView = (response: BookReviewListItemResponse): MyReportVi
   reportId: response.reviewId,
   bookTitle: response.bookTitle,
   coverUrl: response.coverImageUrl ?? "",
-  dateLabel: formatReportDate(response.writtenAt),
-  quote: toQuote(response.title),
-  isDraft: response.status === "DRAFT",
+  reportTitle: response.title ?? REPORT_UNTITLED,
+  dateLabel: formatReportDate(response.updatedAt),
+  updatedAt: response.updatedAt,
   isLiked: response.isLiked,
 });
 
@@ -79,3 +73,12 @@ export const toNewReportEditorView = (bookId: number, bookTitle: string): Report
   status: null,
   dateLabel: formatReportDate(new Date().toLocaleDateString("sv-SE")),
 });
+
+// 배너 날짜는 목록의 수정 시각, 목록에 없으면 완독일
+export const toBannerDateLabel = (report: LatestReportView, updatedAt?: string) => {
+  const tab = REPORT_STATUS_TABS.find((item) => (item.id === "DRAFT") === report.isDraft);
+
+  if (updatedAt) return `${tab?.datePrefix} ${formatReportDate(updatedAt)}`;
+
+  return report.completedAt ? `완독 ${formatReportDate(report.completedAt)}` : "";
+};

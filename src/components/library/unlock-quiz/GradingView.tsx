@@ -41,7 +41,7 @@ export default function GradingView({
       title={GRADING.title}
       description={GRADING.description}
       characterClassName="h-45"
-      topClassName="pt-20"
+      topClassName="pt-[15dvh]"
       footer={
         isError ? (
           <div className="grid grid-cols-2 gap-4">

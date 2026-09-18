@@ -3,6 +3,7 @@ import { api } from "@/api/axios";
 import type { ApiResponse } from "@/types/auth";
 import type {
   BookReviewDetailResponse,
+  BookReviewStatus,
   BookReviewListResponse,
   CreateBookReviewRequest,
   LatestBookReviewResponse,
@@ -11,12 +12,17 @@ import type {
 } from "@/types/library/report";
 
 // 내가 쓴 독후감 목록 조회, 임시저장 포함 좋아요 우선 10개씩
-export const getBookReviews = async (
-  page: number,
-  signal?: AbortSignal,
-): Promise<BookReviewListResponse> => {
+export const getBookReviews = async ({
+  page,
+  status,
+  signal,
+}: {
+  page: number;
+  status?: BookReviewStatus;
+  signal?: AbortSignal;
+}): Promise<BookReviewListResponse> => {
   const response = await api.get<ApiResponse<BookReviewListResponse>>("/api/v1/book-reviews", {
-    params: { page },
+    params: { page, status },
     signal,
   });
   if (!response.data.success) throw new Error(response.data.message);

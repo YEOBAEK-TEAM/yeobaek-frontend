@@ -1,17 +1,25 @@
 import { useNavigate } from "react-router-dom";
 
 import SectionState from "@/components/common/section/SectionState";
-import DraftReportCard from "@/components/library/report/DraftReportCard";
-import MyReportSection from "@/components/library/report/MyReportSection";
+import ReportBannerCard from "@/components/library/report/ReportBannerCard";
+import ReportListSection from "@/components/library/report/ReportListSection";
 import ReportWriteFlowModals from "@/components/library/report/ReportWriteFlowModals";
 import { REPORT_PATH } from "@/constants/library/report";
-import { useLatestReport } from "@/hooks/library/report/useReportQueries";
+import { useLatestReport, useMyReports } from "@/hooks/library/report/useReportQueries";
+import { toBannerDateLabel } from "@/utils/library/report/toReportView";
 import { useReportWriteFlow } from "@/hooks/library/report/useReportWriteFlow";
 
 export default function ReportTabPanel() {
   const navigate = useNavigate();
 
   const latestQuery = useLatestReport();
+  const latest = latestQuery.data ?? null;
+
+  // 배너 독후감의 수정 시각은 같은 캐시를 쓰는 목록에서 찾음
+  const listQuery = useMyReports(latest?.isDraft ? "DRAFT" : "PUBLISHED");
+  const bannerUpdatedAt = listQuery.data?.reports.find(
+    (report) => report.reportId === latest?.reportId,
+  )?.updatedAt;
 
   const writeFlow = useReportWriteFlow();
 
@@ -26,17 +34,15 @@ export default function ReportTabPanel() {
           />
         </div>
       ) : (
-        <DraftReportCard
-          report={latestQuery.data}
+        <ReportBannerCard
+          report={latest}
+          dateLabel={latest ? toBannerDateLabel(latest, bannerUpdatedAt) : ""}
           onContinue={(reportId) => navigate(REPORT_PATH.edit(reportId))}
           onWrite={writeFlow.startWrite}
         />
       )}
 
-      <MyReportSection
-        onWrite={writeFlow.startWrite}
-        onOpenReport={(reportId) => navigate(REPORT_PATH.edit(reportId))}
-      />
+      <ReportListSection onOpenReport={(reportId) => navigate(REPORT_PATH.edit(reportId))} />
 
       <ReportWriteFlowModals writeFlow={writeFlow} />
     </div>

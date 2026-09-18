@@ -39,8 +39,8 @@ export const useToggleReportLike = (onError: () => void) => {
     (reviewId: number) => {
       let nextLiked = false;
 
-      queryClient.setQueryData<InfiniteData<BookReviewListResponse, number>>(
-        libraryReportKeys.mine(),
+      queryClient.setQueriesData<InfiniteData<BookReviewListResponse, number>>(
+        { queryKey: libraryReportKeys.mine() },
         (data) =>
           data && {
             ...data,

@@ -4,23 +4,20 @@ import { DRAFT_REPORT } from "@/constants/library/report";
 
 import type { LatestReportView } from "@/types/library/report";
 
-type DraftReportCardProps = {
+type ReportBannerCardProps = {
   report: LatestReportView | null;
+  dateLabel: string;
   onContinue: (reportId: number) => void;
   onWrite: () => void;
 };
 
-type BookSummaryProps = {
-  report: LatestReportView;
-};
-
 const ACTION_CLASS =
-  "flex h-12 w-full items-center justify-center rounded-lg bg-[#4F4D4E] text-[17px] font-bold text-white active:bg-[#3F3D3E]";
+  "flex h-12 w-full items-center justify-center rounded-lg bg-[#4F4D4E] text-[14px] font-semibold text-white active:bg-[#3F3D3E]";
 
 // 긴 제목은 한 단계 작게 줄바꿈
 const LONG_TITLE_LENGTH = 10;
 
-function BookSummary({ report }: BookSummaryProps) {
+function BookSummary({ report, dateLabel }: { report: LatestReportView; dateLabel: string }) {
   const titleClassName =
     report.title.length > LONG_TITLE_LENGTH ? "text-[18px] leading-6" : "text-[22px] leading-7";
 
@@ -36,17 +33,15 @@ function BookSummary({ report }: BookSummaryProps) {
         <h2 className={`pr-9 font-bold break-keep text-[#2C2A2B] ${titleClassName}`}>
           {report.title}
         </h2>
-        {report.quote && (
-          <p className="mt-1 line-clamp-2 text-[15px] leading-5 font-semibold break-keep text-[#4F4D4E]">
-            {report.quote}
-          </p>
-        )}
+        <p className="mt-1 line-clamp-2 text-[15px] leading-5 font-semibold break-keep text-[#4F4D4E]">
+          {report.quote}
+        </p>
         <p className="mt-1.5 text-[16px] leading-6 font-medium break-keep text-[#54555A]">
           {report.subtitle}
         </p>
-        {report.completedLabel && (
+        {dateLabel && (
           <p className="mt-0.5 text-[16px] font-medium whitespace-nowrap text-[#54555A] tabular-nums">
-            {report.completedLabel}
+            {dateLabel}
           </p>
         )}
       </div>
@@ -54,8 +49,13 @@ function BookSummary({ report }: BookSummaryProps) {
   );
 }
 
-// 작성 중이면 이어쓰기, 작성 완료면 새 작성, 없으면 작성 안내
-export default function DraftReportCard({ report, onContinue, onWrite }: DraftReportCardProps) {
+// 작성 중 독후감이 있으면 이어쓰기, 없으면 가장 최근 독후감과 새 작성 안내
+export default function ReportBannerCard({
+  report,
+  dateLabel,
+  onContinue,
+  onWrite,
+}: ReportBannerCardProps) {
   if (report) {
     const action = report.isDraft
       ? { label: DRAFT_REPORT.continueLabel, onClick: () => onContinue(report.reportId) }
@@ -66,7 +66,7 @@ export default function DraftReportCard({ report, onContinue, onWrite }: DraftRe
         <div className="flex h-full flex-col px-5 pt-4 pb-4">
           {/* 버튼 위 남은 공간의 가운데에 책 정보 배치 */}
           <div className="flex min-h-0 flex-1 items-center justify-center">
-            <BookSummary report={report} />
+            <BookSummary report={report} dateLabel={dateLabel} />
           </div>
 
           <button type="button" onClick={action.onClick} className={`mt-3 ${ACTION_CLASS}`}>
