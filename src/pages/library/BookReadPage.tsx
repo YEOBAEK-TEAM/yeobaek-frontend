@@ -493,6 +493,7 @@ function ContentBookReader({
             }}
           >
             <Heart size={24} strokeWidth={1.5} fill={liked ? "currentColor" : "none"} />
+            <span>{actionsReady ? pageDetail.data.likeCount.toLocaleString("ko-KR") : "—"}</span>
           </button>
           <button
             type="button"
@@ -503,6 +504,7 @@ function ContentBookReader({
             }}
           >
             <MessageSquare size={24} strokeWidth={1.5} />
+            <span>{actionsReady ? pageDetail.data.commentCount.toLocaleString("ko-KR") : "—"}</span>
           </button>
           <button
             type="button"
