@@ -500,9 +500,9 @@ function ContentBookReader({
           <button
             type="button"
             aria-label="페이지 댓글"
-            disabled={!actualPageId}
+            disabled={!actionsReady}
             onClick={() => {
-              if (actualPageId) setCommentsPageId(actualPageId);
+              if (actionsReady) setCommentsPageId(actualPageId);
             }}
           >
             <img src={commentIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
@@ -524,11 +524,12 @@ function ContentBookReader({
           <ReportUnlockButton bookId={bookId} bookTitle={book.data?.title ?? ""} />
         </div>
       </footer>
-      {actualPageId && commentsPageId === actualPageId && (
+      {actionsReady && commentsPageId === actualPageId && (
         <PageCommentsSheet
           key={actualPageId}
           pageId={actualPageId}
           pageNumber={currentPage.pageNumber}
+          commentCount={pageDetail.data.commentCount}
           sentences={currentPage.sentences}
           onClose={() => setCommentsPageId(null)}
         />

@@ -34,6 +34,7 @@ type Props = {
     onThreadChange: (id?: string) => void;
     reaction: (id: string, vote: "like" | "dislike") => boolean | undefined;
     total?: number;
+    replyTotal?: number;
   };
 };
 
@@ -242,7 +243,7 @@ export default function ReaderCommentsSheet({
         <header className="flex shrink-0 items-center justify-between px-7 pt-5 pb-3">
           <h2 id="reader-comments-title" className="text-xl font-semibold">
             {parent
-              ? `답글 (${apiState?.total ?? threadReplies.length})`
+              ? `답글 (${apiState?.replyTotal ?? threadReplies.length})`
               : `댓글 (${apiState?.total ?? comments.length})`}
           </h2>
 

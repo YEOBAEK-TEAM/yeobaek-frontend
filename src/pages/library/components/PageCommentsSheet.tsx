@@ -18,11 +18,13 @@ import ReaderCommentsSheet from "./ReaderCommentsSheet";
 export default function PageCommentsSheet({
   pageId,
   pageNumber,
+  commentCount,
   sentences,
   onClose,
 }: {
   pageId: number;
   pageNumber: number;
+  commentCount: number;
   sentences: ContentChapterPage["sentences"];
   onClose: () => void;
 }) {
@@ -198,7 +200,8 @@ export default function PageCommentsSheet({
 
         reaction: (id, vote) => reactions[id]?.[vote],
 
-        total: query.data?.pages[0]?.totalElements,
+        total: commentCount,
+        replyTotal: repliesQuery.data?.pages[0]?.totalElements,
       }}
     />
   );
