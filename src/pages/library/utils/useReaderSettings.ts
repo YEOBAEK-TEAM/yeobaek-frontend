@@ -1,8 +1,8 @@
 import { useState } from "react";
 
 export const READER_FONTS = {
-  batang: '"Batang", "바탕", "Noto Serif CJK KR", Georgia, serif',
-  nanum: '"Nanum Myeongjo", "나눔명조", "Noto Serif CJK KR", Georgia, serif',
+  batang: '"Pretendard Variable", Pretendard, sans-serif',
+  nanum: '"NanumMyeongjo", serif',
 };
 export const READER_BACKGROUNDS = ["#ffffff", "#FFFEFB", "#000000", "#fafafa"];
 export const READER_LINE_HEIGHTS = [2.3, 1.95, 1.6];
