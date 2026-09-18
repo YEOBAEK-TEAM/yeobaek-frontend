@@ -2,6 +2,7 @@ import type { ContentChapterPage } from "@/types/contentPage";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useSentenceList } from "@/hooks/useSentenceList";
 import { useHighlightMutation } from "@/hooks/useHighlightMutation";
+import { useCommentMutation } from "@/hooks/useComments";
 import type { ContentTextSelection } from "../utils/contentTextSelection";
 import {
   HIGHLIGHT_COLORS,
@@ -31,8 +32,10 @@ export default function ContentPageReader({
     menuRef,
     selection,
     wordSelection,
+    commentSelection,
     close,
     openWord,
+    openComment,
     onPointerDown,
     onPointerMove,
     nativeSelection,
@@ -47,6 +50,7 @@ export default function ContentPageReader({
   } | null>(null);
   const wordPress = useRef<{ x: number; y: number } | null>(null);
   const mutation = useHighlightMutation();
+  const commentMutation = useCommentMutation();
   const pending = useRef(false);
   const savedMenuRef = useRef<HTMLDivElement>(null);
   const savedInlineMenuRef = useRef<HTMLDivElement>(null);
@@ -56,9 +60,24 @@ export default function ContentPageReader({
     sentenceId: number;
     activeMode: "color" | "note" | null;
     wordOpen?: boolean;
+    commentOpen?: boolean;
   } | null>(null);
   const savedHighlight = highlights.data?.find((item) => item.sentenceId === savedMenu?.sentenceId);
   const collectingNow = !!selection && collecting === selection;
+  const submitComment = async (sentenceId: number, content: string) => {
+    const success = await commentMutation.run({
+      type: "create",
+      pageId: page.pageId,
+      sentenceId,
+      content,
+    });
+    if (success) {
+      close();
+      setCollecting(null);
+      setSavedMenu(null);
+    }
+    return success;
+  };
 
   useEffect(() => () => window.clearTimeout(savedClick.current), []);
   useEffect(() => {
@@ -203,16 +222,29 @@ export default function ContentPageReader({
                 <TextSelectionMenu
                   showCloseButton={false}
                   menuRef={menuRef}
-                  mode={collectingNow ? "highlight" : lookupSelection ? "word" : "default"}
+                  mode={
+                    commentSelection
+                      ? "comment"
+                      : collectingNow
+                        ? "highlight"
+                        : lookupSelection
+                          ? "word"
+                          : "default"
+                  }
                   selectedColor={highlight ? HIGHLIGHT_COLORS[highlight.color] : ""}
                   collectionDisabled={mutation.isPending}
                   colorDisabled={mutation.isPending}
-                  commentDisabled
+                  commentPending={commentMutation.isPending}
+                  commentError={commentMutation.isError}
                   onHighlight={() => {
                     mutation.reset();
                     setCollecting(selection);
                   }}
-                  onComment={() => {}}
+                  onComment={() => {
+                    commentMutation.reset();
+                    setCollecting(null);
+                    openComment();
+                  }}
                   onColor={(css) => {
                     const color = highlightColorFromCss(css);
                     if (color)
@@ -223,7 +255,7 @@ export default function ContentPageReader({
                         color,
                       });
                   }}
-                  onSubmitComment={() => {}}
+                  onSubmitComment={(content) => submitComment(selection.sentenceId, content)}
                   onWord={() => {
                     setCollecting(null);
                     openWord();
@@ -250,27 +282,33 @@ export default function ContentPageReader({
                     menuRef={savedInlineMenuRef}
                     showCloseButton={false}
                     mode={
-                      savedMenu.activeMode === "color"
-                        ? "highlight"
-                        : savedMenu.wordOpen
-                          ? "word"
-                          : "default"
+                      savedMenu.commentOpen
+                        ? "comment"
+                        : savedMenu.activeMode === "color"
+                          ? "highlight"
+                          : savedMenu.wordOpen
+                            ? "word"
+                            : "default"
                     }
                     selectedColor={HIGHLIGHT_COLORS[savedHighlight.color]}
                     collectionDisabled={mutation.isPending}
                     colorDisabled={mutation.isPending}
-                    commentDisabled
+                    commentPending={commentMutation.isPending}
+                    commentError={commentMutation.isError}
                     onHighlight={() => setSavedMenu({ ...savedMenu, activeMode: "color" })}
                     onWord={() =>
                       setSavedMenu({ ...savedMenu, activeMode: "note", wordOpen: true })
                     }
-                    onComment={() => {}}
+                    onComment={() => {
+                      commentMutation.reset();
+                      setSavedMenu({ ...savedMenu, commentOpen: true });
+                    }}
                     onColor={(css) => {
                       const color = highlightColorFromCss(css);
                       if (color)
                         run({ type: "color", sentenceId: savedHighlight.sentenceId, color });
                     }}
-                    onSubmitComment={() => {}}
+                    onSubmitComment={(content) => submitComment(savedHighlight.sentenceId, content)}
                     onClose={() => setSavedMenu(null)}
                     wordCard={
                       savedMenu.wordOpen && (

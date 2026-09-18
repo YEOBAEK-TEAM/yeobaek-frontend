@@ -8,6 +8,7 @@ export type ReadingRecordItem = {
   progressRate: number;
   lastPageId: number;
   lastPageNumber: number;
+  lastReadAt: string;
   startedAt: string;
   completedAt: string | null;
 };

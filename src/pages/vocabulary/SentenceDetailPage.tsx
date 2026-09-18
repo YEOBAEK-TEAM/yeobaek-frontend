@@ -11,15 +11,17 @@ import { useVocabularyStore } from "@/stores/vocabulary";
 
 import { useSentenceDetail } from "@/hooks/useSentenceDetail";
 import { useDeleteSentence } from "@/hooks/useDeleteSentence";
+import { useUpdateSentenceMemo } from "@/hooks/useUpdateSentenceMemo";
 
 export default function SentenceDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { sentenceMemos, saveMemo, setTab } = useVocabularyStore();
+  const setTab = useVocabularyStore((state) => state.setTab);
 
   const { data: sentence, isLoading, isError } = useSentenceDetail(Number(id));
   const remove = useDeleteSentence();
+  const updateMemo = useUpdateSentenceMemo();
   const deleting = useRef(false);
 
   const [modal, setModal] = useState<"delete" | null>(null);
@@ -42,10 +44,14 @@ export default function SentenceDetailPage() {
     });
   };
 
-  const handleSave = (memo: string) => {
-    if (sentence) {
-      saveMemo(sentence.sentenceId, memo);
+  const handleSave = async (memo: string): Promise<string | null> => {
+    if (!sentence) return null;
+    try {
+      const saved = await updateMemo.mutateAsync({ sentenceId: sentence.sentenceId, memo });
       setToast(true);
+      return saved.memo ?? "";
+    } catch {
+      return null;
     }
   };
 
@@ -53,7 +59,7 @@ export default function SentenceDetailPage() {
     <main className="flex flex-1 flex-col">
       <Header title="문장 상세" onBack={goBack} />
 
-      {isLoading || isError || !sentence ? (
+      {!sentence ? (
         <div className="flex flex-1 items-center justify-center">
           <p className="px-5 text-center text-[#887D77]">
             {isLoading
@@ -109,9 +115,15 @@ export default function SentenceDetailPage() {
           <div className="flex-1">
             <MemoSection
               key={sentence.sentenceId}
-              initialMemo={sentenceMemos[sentence.sentenceId] ?? sentence.memo ?? ""}
+              initialMemo={sentence.memo ?? ""}
               onSave={handleSave}
+              isSaving={updateMemo.isPending}
             />
+            {updateMemo.isError && (
+              <p role="alert" className="px-6 py-3 text-sm text-red-700">
+                메모를 저장하지 못했습니다. 다시 시도해 주세요.
+              </p>
+            )}
           </div>
 
           {/* 삭제 모달 */}

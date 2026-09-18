@@ -18,6 +18,18 @@ export const getSentenceDetail = async (sentenceId: number, signal?: AbortSignal
   return response.data.data;
 };
 
+export const updateSentenceMemo = async (
+  sentenceId: number,
+  memo: string,
+): Promise<SentenceDetailResponse> => {
+  const response = await api.patch<ApiResponse<SentenceDetailResponse>>(
+    `/api/v1/highlights/${sentenceId}/memo`,
+    { memo },
+  );
+  if (!response.data.success) throw new Error(response.data.message);
+  return response.data.data;
+};
+
 export const createHighlight = async (body: HighlightRequest): Promise<HighlightResponse> => {
   const response = await api.post<ApiResponse<HighlightResponse>>("/api/v1/highlights", body);
   if (!response.data.success) throw new Error(response.data.message);
