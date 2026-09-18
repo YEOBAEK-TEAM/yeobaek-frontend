@@ -9,6 +9,7 @@ import { useTogglePageLike } from "@/hooks/useTogglePageLike";
 import { useTogglePageBookmark } from "@/hooks/useTogglePageBookmark";
 import { useUpdateReadingProgress } from "@/hooks/useUpdateReadingProgress";
 import ContentPageReader from "./components/ContentPageReader";
+import PageCommentsSheet from "./components/PageCommentsSheet";
 import ReaderCoverPage from "./components/ReaderCoverPage";
 import type { BookDetail } from "@/types/book";
 import type { ContentChapterPage } from "@/types/contentPage";
@@ -66,6 +67,7 @@ function ContentBookReader({
   const book = useBookDetail(bookId);
   const { settings, updateSettings, storageError } = useReaderSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [commentsPageId, setCommentsPageId] = useState<number | null>(null);
   const { mutate: saveProgress, isError: saveError } = useUpdateReadingProgress(bookId);
   const lastSaved = useRef<{ pageId: number; at: number } | null>(null);
   const pages = [
@@ -327,7 +329,14 @@ function ContentBookReader({
           >
             <Heart size={24} strokeWidth={1.5} fill={liked ? "currentColor" : "none"} />
           </button>
-          <button type="button" aria-label="댓글 (준비 중)" disabled>
+          <button
+            type="button"
+            aria-label="페이지 댓글"
+            disabled={!actualPageId}
+            onClick={() => {
+              if (actualPageId) setCommentsPageId(actualPageId);
+            }}
+          >
             <MessageSquare size={24} strokeWidth={1.5} />
           </button>
           <button
@@ -345,6 +354,14 @@ function ContentBookReader({
           </button>
         </div>
       </footer>
+      {actualPageId && commentsPageId === actualPageId && (
+        <PageCommentsSheet
+          key={actualPageId}
+          pageId={actualPageId}
+          pageNumber={currentPage.pageNumber}
+          onClose={() => setCommentsPageId(null)}
+        />
+      )}
       {settingsOpen && (
         <ReaderSettingsPanel
           settings={settings}

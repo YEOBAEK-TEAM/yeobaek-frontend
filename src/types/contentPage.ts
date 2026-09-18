@@ -18,6 +18,7 @@ export type ContentChapterPage = {
 export type ContentPage = ContentChapterPage & {
   bookmarked: boolean;
   liked: boolean;
+  commentCount: number;
 };
 
 export type ContentChapter = {
