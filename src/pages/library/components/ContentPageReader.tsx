@@ -3,6 +3,7 @@ import { Fragment, useEffect, useRef, useState } from "react";
 import { useSentenceList } from "@/hooks/useSentenceList";
 import { useHighlightMutation } from "@/hooks/useHighlightMutation";
 import { useCommentMutation } from "@/hooks/useComments";
+import { useToastStore } from "@/stores/common/toast";
 import type { ContentTextSelection } from "../utils/contentTextSelection";
 import {
   HIGHLIGHT_COLORS,
@@ -51,6 +52,7 @@ export default function ContentPageReader({
   const wordPress = useRef<{ x: number; y: number } | null>(null);
   const mutation = useHighlightMutation();
   const commentMutation = useCommentMutation();
+  const showToast = useToastStore((state) => state.showToast);
   const pending = useRef(false);
   const savedMenuRef = useRef<HTMLDivElement>(null);
   const savedInlineMenuRef = useRef<HTMLDivElement>(null);
@@ -72,6 +74,7 @@ export default function ContentPageReader({
       content,
     });
     if (success) {
+      showToast("댓글이 등록되었습니다.", "success");
       close();
       setCollecting(null);
       setSavedMenu(null);

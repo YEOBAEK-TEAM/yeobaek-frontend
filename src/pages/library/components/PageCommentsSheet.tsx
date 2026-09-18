@@ -8,9 +8,9 @@ import {
   useCommentReplies,
   useCommentMutation,
 } from "@/hooks/useComments";
-import { useMyPage } from "@/hooks/useMyPage";
 
 import type { Comment, CommentSort } from "@/types/comment";
+import type { ContentChapterPage } from "@/types/contentPage";
 import type { ReaderComment } from "../utils/useReaderData";
 
 import ReaderCommentsSheet from "./ReaderCommentsSheet";
@@ -18,16 +18,15 @@ import ReaderCommentsSheet from "./ReaderCommentsSheet";
 export default function PageCommentsSheet({
   pageId,
   pageNumber,
+  sentences,
   onClose,
 }: {
   pageId: number;
   pageNumber: number;
+  sentences: ContentChapterPage["sentences"];
   onClose: () => void;
 }) {
   const userId = useAuthStore((state) => state.userId);
-
-  // 로그인한 내 프로필 정보
-  const myPage = useMyPage();
 
   const [sort, setSort] = useState<CommentSort>("LATEST");
   const [parentId, setParentId] = useState<number>();
@@ -55,14 +54,15 @@ export default function PageCommentsSheet({
     page: pageNumber,
     text: comment.content,
     createdAt: comment.createdAt,
+    quote: reply
+      ? undefined
+      : sentences.find((sentence) => sentence.sentenceId === comment.sentenceId)?.content,
 
     user: {
       id: comment.userId,
       nickname: comment.nickname,
 
-      // 댓글 API에는 profileImageUrl이 없으므로
-      // 로그인한 본인의 댓글/답글일 때만 mypage 프로필 이미지를 사용
-      profileImage: comment.userId === userId ? myPage.data?.profileImageUrl : undefined,
+      // PageCommentResponse has no author image field; use ProfileImage's default.
     },
 
     likes: comment.likeCount,

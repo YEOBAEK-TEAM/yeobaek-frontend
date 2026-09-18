@@ -2,7 +2,7 @@
 
 import type { ReaderComment } from "../utils/useReaderData";
 
-import { readerUser } from "../../../mocks/readerUser";
+import ProfileImage from "@/components/my/ProfileImage";
 import CommentConfirmModal from "./CommentConfirmModal";
 
 const editButtonClass =
@@ -178,8 +178,11 @@ export default function ReaderCommentsSheet({
   const shown = parent
     ? [parent]
     : apiState
-      ? comments
+      ? tab === "popular"
+        ? comments.filter((comment) => (comment.likes ?? 0) > 0)
+        : comments
       : comments
+          .filter((comment) => tab !== "popular" || (comment.likes ?? 0) > 0)
           .filter((comment) => tab !== "fan" || comment.user?.isFan)
           .sort((a, b) => {
             if (tab === "popular" && (a.likes ?? 0) !== (b.likes ?? 0)) {
@@ -316,7 +319,11 @@ export default function ReaderCommentsSheet({
           )}
           {!parent && shown.length === 0 && !apiState?.loading && !apiState?.error && (
             <p className="px-7 py-10 text-center text-sm text-[#A3A3A3]">
-              {tab === "fan" ? "아직 찐팬 댓글이 없습니다." : "이 페이지에 첫 의견을 남겨보세요."}
+              {tab === "popular"
+                ? "아직 인기 댓글이 없습니다."
+                : tab === "fan"
+                  ? "아직 찐팬 댓글이 없습니다."
+                  : "이 페이지에 첫 의견을 남겨보세요."}
             </p>
           )}
 
@@ -326,14 +333,14 @@ export default function ReaderCommentsSheet({
               <div className="flex gap-4">
                 {/* Profile */}
                 <div className="flex w-12 shrink-0 flex-col items-center gap-3">
-                  <img
-                    src={comment.user?.profileImage || readerUser.profileImage}
+                  <ProfileImage
+                    src={comment.user?.profileImage}
                     alt=""
                     className="h-12 w-12 rounded-full object-cover"
                   />
 
-                  {(comment.likes ?? 0) >= 10 && (
-                    <span className="rounded-full border border-[#F7F6F1] px-2 text-sm text-[#F7F6F1]">
+                  {tab === "popular" && (comment.likes ?? 0) > 0 && (
+                    <span className="rounded-full border border-[#F7F6F1] px-2 py-0.5 text-xs font-semibold text-[#F7F6F1]">
                       BEST
                     </span>
                   )}
@@ -350,7 +357,10 @@ export default function ReaderCommentsSheet({
 
                   {/* 문장 댓글 quote */}
                   {comment.quote && (
-                    <p title={comment.quote} className="mt-2 truncate text-sm text-[#A3A3A3]">
+                    <p
+                      title={comment.quote}
+                      className="mt-2 line-clamp-2 text-xs break-words text-[#C7C7C7]"
+                    >
                       {comment.quote}
                     </p>
                   )}
@@ -575,8 +585,8 @@ export default function ReaderCommentsSheet({
                 </span>
 
                 {/* 프로필 */}
-                <img
-                  src={reply.user?.profileImage || readerUser.profileImage}
+                <ProfileImage
+                  src={reply.user?.profileImage}
                   alt=""
                   className="h-10 w-10 shrink-0 rounded-full object-cover"
                 />

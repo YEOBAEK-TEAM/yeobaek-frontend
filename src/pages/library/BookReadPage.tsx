@@ -529,6 +529,7 @@ function ContentBookReader({
           key={actualPageId}
           pageId={actualPageId}
           pageNumber={currentPage.pageNumber}
+          sentences={currentPage.sentences}
           onClose={() => setCommentsPageId(null)}
         />
       )}
