@@ -73,17 +73,17 @@ export type LatestReportView = {
   title: string;
   subtitle: string;
   coverUrl: string;
-  quote?: string;
-  completedLabel: string;
+  quote: string;
+  completedAt: string | null;
 };
 
 export type MyReportView = {
   reportId: number;
   bookTitle: string;
   coverUrl: string;
+  reportTitle: string;
   dateLabel: string;
-  quote: string;
-  isDraft: boolean;
+  updatedAt: string;
   isLiked: boolean;
 };
 
