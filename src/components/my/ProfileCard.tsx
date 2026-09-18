@@ -1,4 +1,4 @@
-import { Flame, Settings } from "lucide-react";
+import { Camera, Flame, Settings } from "lucide-react";
 
 import { useRef } from "react";
 import ProfileImage from "./ProfileImage";
@@ -19,16 +19,22 @@ export default function ProfileCard({
       <section aria-label="내 프로필" className="flex items-center gap-5 px-6 pt-6">
         <button
           type="button"
-          aria-label="프로필 이미지 변경"
+          aria-label="프로필 사진 변경"
           disabled={upload.isPending}
           onClick={() => input.current?.click()}
-          className="size-24 shrink-0 rounded-full"
+          className="relative size-24 shrink-0 cursor-pointer rounded-full disabled:cursor-default"
         >
           <ProfileImage
             src={profile.profileImageUrl}
             alt={`${profile.nickname} 프로필`}
             className="size-24 shrink-0 rounded-full object-cover"
           />
+          <span
+            aria-hidden="true"
+            className="absolute right-0 bottom-0 flex size-7 items-center justify-center rounded-full border-2 border-white bg-[#595854] text-white shadow-sm"
+          >
+            <Camera size={16} />
+          </span>
         </button>
         <input
           ref={input}
