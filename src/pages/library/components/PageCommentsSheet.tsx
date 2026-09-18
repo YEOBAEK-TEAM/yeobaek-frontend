@@ -1,13 +1,18 @@
 import { useState } from "react";
+
 import { useAuthStore } from "@/stores/auth";
+
 import {
   uniqueComments,
   usePageComments,
   useCommentReplies,
   useCommentMutation,
 } from "@/hooks/useComments";
+import { useMyPage } from "@/hooks/useMyPage";
+
 import type { Comment, CommentSort } from "@/types/comment";
 import type { ReaderComment } from "../utils/useReaderData";
+
 import ReaderCommentsSheet from "./ReaderCommentsSheet";
 
 export default function PageCommentsSheet({
@@ -20,29 +25,54 @@ export default function PageCommentsSheet({
   onClose: () => void;
 }) {
   const userId = useAuthStore((state) => state.userId);
+
+  // 로그인한 내 프로필 정보
+  const myPage = useMyPage();
+
   const [sort, setSort] = useState<CommentSort>("LATEST");
   const [parentId, setParentId] = useState<number>();
-  // Only successful actions in this open sheet are known; no server reaction flag exists.
+
+  // Only successful actions in this open sheet are known;
+  // no server reaction flag exists.
   const [reactions, setReactions] = useState<
     Record<string, Partial<Record<"like" | "dislike", boolean>>>
   >({});
+
   const commentsQuery = usePageComments(pageId, sort);
   const repliesQuery = useCommentReplies(pageId, parentId ?? NaN);
   const mutation = useCommentMutation();
+
   const comments = uniqueComments(commentsQuery.data?.pages);
   const replies = uniqueComments(repliesQuery.data?.pages);
+
   const query = parentId === undefined ? commentsQuery : repliesQuery;
+
   const find = (id: string) =>
     [...comments, ...replies].find((item) => String(item.commentId) === id);
+
   const toView = (comment: Comment, reply = false): ReaderComment => ({
     id: String(comment.commentId),
     page: pageNumber,
     text: comment.content,
     createdAt: comment.createdAt,
-    user: { id: comment.userId, nickname: comment.nickname },
+
+    user: {
+      id: comment.userId,
+      nickname: comment.nickname,
+
+      // 댓글 API에는 profileImageUrl이 없으므로
+      // 로그인한 본인의 댓글/답글일 때만 mypage 프로필 이미지를 사용
+      profileImage: comment.userId === userId ? myPage.data?.profileImageUrl : undefined,
+    },
+
     likes: comment.likeCount,
     dislikes: comment.dislikeCount,
-    ...(reply ? { parentCommentId: String(parentId) } : {}),
+
+    ...(reply
+      ? {
+          parentCommentId: String(parentId),
+        }
+      : {}),
   });
 
   return (
@@ -55,7 +85,9 @@ export default function PageCommentsSheet({
       onReport={() => {}}
       onSubmit={async (content, replyTo) => {
         const parent = replyTo && find(replyTo);
+
         if (!parent) return false;
+
         return mutation.run({
           type: "reply",
           pageId,
@@ -66,8 +98,15 @@ export default function PageCommentsSheet({
       }}
       onEdit={async (id, content) => {
         const item = find(id);
+
         if (!item || item.userId !== userId) return false;
-        const base = { pageId, sentenceId: item.sentenceId, content };
+
+        const base = {
+          pageId,
+          sentenceId: item.sentenceId,
+          content,
+        };
+
         return parentId !== undefined && replies.some((reply) => reply.commentId === item.commentId)
           ? mutation.run({
               ...base,
@@ -75,12 +114,22 @@ export default function PageCommentsSheet({
               commentId: parentId,
               replyId: item.commentId,
             })
-          : mutation.run({ ...base, type: "edit", commentId: item.commentId });
+          : mutation.run({
+              ...base,
+              type: "edit",
+              commentId: item.commentId,
+            });
       }}
       onDelete={async (id) => {
         const item = find(id);
+
         if (!item || item.userId !== userId) return false;
-        const base = { pageId, sentenceId: item.sentenceId };
+
+        const base = {
+          pageId,
+          sentenceId: item.sentenceId,
+        };
+
         return parentId !== undefined && replies.some((reply) => reply.commentId === item.commentId)
           ? mutation.run({
               ...base,
@@ -88,13 +137,21 @@ export default function PageCommentsSheet({
               commentId: parentId,
               replyId: item.commentId,
             })
-          : mutation.run({ ...base, type: "delete", commentId: item.commentId });
+          : mutation.run({
+              ...base,
+              type: "delete",
+              commentId: item.commentId,
+            });
       }}
       onVote={async (id, vote) => {
         const item = comments.find((comment) => String(comment.commentId) === id);
+
         if (!item) return;
+
         const cancel = reactions[id]?.[vote] === true;
+
         const type = cancel ? (vote === "like" ? "unlike" : "undislike") : vote;
+
         if (
           await mutation.run({
             type,
@@ -103,7 +160,13 @@ export default function PageCommentsSheet({
             commentId: item.commentId,
           })
         ) {
-          setReactions((previous) => ({ ...previous, [id]: { ...previous[id], [vote]: !cancel } }));
+          setReactions((previous) => ({
+            ...previous,
+            [id]: {
+              ...previous[id],
+              [vote]: !cancel,
+            },
+          }));
         }
       }}
       apiState={{
@@ -111,20 +174,30 @@ export default function PageCommentsSheet({
         pending: mutation.isPending,
         loading: query.isPending,
         error: query.isError || mutation.isError,
+
         onRetry: () => {
           void query.refetch();
         },
+
         hasNext: query.hasNextPage,
         loadingMore: query.isFetchingNextPage,
+
         onLoadMore: () => {
-          if (!query.isFetching) void query.fetchNextPage();
+          if (!query.isFetching) {
+            void query.fetchNextPage();
+          }
         },
+
         onSortChange: setSort,
+
         onThreadChange: (id) => {
           setParentId(id === undefined ? undefined : Number(id));
+
           mutation.reset();
         },
+
         reaction: (id, vote) => reactions[id]?.[vote],
+
         total: query.data?.pages[0]?.totalElements,
       }}
     />
