@@ -10,31 +10,52 @@ export const REPORT_PATH = {
 export const DRAFT_REPORT = {
   continueLabel: "독후감 마저 쓰기",
   completedPrefix: "완독",
-  reportCompletedLabel: "독후감 작성완료",
-  newReportLabel: "새로운 독후감 작성",
+  newReportLabel: "새 독후감을 작성해보세요",
   emptyText: "완독한 책으로\n독후감을 써보세요",
   writeLabel: "독후감 쓰기",
 };
 
-export const MY_REPORT_SECTION = {
-  title: "내가 쓴 독후감",
-  writeLabel: "독후감 쓰기",
-  emptyText: "아직 작성한 독후감이 없어요",
-  untitled: "제목 없음",
-  draftBadge: "작성 중",
-};
+export const REPORT_UNTITLED = "제목 없음";
+
+export type ReportStatusTab = "DRAFT" | "PUBLISHED";
+
+export const REPORT_STATUS_TABS: {
+  id: ReportStatusTab;
+  label: string;
+  datePrefix: string;
+  emptyText: string;
+}[] = [
+  {
+    id: "DRAFT",
+    label: "작성중",
+    datePrefix: "마지막 수정 :",
+    emptyText: "작성 중인 독후감이 없어요",
+  },
+  {
+    id: "PUBLISHED",
+    label: "작성 완료",
+    datePrefix: "완료 :",
+    emptyText: "작성한 독후감이 없어요",
+  },
+];
+
+export type ReportSortOrder = "latest" | "oldest";
+
+export const REPORT_SORT_OPTIONS: { id: ReportSortOrder; label: string }[] = [
+  { id: "latest", label: "최신순" },
+  { id: "oldest", label: "오래된순" },
+];
+
+export const REPORT_SORT_MENU_LABEL = "정렬 기준";
 
 export const getReportLikeLabel = (bookTitle: string) => `${bookTitle} 독후감 좋아요`;
 
 export const REPORT_LIKE_ERROR_TEXT = "좋아요를 반영하지 못했어요";
 
-export const DRAFT_EXISTS_MESSAGE =
-  "아직 작성중인 독후감이 있습니다.\n해당 독후감을 저장하셔야 다음 독후감을\n작성하실수있습니다";
-
 export type ReportBookListMode = "unlocked" | "pending";
 
 export const REPORT_BOOK_SHEET = {
-  title: "독후감 목록",
+  title: "독후감 쓸 책 선택",
   modeMenuLabel: "목록 선택",
 };
 
@@ -51,9 +72,6 @@ export const REPORT_BOOK_LIST_MODES: {
   { id: "pending", label: "해금예정", emptyText: "해금을 기다리는 책이 없어요" },
 ];
 
-export const getWriteConfirmMessage = (bookTitle: string) =>
-  `${bookTitle}에 대한 독후감을 작성하시겠습니까?`;
-
 export const REPORT_EDITOR = {
   titleSuffix: "에 대해서",
   titleLabel: "제목",
@@ -64,7 +82,7 @@ export const REPORT_EDITOR = {
   tempSaveLabel: "임시저장",
   submitLabel: "제출하기",
   savedToast: "임시저장되었어요",
-  submittedToast: "독후감을 제출했어요",
+  submittedToast: "독후감 작성 완료",
   exitMessage: "임시저장하고 나가시겠습니까?",
   loadErrorText: "독후감을 불러오지 못했어요",
   bookNotFoundText: "독후감을 쓸 수 있는 책을 찾지 못했어요",
