@@ -51,7 +51,7 @@ export default function ReportUnlockButton({ bookId, bookTitle }: ReportUnlockBu
     if (unlockedQuery.isPending) return;
 
     if (isUnlocked) {
-      writeFlow.writeBook({ bookId, title: bookTitle });
+      void writeFlow.writeBook({ bookId, title: bookTitle });
       return;
     }
 

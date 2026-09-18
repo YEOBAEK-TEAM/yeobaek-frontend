@@ -12,12 +12,18 @@ type UnlockGuideModalProps = {
   bookId: number;
   bookTitle: string;
   onClose: () => void;
+  onBeforeStart?: () => void;
 };
 
 // 서버 퀴즈는 항상 3문제
 const QUESTION_COUNT = 3;
 
-export default function UnlockGuideModal({ bookId, bookTitle, onClose }: UnlockGuideModalProps) {
+export default function UnlockGuideModal({
+  bookId,
+  bookTitle,
+  onClose,
+  onBeforeStart,
+}: UnlockGuideModalProps) {
   const titleId = useId();
   const navigate = useNavigate();
 
@@ -25,7 +31,10 @@ export default function UnlockGuideModal({ bookId, bookTitle, onClose }: UnlockG
 
   const start = () =>
     startQuiz.mutate(undefined, {
-      onSuccess: () => navigate(UNLOCK_QUIZ_PATH(bookId), { state: { bookTitle } }),
+      onSuccess: () => {
+        onBeforeStart?.();
+        navigate(UNLOCK_QUIZ_PATH(bookId), { state: { bookTitle } });
+      },
     });
 
   return (

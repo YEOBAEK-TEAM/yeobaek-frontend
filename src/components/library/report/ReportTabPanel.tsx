@@ -26,7 +26,11 @@ export default function ReportTabPanel() {
           />
         </div>
       ) : (
-        <DraftReportCard report={latestQuery.data} onWrite={writeFlow.startWrite} />
+        <DraftReportCard
+          report={latestQuery.data}
+          onContinue={(reportId) => navigate(REPORT_PATH.edit(reportId))}
+          onWrite={writeFlow.startWrite}
+        />
       )}
 
       <MyReportSection

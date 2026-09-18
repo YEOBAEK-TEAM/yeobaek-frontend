@@ -43,8 +43,7 @@ export default function UnlockQuizPage() {
 
   const bookId = Number(bookIdParam);
 
-  // 퀴즈 응답에 책 제목이 없어 진입 화면에서 넘긴 제목 사용
-  const bookTitle = (location.state as UnlockQuizLocationState)?.bookTitle ?? "";
+  const stateBookTitle = (location.state as UnlockQuizLocationState)?.bookTitle ?? "";
 
   const quizQuery = useUnlockQuiz(bookId);
   const quiz = quizQuery.data;
@@ -113,6 +112,7 @@ export default function UnlockQuizPage() {
   }
 
   const { questions } = quiz;
+  const bookTitle = quiz.bookTitle || stateBookTitle;
   const question = questions[questionIndex];
   const isLastQuestion = questionIndex === questions.length - 1;
   const selectedChoiceId = answers[question.questionId];
