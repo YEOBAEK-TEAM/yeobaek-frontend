@@ -1,71 +1,81 @@
-import { DRAFT_REPORT } from "@/constants/library/report";
+import { DRAFT_REPORT, MY_REPORT_SECTION } from "@/constants/library/report";
 import { formatReportDate } from "@/utils/training/formatReportDate";
 
 import type {
-  DraftReportResponse,
-  DraftReportView,
-  MyReportResponse,
+  BookReviewDetailResponse,
+  BookReviewListItemResponse,
+  LatestBookReviewResponse,
+  LatestReportView,
   MyReportView,
+  ReportEditorView,
   UnlockedBookResponse,
-  UnlockedBookSortOrder,
   UnlockedBookView,
 } from "@/types/library/report";
 
-const toBannerView = (
-  response: Pick<
-    DraftReportResponse,
-    "reportId" | "bookTitle" | "bookSubtitle" | "coverUrl" | "completedAt"
-  >,
-): DraftReportView => ({
-  reportId: response.reportId,
-  title: response.bookTitle,
-  subtitle: response.bookSubtitle,
-  coverUrl: response.coverUrl,
-  completedLabel: `${DRAFT_REPORT.completedPrefix} ${formatReportDate(response.completedAt)}`,
-});
+const toQuote = (title: string | null) => (title ? `“${title}”` : MY_REPORT_SECTION.untitled);
 
-export const toDraftReportView = (response: DraftReportResponse | null): DraftReportView | null =>
-  response && toBannerView(response);
+// 작성 중이면 완독일, 작성 완료면 작성완료 표시
+export const toLatestReportView = (
+  response: LatestBookReviewResponse | null,
+): LatestReportView | null => {
+  if (!response) return null;
 
-// 작성일 기준 가장 최근에 쓴 독후감
-export const toLatestReportView = (reports: MyReportResponse[]): DraftReportView | null => {
-  const latest = reports.reduce<MyReportResponse | null>(
-    (prev, current) =>
-      !prev || Date.parse(current.createdAt) > Date.parse(prev.createdAt) ? current : prev,
-    null,
-  );
+  const isDraft = response.status === "DRAFT";
 
-  return (
-    latest && {
-      ...toBannerView(latest),
-      completedLabel: DRAFT_REPORT.reportCompletedLabel,
-      quote: `“${latest.reportTitle}”`,
-    }
-  );
+  return {
+    reportId: response.reviewId,
+    isDraft,
+    title: response.bookTitle,
+    // 저자와 장르를 이어 붙인 책 소개 한 줄
+    subtitle: [response.author, response.genre].filter(Boolean).join(" "),
+    coverUrl: response.coverImageUrl ?? "",
+    quote: isDraft ? undefined : toQuote(response.title),
+    completedLabel: isDraft
+      ? response.completedAt
+        ? `${DRAFT_REPORT.completedPrefix} ${formatReportDate(response.completedAt)}`
+        : ""
+      : DRAFT_REPORT.reportCompletedLabel,
+  };
 };
 
-export const toMyReportView = (response: MyReportResponse): MyReportView => ({
-  reportId: response.reportId,
+export const toMyReportView = (response: BookReviewListItemResponse): MyReportView => ({
+  reportId: response.reviewId,
   bookTitle: response.bookTitle,
-  coverUrl: response.coverUrl,
-  dateLabel: formatReportDate(response.createdAt),
-  quote: `“${response.reportTitle}”`,
+  coverUrl: response.coverImageUrl ?? "",
+  dateLabel: formatReportDate(response.writtenAt),
+  quote: toQuote(response.title),
+  isDraft: response.status === "DRAFT",
   isLiked: response.isLiked,
 });
 
+// 해금일 최신순
 export const toUnlockedBookViews = (responses: UnlockedBookResponse[]): UnlockedBookView[] =>
-  responses.map((response) => ({
-    bookId: response.bookId,
-    title: response.bookTitle,
-    author: response.author,
-    coverUrl: response.coverUrl,
-    unlockedAt: response.unlockedAt,
-    unlockedLabel: formatReportDate(response.unlockedAt),
-  }));
+  [...responses]
+    .sort((a, b) => Date.parse(b.quizPassedAt) - Date.parse(a.quizPassedAt))
+    .map((response) => ({
+      bookId: response.bookId,
+      title: response.bookTitle,
+      author: response.author,
+      coverUrl: response.coverImageUrl ?? "",
+      unlockedLabel: formatReportDate(response.quizPassedAt),
+    }));
 
-export const sortUnlockedBooks = (books: UnlockedBookView[], order: UnlockedBookSortOrder) =>
-  [...books].sort((a, b) =>
-    order === "latest"
-      ? Date.parse(b.unlockedAt) - Date.parse(a.unlockedAt)
-      : Date.parse(a.unlockedAt) - Date.parse(b.unlockedAt),
-  );
+export const toReportEditorView = (response: BookReviewDetailResponse): ReportEditorView => ({
+  reportId: response.reviewId,
+  bookId: response.bookId,
+  bookTitle: response.bookTitle,
+  title: response.title ?? "",
+  content: response.content ?? "",
+  status: response.status,
+  dateLabel: formatReportDate(response.writtenAt),
+});
+
+export const toNewReportEditorView = (bookId: number, bookTitle: string): ReportEditorView => ({
+  reportId: null,
+  bookId,
+  bookTitle,
+  title: "",
+  content: "",
+  status: null,
+  dateLabel: formatReportDate(new Date().toLocaleDateString("sv-SE")),
+});

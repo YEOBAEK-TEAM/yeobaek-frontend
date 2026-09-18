@@ -8,7 +8,6 @@ import SectionState from "@/components/common/section/SectionState";
 import { REPORT_BOOK_LIST_MODES, REPORT_BOOK_SHEET } from "@/constants/library/report";
 import { useUnlockedBooks } from "@/hooks/library/report/useReportQueries";
 import { usePendingUnlockBooks } from "@/hooks/library/unlock-quiz/useUnlockQuizQueries";
-import { sortUnlockedBooks } from "@/utils/library/report/toReportView";
 
 import type { ReportBookListMode } from "@/constants/library/report";
 import type { UnlockedBookView } from "@/types/library/report";
@@ -114,7 +113,7 @@ function ReportBookList({
   const rows = useMemo<BookRow[]>(
     () =>
       mode === "unlocked"
-        ? sortUnlockedBooks(unlockedQuery.data ?? [], "latest").map((book) => ({
+        ? (unlockedQuery.data ?? []).map((book) => ({
             ...book,
             dateLabel: book.unlockedLabel,
             select: () => requestClose(() => onSelectUnlocked(book)),

@@ -10,45 +10,41 @@ import { useEffect } from "react";
 import {
   completeReading,
   getPendingUnlockBooks,
-  getReportUnlockStatus,
   getUnlockQuiz,
-  gradeUnlockQuiz,
+  submitUnlockQuiz,
 } from "@/api/library/unlockQuiz";
+import { getReadingRecords } from "@/api/readingRecord";
 import { libraryReportKeys } from "@/hooks/library/report/useReportQueries";
-import { useReadingRecords } from "@/hooks/useReadingRecords";
-
 import { toPendingUnlockBookViews } from "@/utils/library/unlock-quiz/toPendingUnlockBookView";
+import { toUnlockQuizView } from "@/utils/library/unlock-quiz/toUnlockQuizView";
 
 import type { UpdateReadingProgressResponse } from "@/types/readingRecord";
 
 // 독후감 해금 query key 팩토리
 export const unlockQuizKeys = {
   all: ["library", "unlock"] as const,
-  status: (bookId: number) => [...unlockQuizKeys.all, "status", bookId] as const,
   quiz: (bookId: number) => [...unlockQuizKeys.all, "quiz", bookId] as const,
-  pendingBooks: () => [...unlockQuizKeys.all, "pending-books"] as const,
 };
 
-const isValidBookId = (bookId: number) => Number.isSafeInteger(bookId) && bookId > 0;
+// 완독 기록 조회 최대 개수
+const COMPLETED_RECORD_SIZE = 50;
 
+export const isValidBookId = (bookId: number) => Number.isSafeInteger(bookId) && bookId > 0;
+
+// 퀴즈 생성에 시간이 걸려 자동 재시도 없이 사용자가 다시 시도
 const unlockQuizQuery = (bookId: number) =>
   queryOptions({
     queryKey: unlockQuizKeys.quiz(bookId),
-    queryFn: () => getUnlockQuiz(bookId),
+    queryFn: ({ signal }) => getUnlockQuiz(bookId, signal),
     staleTime: 0,
-  });
-
-export const useReportUnlockStatus = (bookId: number) =>
-  useQuery({
-    queryKey: unlockQuizKeys.status(bookId),
-    queryFn: () => getReportUnlockStatus(bookId),
-    enabled: isValidBookId(bookId),
+    retry: false,
   });
 
 // 시작하기에서 받아 둔 문제를 그대로 쓰고, 주소로 바로 들어왔을 때만 새로 조회
 export const useUnlockQuiz = (bookId: number) =>
   useQuery({
     ...unlockQuizQuery(bookId),
+    select: toUnlockQuizView,
     enabled: isValidBookId(bookId),
     refetchOnMount: false,
     refetchOnWindowFocus: false,
@@ -56,48 +52,51 @@ export const useUnlockQuiz = (bookId: number) =>
 
 export const usePendingUnlockBooks = (enabled: boolean) =>
   useQuery({
-    queryKey: unlockQuizKeys.pendingBooks(),
-    queryFn: getPendingUnlockBooks,
+    queryKey: libraryReportKeys.pendingUnlockBooks(),
+    queryFn: ({ signal }) => getPendingUnlockBooks(signal),
     select: toPendingUnlockBookViews,
+    staleTime: 30_000,
     enabled,
   });
 
-// 시작하기 시점마다 새 문제 조회
+// 시작하기 시점마다 새로 조회
 export const useStartUnlockQuiz = (bookId: number) => {
   const queryClient = useQueryClient();
 
   return useMutation({ mutationFn: () => queryClient.fetchQuery(unlockQuizQuery(bookId)) });
 };
 
-export const useGradeUnlockQuiz = () => {
+// 중복 채점 방지를 위해 자동 재시도 없음
+export const useSubmitUnlockQuiz = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: gradeUnlockQuiz,
-    onSuccess: ({ result }, { bookId }) => {
-      if (result !== "unlocked") return;
+    mutationFn: submitUnlockQuiz,
+    retry: 0,
+    onSuccess: ({ passed }) => {
+      if (!passed) return;
 
-      [
-        unlockQuizKeys.status(bookId),
-        unlockQuizKeys.pendingBooks(),
-        libraryReportKeys.unlockedBooks(),
-      ].forEach((queryKey) => void queryClient.invalidateQueries({ queryKey }));
+      [libraryReportKeys.unlockedBooks(), libraryReportKeys.pendingUnlockBooks()].forEach(
+        (queryKey) => void queryClient.invalidateQueries({ queryKey }),
+      );
     },
   });
 };
 
-// 실제 읽기 기록이 완독이거나 진행률 저장 응답이 100%가 되면 완독 처리 요청
-export const useReadingCompletion = (
-  bookId: number,
-  bookTitle: string,
-  isCompleted: boolean | undefined,
-) => {
+// 실제 읽기 기록이 완독이거나 진행률 저장 응답이 100%면 완독으로 판단
+export const useReadingCompletion = (bookId: number) => {
   const queryClient = useQueryClient();
 
-  const { data: completedRecords } = useReadingRecords("COMPLETED", isCompleted === false);
+  const completedRecordsQuery = useQuery({
+    queryKey: ["reading-records", "COMPLETED", COMPLETED_RECORD_SIZE],
+    queryFn: ({ signal }) =>
+      getReadingRecords({ status: "COMPLETED", size: COMPLETED_RECORD_SIZE }, signal),
+    enabled: isValidBookId(bookId),
+  });
   const hasCompletedRecord =
-    completedRecords?.items.some((record) => record.bookId === bookId && record.completedAt) ??
-    false;
+    completedRecordsQuery.data?.items.some(
+      (record) => record.bookId === bookId && record.completedAt,
+    ) ?? false;
 
   const progressRates = useMutationState({
     filters: { mutationKey: ["reading-progress", bookId], status: "success" },
@@ -105,20 +104,25 @@ export const useReadingCompletion = (
       (mutation.state.data as UpdateReadingProgressResponse | undefined)?.progressRate ?? 0,
   });
 
-  const hasReachedEnd = hasCompletedRecord || progressRates.some((rate) => rate >= 100);
+  const hasReachedEnd = progressRates.some((rate) => rate >= 100);
 
   const { mutate, isIdle } = useMutation({
     mutationFn: completeReading,
     onSuccess: () =>
-      [unlockQuizKeys.status(bookId), unlockQuizKeys.pendingBooks()].forEach(
+      [["reading-records"], libraryReportKeys.pendingUnlockBooks()].forEach(
         (queryKey) => void queryClient.invalidateQueries({ queryKey }),
       ),
   });
 
   useEffect(() => {
-    // 이미 완독한 책이거나 한 번 요청했으면 다시 보내지 않음
-    if (isCompleted !== false || !hasReachedEnd || !isIdle) return;
+    // 기록상 이미 완독한 책이거나 한 번 요청했으면 다시 보내지 않음
+    if (hasCompletedRecord || !hasReachedEnd || !isIdle) return;
 
-    mutate({ bookId, bookTitle: bookTitle || null });
-  }, [bookId, bookTitle, isCompleted, hasReachedEnd, isIdle, mutate]);
+    mutate(bookId);
+  }, [bookId, hasCompletedRecord, hasReachedEnd, isIdle, mutate]);
+
+  return {
+    isCompleted: hasCompletedRecord || hasReachedEnd,
+    isReady: !completedRecordsQuery.isPending,
+  };
 };

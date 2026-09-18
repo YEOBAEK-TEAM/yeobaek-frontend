@@ -2,17 +2,16 @@ import BookCover from "@/components/common/bookCover/BookCover";
 import PaperCard from "@/components/library/report/PaperCard";
 import { DRAFT_REPORT } from "@/constants/library/report";
 
-import type { DraftReportView } from "@/types/library/report";
+import type { LatestReportView } from "@/types/library/report";
 
 type DraftReportCardProps = {
-  draft: DraftReportView | null;
-  latestReport: DraftReportView | null;
-  onContinue: () => void;
+  report: LatestReportView | null;
+  onContinue: (reportId: number) => void;
   onWrite: () => void;
 };
 
 type BookSummaryProps = {
-  report: DraftReportView;
+  report: LatestReportView;
 };
 
 const ACTION_CLASS =
@@ -29,7 +28,7 @@ function BookSummary({ report }: BookSummaryProps) {
     <div className="flex items-center justify-center gap-4">
       <BookCover
         src={report.coverUrl}
-        className="h-36 w-26 shrink-0 shadow-[0_2px_6px_rgba(0,0,0,0.12)]"
+        className="h-36 w-26 shrink-0 bg-[#EFEDE7] shadow-[0_2px_6px_rgba(0,0,0,0.12)]"
       />
 
       <div className="min-w-0">
@@ -45,40 +44,33 @@ function BookSummary({ report }: BookSummaryProps) {
         <p className="mt-1.5 text-[16px] leading-6 font-medium break-keep text-[#54555A]">
           {report.subtitle}
         </p>
-        <p className="mt-0.5 text-[16px] font-medium whitespace-nowrap text-[#54555A] tabular-nums">
-          {report.completedLabel}
-        </p>
+        {report.completedLabel && (
+          <p className="mt-0.5 text-[16px] font-medium whitespace-nowrap text-[#54555A] tabular-nums">
+            {report.completedLabel}
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-export default function DraftReportCard({
-  draft,
-  latestReport,
-  onContinue,
-  onWrite,
-}: DraftReportCardProps) {
-  // 작성 중이면 이어쓰기, 없으면 가장 최근 독후감과 새 작성 버튼
-  const banner = draft
-    ? { report: draft, actionLabel: DRAFT_REPORT.continueLabel, onAction: onContinue }
-    : latestReport && {
-        report: latestReport,
-        actionLabel: DRAFT_REPORT.newReportLabel,
-        onAction: onWrite,
-      };
+// 작성 중이면 이어쓰기, 작성 완료면 새 작성, 없으면 작성 안내
+export default function DraftReportCard({ report, onContinue, onWrite }: DraftReportCardProps) {
+  if (report) {
+    const action = report.isDraft
+      ? { label: DRAFT_REPORT.continueLabel, onClick: () => onContinue(report.reportId) }
+      : { label: DRAFT_REPORT.newReportLabel, onClick: onWrite };
 
-  if (banner) {
     return (
       <PaperCard>
         <div className="flex h-full flex-col px-5 pt-4 pb-4">
           {/* 버튼 위 남은 공간의 가운데에 책 정보 배치 */}
           <div className="flex min-h-0 flex-1 items-center justify-center">
-            <BookSummary report={banner.report} />
+            <BookSummary report={report} />
           </div>
 
-          <button type="button" onClick={banner.onAction} className={`mt-3 ${ACTION_CLASS}`}>
-            {banner.actionLabel}
+          <button type="button" onClick={action.onClick} className={`mt-3 ${ACTION_CLASS}`}>
+            {action.label}
           </button>
         </div>
       </PaperCard>

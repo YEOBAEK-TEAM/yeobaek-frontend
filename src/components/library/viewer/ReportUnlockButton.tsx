@@ -5,11 +5,9 @@ import { createPortal } from "react-dom";
 import ReportWriteFlowModals from "@/components/library/report/ReportWriteFlowModals";
 import UnlockGuideModal from "@/components/library/unlock-quiz/UnlockGuideModal";
 import { REPORT_UNLOCK_BUTTON_LABEL } from "@/constants/library/unlockQuiz";
+import { useUnlockedBooks } from "@/hooks/library/report/useReportQueries";
 import { useReportWriteFlow } from "@/hooks/library/report/useReportWriteFlow";
-import {
-  useReadingCompletion,
-  useReportUnlockStatus,
-} from "@/hooks/library/unlock-quiz/useUnlockQuizQueries";
+import { useReadingCompletion } from "@/hooks/library/unlock-quiz/useUnlockQuizQueries";
 
 type ReportUnlockButtonProps = {
   bookId: number;
@@ -26,17 +24,18 @@ const APPEAR_KEYFRAMES: Keyframe[] = [
 export default function ReportUnlockButton({ bookId, bookTitle }: ReportUnlockButtonProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
-  const { data: status } = useReportUnlockStatus(bookId);
-  const isCompleted = status?.isCompleted ?? false;
+  const { isCompleted, isReady } = useReadingCompletion(bookId);
 
-  useReadingCompletion(bookId, bookTitle, status?.isCompleted);
+  // 해금됐지만 아직 쓰지 않은 책이면 퀴즈 없이 작성
+  const unlockedQuery = useUnlockedBooks(isCompleted);
+  const isUnlocked = unlockedQuery.data?.some((book) => book.bookId === bookId) ?? false;
 
   const writeFlow = useReportWriteFlow();
 
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [wasCompletedOnLoad, setWasCompletedOnLoad] = useState<boolean | null>(null);
 
-  if (status && wasCompletedOnLoad === null) setWasCompletedOnLoad(status.isCompleted);
+  if (isReady && wasCompletedOnLoad === null) setWasCompletedOnLoad(isCompleted);
 
   // 읽는 도중 완독한 순간에만 등장 연출
   useEffect(() => {
@@ -46,13 +45,18 @@ export default function ReportUnlockButton({ bookId, bookTitle }: ReportUnlockBu
     buttonRef.current?.animate(APPEAR_KEYFRAMES, { duration: 420, easing: "ease-out" });
   }, [isCompleted, wasCompletedOnLoad]);
 
-  if (!status?.isCompleted) return null;
+  if (!isCompleted) return null;
 
-  // 해금은 퀴즈 통과로만 가능, 안내만 닫으면 해금예정에 남음
-  const handleClick = () =>
-    status.isUnlocked
-      ? void writeFlow.writeBook({ bookId, title: bookTitle })
-      : setIsGuideOpen(true);
+  const handleClick = () => {
+    if (unlockedQuery.isPending) return;
+
+    if (isUnlocked) {
+      void writeFlow.writeBook({ bookId, title: bookTitle });
+      return;
+    }
+
+    setIsGuideOpen(true);
+  };
 
   return (
     <>
@@ -61,6 +65,7 @@ export default function ReportUnlockButton({ bookId, bookTitle }: ReportUnlockBu
         type="button"
         aria-label={REPORT_UNLOCK_BUTTON_LABEL}
         aria-haspopup="dialog"
+        aria-busy={unlockedQuery.isPending}
         onClick={handleClick}
         // 하단 바 오른쪽 끝에 붙도록 아이콘 우측 정렬
         className="justify-end"
@@ -72,7 +77,11 @@ export default function ReportUnlockButton({ bookId, bookTitle }: ReportUnlockBu
       {createPortal(
         <>
           {isGuideOpen && (
-            <UnlockGuideModal bookId={bookId} onClose={() => setIsGuideOpen(false)} />
+            <UnlockGuideModal
+              bookId={bookId}
+              bookTitle={bookTitle}
+              onClose={() => setIsGuideOpen(false)}
+            />
           )}
           <ReportWriteFlowModals writeFlow={writeFlow} />
         </>,

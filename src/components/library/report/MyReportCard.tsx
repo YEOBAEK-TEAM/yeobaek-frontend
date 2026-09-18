@@ -1,5 +1,6 @@
 import BookCover from "@/components/common/bookCover/BookCover";
 import LikeButton from "@/components/library/report/LikeButton";
+import { MY_REPORT_SECTION } from "@/constants/library/report";
 
 import type { MyReportView } from "@/types/library/report";
 
@@ -18,13 +19,18 @@ export default function MyReportCard({ report, onOpen, onToggleLike }: MyReportC
         onClick={onOpen}
         className="flex h-full w-full flex-col px-3 pt-2.5 pb-3 text-left"
       >
-        <BookCover src={report.coverUrl} className="h-19.5 w-13 shrink-0" />
+        <BookCover src={report.coverUrl} className="h-19.5 w-13 shrink-0 bg-[#EFEDE7]" />
 
         <p className="mt-2.5 truncate text-[17px] leading-6 font-bold text-[#2C2A2B]">
           {report.bookTitle}
         </p>
         <p className="mt-1 text-[14px] leading-5 font-semibold text-[#4F4D4E] tabular-nums">
           {report.dateLabel}
+          {report.isDraft && (
+            <span className="ml-1 text-[12px] font-semibold text-[#A89F94]">
+              {MY_REPORT_SECTION.draftBadge}
+            </span>
+          )}
         </p>
         <p className="mt-1 line-clamp-2 text-[15px] leading-5 font-medium text-[#4F4D4E]">
           {report.quote}

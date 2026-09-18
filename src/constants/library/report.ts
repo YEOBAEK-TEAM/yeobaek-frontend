@@ -20,6 +20,8 @@ export const MY_REPORT_SECTION = {
   title: "내가 쓴 독후감",
   writeLabel: "독후감 쓰기",
   emptyText: "아직 작성한 독후감이 없어요",
+  untitled: "제목 없음",
+  draftBadge: "작성 중",
 };
 
 export const getReportLikeLabel = (bookTitle: string) => `${bookTitle} 독후감 좋아요`;
@@ -65,13 +67,10 @@ export const REPORT_EDITOR = {
   submittedToast: "독후감을 제출했어요",
   exitMessage: "임시저장하고 나가시겠습니까?",
   loadErrorText: "독후감을 불러오지 못했어요",
+  bookNotFoundText: "독후감을 쓸 수 있는 책을 찾지 못했어요",
 };
 
 export const REPORT_TITLE_MAX_LENGTH = 40;
-
-export const REPORT_SAVE_ERROR_MESSAGE: Record<string, string> = {
-  DRAFT_EXISTS: "작성중인 독후감이 있어 임시저장할 수 없어요",
-};
 
 export const REPORT_SAVE_ERROR_FALLBACK = "저장하지 못했어요. 다시 시도해 주세요";
 

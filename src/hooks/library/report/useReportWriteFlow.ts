@@ -3,7 +3,7 @@ import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { REPORT_PATH } from "@/constants/library/report";
-import { draftReportQuery } from "@/hooks/library/report/useReportQueries";
+import { latestReportQuery } from "@/hooks/library/report/useReportQueries";
 
 export type ReportWriteTarget = {
   bookId: number;
@@ -15,7 +15,7 @@ export type ReportWriteFlowStep =
   | { step: "draftExists" }
   | { step: "selectBook" }
   | { step: "confirm"; book: ReportWriteTarget }
-  | { step: "unlockGuide"; bookId: number };
+  | { step: "unlockGuide"; book: ReportWriteTarget };
 
 type WriteBookOptions = {
   confirm?: boolean;
@@ -30,16 +30,21 @@ export const useReportWriteFlow = () => {
 
   const close = useCallback(() => setFlow({ step: "idle" }), []);
 
+  const goWrite = (book: ReportWriteTarget, replace = false) =>
+    navigate(REPORT_PATH.write(book.bookId), { replace, state: { bookTitle: book.title } });
+
   // 해금예정 책의 퀴즈도 풀 수 있도록 목록은 작성 중 독후감과 무관하게 오픈
   const startWrite = () => setFlow({ step: "selectBook" });
 
-  // 작성 중인 독후감은 하나만 허용, 있으면 작성 대신 안내
+  // 작성 중인 독후감은 하나만 허용, 서버 배너 독후감이 임시저장 상태면 안내
   const writeBook = async (
     book: ReportWriteTarget,
     { confirm = true, replace = false }: WriteBookOptions = {},
   ) => {
     try {
-      if ((await queryClient.fetchQuery(draftReportQuery)) !== null) {
+      const latest = await queryClient.fetchQuery({ ...latestReportQuery, staleTime: 0 });
+
+      if (latest?.status === "DRAFT") {
         setFlow({ step: "draftExists" });
         return;
       }
@@ -53,15 +58,15 @@ export const useReportWriteFlow = () => {
       return;
     }
 
-    navigate(REPORT_PATH.write(book.bookId), { replace });
+    goWrite(book, replace);
   };
 
-  const openUnlockGuide = (bookId: number) => setFlow({ step: "unlockGuide", bookId });
+  const openUnlockGuide = (book: ReportWriteTarget) => setFlow({ step: "unlockGuide", book });
 
   const confirmWrite = () => {
     if (flow.step !== "confirm") return;
 
-    navigate(REPORT_PATH.write(flow.book.bookId));
+    goWrite(flow.book);
   };
 
   return { flow, close, startWrite, writeBook, openUnlockGuide, confirmWrite };

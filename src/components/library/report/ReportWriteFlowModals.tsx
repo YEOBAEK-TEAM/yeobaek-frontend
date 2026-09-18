@@ -30,7 +30,7 @@ export default function ReportWriteFlowModals({ writeFlow }: ReportWriteFlowModa
     return (
       <UnlockedBookSheet
         onSelectUnlocked={(book) => void writeBook({ bookId: book.bookId, title: book.title })}
-        onSelectPending={(book) => openUnlockGuide(book.bookId)}
+        onSelectPending={(book) => openUnlockGuide({ bookId: book.bookId, title: book.title })}
         onClose={close}
       />
     );
@@ -52,7 +52,8 @@ export default function ReportWriteFlowModals({ writeFlow }: ReportWriteFlowModa
   if (flow.step === "unlockGuide") {
     return (
       <UnlockGuideModal
-        bookId={flow.bookId}
+        bookId={flow.book.bookId}
+        bookTitle={flow.book.title}
         onClose={close}
         // 퀴즈에서 돌아오면 서재가 독후감 탭으로 열리도록 현재 기록에 탭 정보 저장
         onBeforeStart={() =>
