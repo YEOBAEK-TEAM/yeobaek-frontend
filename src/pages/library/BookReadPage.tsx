@@ -2,7 +2,9 @@
 import type { CSSProperties } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
-import { Bookmark, Heart, MessageSquare } from "lucide-react";
+import heartIcon from "@/assets/icons/reader/heartIcon.png";
+import commentIcon from "@/assets/icons/reader/commentIcon.png";
+import bookmarkIcon from "@/assets/icons/reader/bookmarkIcon.png";
 import { useBookDetail } from "@/hooks/useBookDetail";
 import { contentChapterQueryOptions, useContentChapter } from "@/hooks/useContentChapter";
 import { useContentPage } from "@/hooks/useContentPage";
@@ -492,7 +494,7 @@ function ContentBookReader({
               likeMutation.mutate({ pageId: actualPageId, liked });
             }}
           >
-            <Heart size={24} strokeWidth={1.5} fill={liked ? "currentColor" : "none"} />
+            <img src={heartIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
             <span>{actionsReady ? pageDetail.data.likeCount.toLocaleString("ko-KR") : "—"}</span>
           </button>
           <button
@@ -503,7 +505,7 @@ function ContentBookReader({
               if (actualPageId) setCommentsPageId(actualPageId);
             }}
           >
-            <MessageSquare size={24} strokeWidth={1.5} />
+            <img src={commentIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
             <span>{actionsReady ? pageDetail.data.commentCount.toLocaleString("ko-KR") : "—"}</span>
           </button>
           <button
@@ -517,7 +519,7 @@ function ContentBookReader({
               bookmarkMutation.mutate({ pageId: actualPageId, bookmarked });
             }}
           >
-            <Bookmark size={24} strokeWidth={1.5} fill={bookmarked ? "currentColor" : "none"} />
+            <img src={bookmarkIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
           </button>
           <ReportUnlockButton bookId={bookId} bookTitle={book.data?.title ?? ""} />
         </div>
