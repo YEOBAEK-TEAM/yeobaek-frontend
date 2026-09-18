@@ -130,6 +130,8 @@ export const HOST_LABEL = "방장";
 export const OPENED_SUFFIX = "개설";
 
 export const JOIN_BUTTON_LABEL = {
+  join: "참가하기",
+  joining: "참가하는 중...",
   request: "참가 신청하기",
   requesting: "신청하는 중...",
   enter: "입장하기",

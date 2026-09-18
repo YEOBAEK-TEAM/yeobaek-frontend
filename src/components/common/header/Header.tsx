@@ -1,3 +1,4 @@
+import BookReviewIcon from "@/assets/icons/BookReview/bookReviewIcon.svg";
 import LityIcon from "@/assets/icons/LityIcon.png";
 import BellIcon from "@/assets/icons/BellIcon.png";
 import SearchIcon from "@/assets/icons/SearchIcon.png";
@@ -5,7 +6,7 @@ import BMDOHYEON from "@/assets/fonts/BMDOHYEON.ttf";
 
 type HeaderProps = {
   title: string;
-  action?: "bell" | "search";
+  action?: "bell" | "search" | "write";
   onActionClick?: () => void;
   className?: string;
   onBack?: () => void;
@@ -72,6 +73,12 @@ export default function Header({
           {action === "search" && (
             <button type="button" aria-label="검색" onClick={onActionClick}>
               <img src={SearchIcon} alt="" className="h-9 w-9 cursor-pointer" />
+            </button>
+          )}
+
+          {action === "write" && (
+            <button type="button" aria-label="독후감 쓰기" onClick={onActionClick}>
+              <img src={BookReviewIcon} alt="" className="h-9 w-9 cursor-pointer" />
             </button>
           )}
         </div>

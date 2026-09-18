@@ -16,6 +16,7 @@ import type { BookDetail } from "@/types/book";
 import type { ContentChapterPage } from "@/types/contentPage";
 import ReaderPageDeck from "./components/ReaderPageDeck";
 import ReaderSettingsPanel from "./components/ReaderSettingsPanel";
+import ReportUnlockButton from "@/components/library/viewer/ReportUnlockButton";
 import { READER_FONTS, useReaderSettings } from "./utils/useReaderSettings";
 import "./BookReadPage.css";
 
@@ -516,6 +517,7 @@ function ContentBookReader({
           >
             <Bookmark size={24} strokeWidth={1.5} fill={bookmarked ? "currentColor" : "none"} />
           </button>
+          <ReportUnlockButton bookId={bookId} bookTitle={book.data?.title ?? ""} />
         </div>
       </footer>
       {actualPageId && commentsPageId === actualPageId && (
