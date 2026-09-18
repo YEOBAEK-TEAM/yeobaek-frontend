@@ -7,6 +7,7 @@ import type {
 
 // 선택지 id는 서버 선택 번호(1부터)를 문자열로 사용
 export const toUnlockQuizView = (response: UnlockQuizResponse): UnlockQuizView => ({
+  bookTitle: response.bookTitle,
   questions: [...response.questions]
     .sort((a, b) => a.questionOrder - b.questionOrder)
     .map((question) => ({

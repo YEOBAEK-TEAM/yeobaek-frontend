@@ -28,14 +28,9 @@ export const useSaveReport = () => {
       // 첫 저장 후 주소가 바뀌어도 입력 화면이 끊기지 않도록 상세 캐시 선반영
       queryClient.setQueryData(libraryReportKeys.detail(review.reviewId), review);
 
-      [
-        libraryReportKeys.latest(),
-        libraryReportKeys.mine(),
-        libraryReportKeys.unlockedBooks(),
-      ].forEach((queryKey) => void queryClient.invalidateQueries({ queryKey }));
+      [libraryReportKeys.latest(), libraryReportKeys.mine()].forEach(
+        (queryKey) => void queryClient.invalidateQueries({ queryKey }),
+      );
     },
-    // 해금 상태가 바뀌었을 수 있어 해금 목록 재조회
-    onError: () =>
-      void queryClient.invalidateQueries({ queryKey: libraryReportKeys.unlockedBooks() }),
   });
 };

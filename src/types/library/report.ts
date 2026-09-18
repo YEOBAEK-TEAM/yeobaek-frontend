@@ -1,6 +1,6 @@
 export type BookReviewStatus = "DRAFT" | "PUBLISHED";
 
-export type BookReviewListItemResponse = {
+type BookReviewBase = {
   reviewId: number;
   bookId: number;
   bookTitle: string;
@@ -8,6 +8,13 @@ export type BookReviewListItemResponse = {
   status: BookReviewStatus;
   writtenAt: string;
   updatedAt: string;
+};
+
+// 좋아요한 독후감이 앞, 그다음 최근 수정·작성순
+export type BookReviewListItemResponse = BookReviewBase & {
+  coverImageUrl: string | null;
+  isLiked: boolean;
+  likedAt: string | null;
 };
 
 export type BookReviewListResponse = {
@@ -18,21 +25,29 @@ export type BookReviewListResponse = {
   totalCount: number;
 };
 
-export type BookReviewDetailResponse = BookReviewListItemResponse & {
+export type BookReviewDetailResponse = BookReviewBase & {
   content: string | null;
 };
 
-// 작성 중 독후감이 있으면 그 책, 없으면 가장 최근 독후감의 책
+// 작성 중 독후감이 있으면 그 독후감, 없으면 가장 최근 독후감
 export type LatestBookReviewResponse = {
+  reviewId: number;
+  status: BookReviewStatus;
+  title: string | null;
+  bookId: number;
   bookTitle: string;
   author: string;
+  coverImageUrl: string | null;
+  genre: string | null;
   completedAt: string | null;
 };
 
-// 해금됐지만 아직 독후감을 쓰지 않은 책
+// 이미 독후감을 쓴 책도 포함, 책 한 권에 여러 번 작성 가능
 export type UnlockedBookResponse = {
   bookId: number;
   bookTitle: string;
+  author: string;
+  coverImageUrl: string | null;
   quizPassedAt: string;
 };
 
@@ -53,23 +68,30 @@ export type SaveBookReviewRequest = SaveBookReviewBody & {
 };
 
 export type LatestReportView = {
+  reportId: number;
+  isDraft: boolean;
   title: string;
   subtitle: string;
+  coverUrl: string;
+  quote?: string;
   completedLabel: string;
 };
 
 export type MyReportView = {
   reportId: number;
   bookTitle: string;
+  coverUrl: string;
   dateLabel: string;
   quote: string;
   isDraft: boolean;
+  isLiked: boolean;
 };
 
 export type UnlockedBookView = {
   bookId: number;
   title: string;
-  unlockedAt: string;
+  author: string;
+  coverUrl: string;
   unlockedLabel: string;
 };
 

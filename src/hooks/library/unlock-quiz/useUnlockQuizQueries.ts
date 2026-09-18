@@ -7,9 +7,15 @@ import {
 } from "@tanstack/react-query";
 import { useEffect } from "react";
 
-import { completeReading, getUnlockQuiz, submitUnlockQuiz } from "@/api/library/unlockQuiz";
+import {
+  completeReading,
+  getPendingUnlockBooks,
+  getUnlockQuiz,
+  submitUnlockQuiz,
+} from "@/api/library/unlockQuiz";
 import { getReadingRecords } from "@/api/readingRecord";
 import { libraryReportKeys } from "@/hooks/library/report/useReportQueries";
+import { toPendingUnlockBookViews } from "@/utils/library/unlock-quiz/toPendingUnlockBookView";
 import { toUnlockQuizView } from "@/utils/library/unlock-quiz/toUnlockQuizView";
 
 import type { UpdateReadingProgressResponse } from "@/types/readingRecord";
@@ -44,6 +50,15 @@ export const useUnlockQuiz = (bookId: number) =>
     refetchOnWindowFocus: false,
   });
 
+export const usePendingUnlockBooks = (enabled: boolean) =>
+  useQuery({
+    queryKey: libraryReportKeys.pendingUnlockBooks(),
+    queryFn: ({ signal }) => getPendingUnlockBooks(signal),
+    select: toPendingUnlockBookViews,
+    staleTime: 30_000,
+    enabled,
+  });
+
 // 시작하기 시점마다 새로 조회
 export const useStartUnlockQuiz = (bookId: number) => {
   const queryClient = useQueryClient();
@@ -61,7 +76,9 @@ export const useSubmitUnlockQuiz = () => {
     onSuccess: ({ passed }) => {
       if (!passed) return;
 
-      void queryClient.invalidateQueries({ queryKey: libraryReportKeys.unlockedBooks() });
+      [libraryReportKeys.unlockedBooks(), libraryReportKeys.pendingUnlockBooks()].forEach(
+        (queryKey) => void queryClient.invalidateQueries({ queryKey }),
+      );
     },
   });
 };
@@ -91,7 +108,10 @@ export const useReadingCompletion = (bookId: number) => {
 
   const { mutate, isIdle } = useMutation({
     mutationFn: completeReading,
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ["reading-records"] }),
+    onSuccess: () =>
+      [["reading-records"], libraryReportKeys.pendingUnlockBooks()].forEach(
+        (queryKey) => void queryClient.invalidateQueries({ queryKey }),
+      ),
   });
 
   useEffect(() => {

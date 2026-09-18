@@ -12,35 +12,53 @@ import type {
   UnlockedBookView,
 } from "@/types/library/report";
 
+const toQuote = (title: string | null) => (title ? `“${title}”` : MY_REPORT_SECTION.untitled);
+
+// 작성 중이면 완독일, 작성 완료면 작성완료 표시
 export const toLatestReportView = (
   response: LatestBookReviewResponse | null,
-): LatestReportView | null =>
-  response && {
+): LatestReportView | null => {
+  if (!response) return null;
+
+  const isDraft = response.status === "DRAFT";
+
+  return {
+    reportId: response.reviewId,
+    isDraft,
     title: response.bookTitle,
-    subtitle: response.author,
-    completedLabel: response.completedAt
-      ? `${DRAFT_REPORT.completedPrefix} ${formatReportDate(response.completedAt)}`
-      : "",
+    // 저자와 장르를 이어 붙인 책 소개 한 줄
+    subtitle: [response.author, response.genre].filter(Boolean).join(" "),
+    coverUrl: response.coverImageUrl ?? "",
+    quote: isDraft ? undefined : toQuote(response.title),
+    completedLabel: isDraft
+      ? response.completedAt
+        ? `${DRAFT_REPORT.completedPrefix} ${formatReportDate(response.completedAt)}`
+        : ""
+      : DRAFT_REPORT.reportCompletedLabel,
   };
+};
 
 export const toMyReportView = (response: BookReviewListItemResponse): MyReportView => ({
   reportId: response.reviewId,
   bookTitle: response.bookTitle,
+  coverUrl: response.coverImageUrl ?? "",
   dateLabel: formatReportDate(response.writtenAt),
-  quote: response.title ? `“${response.title}”` : MY_REPORT_SECTION.untitled,
+  quote: toQuote(response.title),
   isDraft: response.status === "DRAFT",
+  isLiked: response.isLiked,
 });
 
 // 해금일 최신순
 export const toUnlockedBookViews = (responses: UnlockedBookResponse[]): UnlockedBookView[] =>
-  responses
+  [...responses]
+    .sort((a, b) => Date.parse(b.quizPassedAt) - Date.parse(a.quizPassedAt))
     .map((response) => ({
       bookId: response.bookId,
       title: response.bookTitle,
-      unlockedAt: response.quizPassedAt,
+      author: response.author,
+      coverUrl: response.coverImageUrl ?? "",
       unlockedLabel: formatReportDate(response.quizPassedAt),
-    }))
-    .sort((a, b) => Date.parse(b.unlockedAt) - Date.parse(a.unlockedAt));
+    }));
 
 export const toReportEditorView = (response: BookReviewDetailResponse): ReportEditorView => ({
   reportId: response.reviewId,

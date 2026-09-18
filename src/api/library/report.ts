@@ -10,7 +10,7 @@ import type {
   UnlockedBookResponse,
 } from "@/types/library/report";
 
-// 내가 쓴 독후감 목록 조회, 임시저장 포함 최근순 10개씩
+// 내가 쓴 독후감 목록 조회, 임시저장 포함 좋아요 우선 10개씩
 export const getBookReviews = async (
   page: number,
   signal?: AbortSignal,
@@ -35,7 +35,7 @@ export const getLatestBookReview = async (
   return response.data.data;
 };
 
-// 해금됐지만 독후감을 쓰지 않은 책 조회
+// 독후감 작성이 해금된 책 조회
 export const getUnlockedBooks = async (signal?: AbortSignal): Promise<UnlockedBookResponse[]> => {
   const response = await api.get<ApiResponse<UnlockedBookResponse[]>>(
     "/api/v1/book-reviews/unlocked",
@@ -79,4 +79,14 @@ export const updateBookReview = async (
   );
   if (!response.data.success) throw new Error(response.data.message);
   return response.data.data;
+};
+
+export const likeBookReview = async (reviewId: number): Promise<void> => {
+  const response = await api.post<ApiResponse<null>>(`/api/v1/book-reviews/${reviewId}/like`);
+  if (!response.data.success) throw new Error(response.data.message);
+};
+
+export const unlikeBookReview = async (reviewId: number): Promise<void> => {
+  const response = await api.delete<ApiResponse<null>>(`/api/v1/book-reviews/${reviewId}/like`);
+  if (!response.data.success) throw new Error(response.data.message);
 };

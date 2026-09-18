@@ -7,7 +7,25 @@ export type UnlockQuizQuestionResponse = {
 };
 
 export type UnlockQuizResponse = {
+  bookTitle: string;
   questions: UnlockQuizQuestionResponse[];
+};
+
+// 완독했지만 퀴즈를 아직 통과하지 못한 책
+export type PendingUnlockBookResponse = {
+  bookId: number;
+  bookTitle: string;
+  author: string;
+  coverImageUrl: string | null;
+  completedAt: string;
+};
+
+export type PendingUnlockBookView = {
+  bookId: number;
+  title: string;
+  author: string;
+  coverUrl: string;
+  completedLabel: string;
 };
 
 export type SubmitUnlockQuizRequest = {
@@ -41,6 +59,7 @@ export type UnlockQuizQuestion = {
 };
 
 export type UnlockQuizView = {
+  bookTitle: string;
   questions: UnlockQuizQuestion[];
 };
 

@@ -3,6 +3,7 @@ import { api } from "@/api/axios";
 import type { ApiResponse } from "@/types/auth";
 import type {
   CompleteReadingResponse,
+  PendingUnlockBookResponse,
   SubmitUnlockQuizRequest,
   SubmitUnlockQuizResponse,
   UnlockQuizResponse,
@@ -40,6 +41,18 @@ export const submitUnlockQuiz = async ({
 export const completeReading = async (bookId: number): Promise<CompleteReadingResponse> => {
   const response = await api.post<ApiResponse<CompleteReadingResponse>>(
     `/api/v1/reading-records/${bookId}/complete`,
+  );
+  if (!response.data.success) throw new Error(response.data.message);
+  return response.data.data;
+};
+
+// 완독했지만 퀴즈를 통과하지 못한 해금 예정 책 조회
+export const getPendingUnlockBooks = async (
+  signal?: AbortSignal,
+): Promise<PendingUnlockBookResponse[]> => {
+  const response = await api.get<ApiResponse<PendingUnlockBookResponse[]>>(
+    "/api/v1/book-reviews/pending-unlock",
+    { signal },
   );
   if (!response.data.success) throw new Error(response.data.message);
   return response.data.data;

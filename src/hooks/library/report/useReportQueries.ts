@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
+import { queryOptions, useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 import { getBookReviews, getLatestBookReview, getUnlockedBooks } from "@/api/library/report";
 import {
@@ -16,14 +16,19 @@ export const libraryReportKeys = {
   mine: () => [...libraryReportKeys.all, "mine"] as const,
   detail: (reviewId: number) => [...libraryReportKeys.all, "detail", reviewId] as const,
   unlockedBooks: () => [...libraryReportKeys.all, "unlocked-books"] as const,
+  pendingUnlockBooks: () => [...libraryReportKeys.all, "pending-unlock-books"] as const,
 };
+
+export const latestReportQuery = queryOptions({
+  queryKey: libraryReportKeys.latest(),
+  queryFn: ({ signal }) => getLatestBookReview(signal),
+  staleTime: STALE_TIME,
+});
 
 export const useLatestReport = () =>
   useQuery({
-    queryKey: libraryReportKeys.latest(),
-    queryFn: ({ signal }) => getLatestBookReview(signal),
+    ...latestReportQuery,
     select: toLatestReportView,
-    staleTime: STALE_TIME,
   });
 
 export const useMyReports = () =>
