@@ -17,6 +17,9 @@ export const COMPREHENSION_END_ANSWER = {
 export const getAnalyzingPagesText = (nickname: string) =>
   `리티가 지금 ${nickname}님이 고른 부분을\n살펴보고 있습니다\n잠시 기다려주세요`;
 
+export const ONGOING_TRAINING_BLOCKED_TEXT =
+  "진행 중인 훈련이 있어요.\n먼저 마무리한 뒤에 새 훈련을 시작할 수 있어요.";
+
 export const ONGOING_TRAINING_CONFIRM_TEXT = "진행 중인 훈련이 있어요.\n이어서 진행하시겠어요?";
 
 export const START_ERROR_TEXT = "훈련을 시작하지 못했어요. 다시 시도해 주세요";
