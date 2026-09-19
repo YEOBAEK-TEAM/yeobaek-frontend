@@ -75,10 +75,15 @@ export const useRoomInviteCode = (roomId: number, enabled: boolean) =>
   });
 
 export const useRoomApplicants = (roomId: number, enabled: boolean) =>
-  useQuery({
+  useInfiniteQuery({
     queryKey: roomKeys.applicants(roomId),
-    queryFn: ({ signal }) => getRoomApplicants(roomId, signal),
-    select: toApplicantViews,
+    queryFn: ({ pageParam, signal }) => getRoomApplicants({ roomId, page: pageParam, signal }),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.page + 1 : undefined),
+    select: (data) => ({
+      applicants: data.pages.flatMap((page) => toApplicantViews(page.items)),
+      totalCount: data.pages[0]?.totalCount ?? 0,
+    }),
     enabled,
     staleTime: STALE_TIME,
   });

@@ -13,6 +13,9 @@ import type {
 
 const SOCKET_PATH = "/ws";
 
+// 끊긴 연결을 감지하는 주기, 서버와 협상해 둘 다 켜져 있을 때만 동작
+const HEARTBEAT_MS = 10_000;
+
 // 경로가 바뀌면 이 표만 수정
 const DESTINATION = {
   roomMessages: (roomId: number) => `/sub/rooms/${roomId}`,
@@ -28,7 +31,7 @@ const readMessage = (body: string) => {
   }
 };
 
-// STOMP over SockJS 구현체, 재연결은 상위 연결 매니저가 담당
+// STOMP over SockJS 구현체
 export const createRoomWebSocketTransport = (): RoomSocketTransport => {
   const listeners = new Set<RoomSocketListener>();
 
@@ -52,9 +55,10 @@ export const createRoomWebSocketTransport = (): RoomSocketTransport => {
         webSocketFactory: () =>
           new SockJS(`${base}${SOCKET_PATH}?token=${encodeURIComponent(accessToken)}`),
         connectHeaders: { Authorization: `Bearer ${accessToken}` },
+        // 재연결은 상위 연결 매니저가 담당
         reconnectDelay: 0,
-        heartbeatIncoming: 0,
-        heartbeatOutgoing: 0,
+        heartbeatIncoming: HEARTBEAT_MS,
+        heartbeatOutgoing: HEARTBEAT_MS,
 
         onConnect: () => {
           setStatus("open");

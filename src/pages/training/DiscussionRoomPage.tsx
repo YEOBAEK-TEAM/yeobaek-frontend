@@ -53,9 +53,13 @@ export default function DiscussionRoomPage() {
   const session = sessionQuery.data;
 
   const messagesQuery = useRoomMessages(roomId, session !== undefined);
+
+  // 본인 메시지 판별은 서버가 알려준 내 id 기준
+  const myUserId = messagesQuery.data?.pages[0]?.myUserId;
+
   const { status, endReason, sendMessage, retryMessage, retryConnection } = useRoomChat(
     roomId,
-    session,
+    myUserId,
   );
 
   const leaveRoom = useLeaveRoom();
@@ -106,10 +110,14 @@ export default function DiscussionRoomPage() {
 
   const rows = useMemo(
     () =>
-      session && messages
-        ? toRoomChatRows(messages, { session, dividerAfterId: dividerAfterId ?? null })
+      session && messages && myUserId !== undefined
+        ? toRoomChatRows(messages, {
+            session,
+            myUserId,
+            dividerAfterId: dividerAfterId ?? null,
+          })
         : [],
-    [session, messages, dividerAfterId],
+    [session, messages, myUserId, dividerAfterId],
   );
 
   const goDiscussionTab = () => {
@@ -157,7 +165,7 @@ export default function DiscussionRoomPage() {
         title={session?.roomTitle ?? ""}
         onBack={goBack}
         onLeave={session && !endReason ? () => setDialog({ type: "leave" }) : undefined}
-        applicantCount={applicantsQuery.data?.length ?? 0}
+        applicantCount={applicantsQuery.data?.totalCount ?? 0}
         onShowApplicants={isHost ? () => setIsApplicantOpen(true) : undefined}
         onShowInviteCode={inviteCode ? () => setIsInviteCodeOpen(true) : undefined}
       />

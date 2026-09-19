@@ -2,7 +2,7 @@ import type { ChatMessageStatus } from "@/types/training/chat";
 import type { ChatConnectionStatus } from "@/types/training/chatSocket";
 
 // KICKED는 userId가 강퇴된 사람, ROOM_DELETED는 방 삭제 안내
-export type ChatMessageType = "TALK" | "ENTER" | "KICKED" | "ROOM_DELETED";
+export type ChatMessageType = "TALK" | "ENTER" | "LEAVE" | "KICKED" | "ROOM_DELETED";
 
 export type ChatMessageResponse = {
   messageId: number;
@@ -24,6 +24,8 @@ export type ChatCursor = {
 
 export type ChatHistoryResponse = {
   items: ChatMessageResponse[];
+  // 로그인 응답의 userId와 같은 값
+  myUserId: number;
   hasNext: boolean;
   nextCursor: ChatCursor | null;
   totalCount: number;
@@ -36,7 +38,6 @@ export type RoomChatSession = {
   roomId: number;
   roomTitle: string;
   isHost: boolean;
-  myUserId: number;
 };
 
 type RoomMessageBase = {
@@ -54,7 +55,11 @@ export type RoomMessageResponse = RoomMessageBase &
         senderIsHost: boolean;
         text: string;
       }
-    | { type: "memberJoined" | "memberKicked"; memberId: number; nickname: string }
+    | {
+        type: "memberJoined" | "memberLeft" | "memberKicked";
+        memberId: number;
+        nickname: string;
+      }
     | { type: "roomDeleted" }
   );
 
@@ -66,6 +71,7 @@ export type RoomTimelineMessage = RoomMessageResponse & {
 
 export type RoomMessagePageResponse = {
   messages: RoomTimelineMessage[];
+  myUserId: number;
   nextCursor: ChatCursor | null;
   lastReadAt: string | null;
 };
