@@ -6,11 +6,11 @@ import ChatActionButtons from "@/components/training/shared/chat/ChatActionButto
 import ChatInput from "@/components/training/shared/chat/ChatInput";
 import BookReportMessageList from "@/components/training/bookReport/BookReportMessageList";
 import PinnedBookSummary from "@/components/training/shared/chat/PinnedBookSummary";
-import ReportListBottomSheet from "@/components/training/bookReport/ReportListBottomSheet";
 import {
   BOOK_REPORT_CHAT_TITLE,
   EXIT_BEFORE_START_TEXT,
   EXIT_IN_PROGRESS_TEXT,
+  SUMMARY_ACTION_LABEL,
 } from "@/constants/training/bookReportChat";
 import { useBookReportChat } from "@/hooks/training/useBookReportChat";
 import { myProfile } from "@/mocks/my";
@@ -23,13 +23,10 @@ export default function BookReportChatPage() {
     phase,
     messages,
     pinnedReport,
-    reviews,
+    reviewTitle,
     isReplying,
     isChatReady,
     olderMessages,
-    isSheetOpen,
-    closeSheet,
-    selectReport,
     sendMessage,
     retryMessage,
     leaveChat,
@@ -41,7 +38,7 @@ export default function BookReportChatPage() {
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
 
   // 뒤로가기 확인 문구 분기
-  const isTrainingStarted = phase.type !== "select" && phase.type !== "empty";
+  const isTrainingStarted = phase.type !== "select";
 
   const handleBack = () => {
     if (phase.type === "ended") {
@@ -60,7 +57,7 @@ export default function BookReportChatPage() {
         <PinnedBookSummary
           coverUrl={pinnedReport.coverUrl}
           title={pinnedReport.bookTitle}
-          subtitle={pinnedReport.reportTitle}
+          subtitle={reviewTitle || pinnedReport.reportTitle}
         />
       )}
 
@@ -77,21 +74,13 @@ export default function BookReportChatPage() {
           actions={[
             {
               id: "apply",
-              label: "독후감에 반영하기",
+              label: SUMMARY_ACTION_LABEL.applyToReport,
               variant: "primary",
               onClick: applyToReport,
             },
             {
-              // 이어가기 API 준비 전까지 선택 불가
-              id: "continue",
-              label: "다른 주제로 이어가기",
-              variant: "dark",
-              onClick: () => undefined,
-              disabled: true,
-            },
-            {
-              id: "save",
-              label: "대화 내용 저장하고 중단하기",
+              id: "finish",
+              label: SUMMARY_ACTION_LABEL.finish,
               variant: "outline",
               onClick: () => void saveAndStop(),
             },
@@ -101,20 +90,6 @@ export default function BookReportChatPage() {
 
       {phase.type !== "summary" && phase.type !== "ended" && (
         <ChatInput disabled={!isChatReady || isReplying} onSend={sendMessage} />
-      )}
-
-      {isSheetOpen && (
-        <ReportListBottomSheet
-          reports={reviews.data ?? []}
-          isPending={reviews.isPending}
-          isError={reviews.isError}
-          hasNextPage={reviews.hasNextPage}
-          isFetchingNextPage={reviews.isFetchingNextPage}
-          fetchNextPage={reviews.fetchNextPage}
-          onRetry={() => void reviews.refetch()}
-          onSelect={selectReport}
-          onClose={closeSheet}
-        />
       )}
 
       {isExitConfirmOpen && (

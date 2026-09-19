@@ -1,6 +1,6 @@
-import { useEffect, useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import ReportCard from "@/components/training/bookReport/ReportCard";
+import PerspectiveCard from "@/components/training/bookReport/PerspectiveCard";
 import ThoughtCompareBubble from "@/components/training/bookReport/ThoughtCompareBubble";
 import ChatMessageRow from "@/components/training/shared/chat/ChatMessageRow";
 import MessageScroller from "@/components/training/shared/chat/MessageScroller";
@@ -31,6 +31,12 @@ export default function BookReportMessageList({
   onRetry,
 }: BookReportMessageListProps) {
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = olderMessages;
+
+  // 처음 불러온 이력은 다시 타자 효과를 주지 않음
+  const [seenIds] = useState(() => new Set(messages.map((message) => message.id)));
+
+  // 글자가 늘어날 때마다 스크롤을 따라가게 하는 신호
+  const [typingTick, setTypingTick] = useState(0);
 
   const topRef = useRef<HTMLDivElement>(null);
   // 이전 대화 추가 전 아래 끝 기준 스크롤 거리
@@ -64,14 +70,14 @@ export default function BookReportMessageList({
   }, [messages, isFetchingNextPage]);
 
   return (
-    <MessageScroller dependency={messages}>
+    <MessageScroller dependency={`${messages.length}:${typingTick}`}>
       <div ref={topRef} aria-hidden="true" className="h-px" />
 
       {messages.map((message) => {
-        if (message.kind === "reportCard") {
+        if (message.kind === "perspectiveCard") {
           return (
             <RitiMessage key={message.id}>
-              <ReportCard report={message.report} variant="message" />
+              <PerspectiveCard perspectives={[message.perspective]} />
             </RitiMessage>
           );
         }
@@ -90,6 +96,8 @@ export default function BookReportMessageList({
             message={message}
             onQuickReply={onQuickReply}
             onRetry={onRetry}
+            isTyped={message.role === "riti" && !seenIds.has(message.id)}
+            onTypingTick={() => setTypingTick((tick) => tick + 1)}
           />
         );
       })}

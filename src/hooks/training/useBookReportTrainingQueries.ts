@@ -9,12 +9,13 @@ import {
 
 import {
   createTrainingSummation,
-  getTrainingEntry,
   getTrainingMessages,
   getTrainingReview,
   getTrainingReviews,
   getTrainingSummation,
   sendTrainingMessage,
+  showOtherPerspective,
+  skipOtherPerspective,
   startTraining,
 } from "@/api/training/bookReportTraining";
 import { getApiErrorStatus } from "@/utils/common/getApiErrorMessage";
@@ -26,13 +27,13 @@ import {
 
 import type {
   SendTrainingMessageRequest,
+  TrainingMessageItemResponse,
   TrainingMessageListResponse,
 } from "@/types/training/bookReportTraining";
 
 // 독후감 훈련 query key 팩토리
 export const bookReportTrainingKeys = {
   all: ["trainings", "book-report"] as const,
-  entry: () => [...bookReportTrainingKeys.all, "entry"] as const,
   reviews: () => [...bookReportTrainingKeys.all, "reviews"] as const,
   review: (reviewId: number) => [...bookReportTrainingKeys.all, "review", reviewId] as const,
   messages: (trainingRoomId: number) =>
@@ -44,15 +45,6 @@ export const bookReportTrainingKeys = {
 // 없음·권한 없음 응답은 다시 요청하지 않음
 const retryUnlessNotFound = (failureCount: number, error: unknown) =>
   getApiErrorStatus(error) !== 404 && failureCount < 2;
-
-export const useTrainingEntry = (enabled: boolean) =>
-  useQuery({
-    queryKey: bookReportTrainingKeys.entry(),
-    queryFn: ({ signal }) => getTrainingEntry(signal),
-    enabled,
-    retry: retryUnlessNotFound,
-    refetchOnWindowFocus: false,
-  });
 
 export const useTrainingReviews = (enabled: boolean) =>
   useInfiniteQuery({
@@ -81,6 +73,12 @@ export const useTrainingReview = (reviewId: number | null) =>
 
 export const useStartTraining = () => useMutation({ mutationFn: startTraining, retry: 0 });
 
+export const useShowOtherPerspective = () =>
+  useMutation({ mutationFn: showOtherPerspective, retry: 0 });
+
+export const useSkipOtherPerspective = () =>
+  useMutation({ mutationFn: skipOtherPerspective, retry: 0 });
+
 export const useTrainingMessages = (trainingRoomId: number | null) =>
   useInfiniteQuery({
     queryKey: bookReportTrainingKeys.messages(trainingRoomId ?? 0),
@@ -88,7 +86,11 @@ export const useTrainingMessages = (trainingRoomId: number | null) =>
       getTrainingMessages({ trainingRoomId: trainingRoomId ?? 0, cursor: pageParam, signal }),
     initialPageParam: null as number | null,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
-    select: (data) => toTrainingChatMessages(data.pages),
+    select: (data) => ({
+      messages: toTrainingChatMessages(data.pages),
+      reviewId: data.pages[0]?.reviewId ?? null,
+      reviewTitle: data.pages[0]?.reviewTitle ?? "",
+    }),
     enabled: trainingRoomId !== null,
     retry: retryUnlessNotFound,
     refetchOnWindowFocus: false,
@@ -111,15 +113,24 @@ export const useSendTrainingMessage = () => {
           if (!data) return data;
 
           const [latestPage, ...olderPages] = data.pages;
-          const sentItems = [
+          const sentItems: TrainingMessageItemResponse[] = [
             {
               role: "AI",
               content: reply.content,
               type: reply.messageType,
+              otherPerspective: null,
+              growthSummary: null,
               createdAt: reply.createdAt,
             },
-            { role: "USER", content, type: "TEXT", createdAt: reply.createdAt },
-          ] as const;
+            {
+              role: "USER",
+              content,
+              type: "TEXT",
+              otherPerspective: null,
+              growthSummary: null,
+              createdAt: reply.createdAt,
+            },
+          ];
 
           return {
             ...data,
@@ -151,7 +162,6 @@ export const useCreateTrainingSummation = () => {
         bookReportTrainingKeys.summation(summation.trainingRoomId),
         summation,
       );
-      void queryClient.invalidateQueries({ queryKey: bookReportTrainingKeys.entry() });
     },
   });
 };
