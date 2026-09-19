@@ -60,13 +60,17 @@ export default function LibraryPage() {
 
   const selectedBook =
     libraryBooks.find((book) => book.recordId === selectedRecordId) ?? libraryBooks[0];
+  const isCurrentRoundCompleted = selectedBook?.progressRate === 100;
   const isFirstRead =
-    !!selectedBook && !selectedBook.completedAt && selectedBook.lastPageNumber <= 1;
+    !!selectedBook &&
+    !isCurrentRoundCompleted &&
+    selectedBook.repeatCount === 0 &&
+    selectedBook.lastPageNumber <= 1;
 
   const handleReadBook = async () => {
     if (!selectedBook || rereadPending.current) return;
 
-    if (!selectedBook.completedAt) {
+    if (!isCurrentRoundCompleted) {
       navigate(`/library/read?bookId=${selectedBook.bookId}&pageId=${selectedBook.lastPageId}`);
       return;
     }
@@ -243,7 +247,7 @@ export default function LibraryPage() {
 
             {/* 독서 진행 정보 */}
             <p className="mt-4 text-sm font-semibold text-[#555555]">
-              {selectedBook.completedAt
+              {isCurrentRoundCompleted
                 ? "완독"
                 : isFirstRead
                   ? "아직 읽기 전이에요"
@@ -257,7 +261,7 @@ export default function LibraryPage() {
               disabled={isRereadPending}
               className="mt-2 flex h-14 w-full cursor-pointer items-center justify-center bg-[#4F4D4E] text-base font-bold text-white"
             >
-              {selectedBook.completedAt
+              {isCurrentRoundCompleted
                 ? `${selectedBook.repeatCount + 1}회독 하러가기`
                 : isFirstRead
                   ? "읽기 시작하기"

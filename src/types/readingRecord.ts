@@ -6,6 +6,7 @@ export type ReadingRecordItem = {
   bookTitle: string;
   author: string;
   coverImageUrl: string;
+  allPage: number;
   progressRate: number;
   lastPageId: number;
   lastPageNumber: number;
