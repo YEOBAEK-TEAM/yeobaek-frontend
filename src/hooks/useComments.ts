@@ -104,6 +104,7 @@ export const useCommentMutation = () => {
     },
     onSuccess: async (_result, action) => {
       const updates = [client.invalidateQueries({ queryKey: commentKeys.page(action.pageId) })];
+      updates.push(client.invalidateQueries({ queryKey: ["activity", "liked-comments"] }));
       if (action.sentenceId != null)
         updates.push(
           client.invalidateQueries({ queryKey: commentKeys.sentence(action.sentenceId) }),
