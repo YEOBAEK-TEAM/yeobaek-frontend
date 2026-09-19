@@ -17,6 +17,11 @@ export const DRAFT_REPORT = {
 
 export const REPORT_UNTITLED = "제목 없음";
 
+// 책 선택 시트를 여는 주소 파라미터
+export const REPORT_WRITE_PARAM = "write";
+
+export const REPORT_WRITE_PATH = `/library?${REPORT_WRITE_PARAM}=1`;
+
 export type ReportStatusTab = "DRAFT" | "PUBLISHED";
 
 export const REPORT_STATUS_TABS: {

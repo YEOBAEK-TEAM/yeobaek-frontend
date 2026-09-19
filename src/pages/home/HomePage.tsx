@@ -13,9 +13,9 @@ import {
   useReadingProgress,
   useRecentReport,
   useTasteBooks,
-  useTasteTopBooks,
   useTodaySentence,
 } from "@/hooks/home/useHomeQueries";
+import { LIBRARY_REPORT_TAB_STATE, REPORT_WRITE_PATH } from "@/constants/library/report";
 import { myProfile } from "@/mocks/my";
 import { useAuthStore } from "@/stores/auth";
 import { useFolderBannerStore } from "@/stores/home/folderBanner";
@@ -31,7 +31,8 @@ export default function HomePage() {
   const tasteQuery = useTasteBooks();
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const topBooksQuery = useTasteTopBooks(isSheetOpen);
+
+  const tasteBooks = tasteQuery.data ?? [];
 
   const activeTab = useFolderBannerStore((state) => state.activeTab);
 
@@ -40,12 +41,11 @@ export default function HomePage() {
 
   const goBookDetail = (bookId: number) => navigate(`/library/books/${bookId}`);
 
-  // 독후감 쓰기 라우트 준비 전까지 서재 이동만 연결
-  const handleFolderLink = () => {
-    if (activeTab !== "reading") return;
-
-    navigate("/library");
-  };
+  // 독후감 쓰기는 서재 독후감 탭에서 책 선택 시트까지 열기
+  const handleFolderLink = () =>
+    activeTab === "report"
+      ? navigate(REPORT_WRITE_PATH, { state: LIBRARY_REPORT_TAB_STATE })
+      : navigate("/library");
 
   return (
     <main className="flex-1 pb-8">
@@ -92,7 +92,8 @@ export default function HomePage() {
         <SectionHeader
           title={`${nickname}님의 취향을 반영한 도서`}
           actionLabel={TASTE_SECTION_ACTION}
-          onAction={() => setIsSheetOpen(true)}
+          // 추천을 불러오기 전에는 시트를 열지 않음
+          onAction={() => tasteBooks.length > 0 && setIsSheetOpen(true)}
         />
 
         <div className="mt-4">
@@ -102,7 +103,7 @@ export default function HomePage() {
             </div>
           ) : (
             <BookShelfCarousel
-              books={tasteQuery.data ?? []}
+              books={tasteBooks}
               isPending={tasteQuery.isPending}
               onSelect={goBookDetail}
             />
@@ -112,7 +113,7 @@ export default function HomePage() {
 
       {isSheetOpen && (
         <TasteBookTopSheet
-          books={topBooksQuery.data ?? []}
+          books={tasteBooks}
           onSelect={goBookDetail}
           onClose={() => setIsSheetOpen(false)}
         />

@@ -1,8 +1,7 @@
 import { useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { REPORT_PATH } from "@/constants/library/report";
-import { useReportWriteStore } from "@/stores/library/reportWrite";
+import { REPORT_PATH, REPORT_WRITE_PARAM } from "@/constants/library/report";
 
 export type ReportWriteTarget = {
   bookId: number;
@@ -17,11 +16,33 @@ type WriteBookOptions = {
 export const useReportWriteFlow = () => {
   const navigate = useNavigate();
 
-  const isSheetOpen = useReportWriteStore((state) => state.isSheetOpen);
-  const openSheet = useReportWriteStore((state) => state.openSheet);
-  const closeSheet = useReportWriteStore((state) => state.closeSheet);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [guideBook, setGuideBook] = useState<ReportWriteTarget | null>(null);
+
+  // 시트 열림은 주소에만 두어 뒤로가기로도 닫힘
+  const isSheetOpen = searchParams.get(REPORT_WRITE_PARAM) === "1";
+
+  const openSheet = useCallback(
+    () =>
+      setSearchParams((params) => {
+        params.set(REPORT_WRITE_PARAM, "1");
+        return params;
+      }),
+    [setSearchParams],
+  );
+
+  const closeSheet = useCallback(
+    () =>
+      setSearchParams(
+        (params) => {
+          params.delete(REPORT_WRITE_PARAM);
+          return params;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
 
   const close = useCallback(() => {
     closeSheet();
