@@ -12,6 +12,7 @@ export type ReadingRecordItem = {
   lastReadAt: string;
   startedAt: string;
   completedAt: string | null;
+  repeatCount: number;
 };
 
 export type ReadingRecordList = {
