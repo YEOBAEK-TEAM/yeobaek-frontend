@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { isAxiosError } from "axios";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { useBookDetail } from "@/hooks/useBookDetail";
 import { useAddReadingRecord } from "@/hooks/useAddReadingRecord";
@@ -11,6 +11,11 @@ import { ArrowIcon } from "./components/LibraryIcons";
 export default function BookDetailPage() {
   const { bookId } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // 들어온 화면으로 돌아가기, 앱 안 이동 기록이 없으면 검색으로
+  const goBack = () =>
+    location.key === "default" ? navigate("/library/search", { replace: true }) : navigate(-1);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const numericBookId = bookId && /^\d+$/.test(bookId) ? Number(bookId) : NaN;
@@ -42,9 +47,9 @@ export default function BookDetailPage() {
     <main className="flex min-h-dvh flex-col bg-[#F7F6F1] px-5 pt-8 pb-8">
       {/* 헤더 */}
       <header className="relative flex h-12 items-center justify-center">
-        <Link to="/library/search" className="absolute left-0" aria-label="뒤로가기">
+        <button type="button" onClick={goBack} className="absolute left-0" aria-label="뒤로가기">
           <ArrowIcon back />
-        </Link>
+        </button>
 
         <h1 className="max-w-60 truncate text-lg font-bold">{book.title}</h1>
       </header>
