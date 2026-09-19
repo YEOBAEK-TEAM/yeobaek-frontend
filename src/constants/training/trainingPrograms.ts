@@ -12,6 +12,7 @@ export const TRAINING_PATH = {
   comprehension: "/training/comprehension",
   comprehensionChat: "/training/comprehension/chat",
   comprehensionComplete: "/training/comprehension/complete",
+  history: "/my/training-history",
 };
 
 export const TRAINING_TABS: { id: TrainingTab; label: string }[] = [

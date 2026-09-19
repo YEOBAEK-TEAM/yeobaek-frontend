@@ -7,6 +7,7 @@ import {
   MESSAGES_ERROR_TEXT,
   SUMMATION_ERROR_TEXT,
 } from "@/constants/training/comprehensionChat";
+import { HISTORY_ENTRY_PARAM, HISTORY_ENTRY_VALUE } from "@/constants/training/trainingHistory";
 import { TRAINING_PATH } from "@/constants/training/trainingPrograms";
 import {
   useCreateUnderstandSummation,
@@ -43,6 +44,9 @@ export const useComprehensionChat = () => {
 
   const understandRoomId = toId(searchParams.get(UNDERSTAND_ROOM_PARAM));
 
+  // 훈련 기록에서 들어오면 대화를 보기만 함
+  const isReadOnly = searchParams.get(HISTORY_ENTRY_PARAM) === HISTORY_ENTRY_VALUE;
+
   const phase = useComprehensionChatStore((state) => state.phase);
   const localMessages = useComprehensionChatStore((state) => state.messages);
   const options = useComprehensionChatStore((state) => state.options);
@@ -72,7 +76,7 @@ export const useComprehensionChat = () => {
 
   // 서버 방 상태 기준으로 재진입 시 단계 복구
   useEffect(() => {
-    if (roomStatus === null) return;
+    if (roomStatus === null || isReadOnly) return;
 
     const store = useComprehensionChatStore.getState();
     if (store.phase.type === "ended") return;
@@ -88,7 +92,7 @@ export const useComprehensionChat = () => {
     }
 
     store.setPhase({ type: "chatting" });
-  }, [roomStatus]);
+  }, [roomStatus, isReadOnly]);
 
   // 없거나 권한 없는 방이면 훈련 페이지로 이동
   useEffect(() => {
@@ -232,6 +236,7 @@ export const useComprehensionChat = () => {
 
   return {
     phase,
+    isReadOnly,
     messages,
     book,
     isWaiting,
