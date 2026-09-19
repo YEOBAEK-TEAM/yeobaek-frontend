@@ -113,10 +113,35 @@ export const useBookReportChat = () => {
     if (trainingRoomId === null) navigate(TRAINING_PATH.bookReportSelect, { replace: true });
   }, [trainingRoomId, navigate]);
 
+  const roomStatus = messagesQuery.data?.status ?? null;
+  const historyMessages = messagesQuery.data?.messages;
+
+  // 서버 방 상태 기준으로 재진입 시 단계 복구
   useEffect(() => {
+    if (roomStatus === null) return;
+
     const store = useBookReportChatStore.getState();
-    if (store.phase.type === "select") store.setPhase({ type: "chatting" });
-  }, [trainingRoomId]);
+    if (store.phase.type !== "select" && store.phase.type !== "chatting") return;
+
+    if (roomStatus === "GROWTH_PROMPT") {
+      store.setPhase({ type: "perspectivePrompt" });
+      return;
+    }
+
+    if (roomStatus === "COMPLETED") {
+      // 요약 카드는 이력에 남아 있어 그 값으로 복구
+      const summary = historyMessages?.findLast((message) => message.kind === "thoughtSummary");
+
+      store.setPhase(
+        summary?.kind === "thoughtSummary"
+          ? { type: "summary", thought: summary.thought }
+          : { type: "chatting" },
+      );
+      return;
+    }
+
+    store.setPhase({ type: "chatting" });
+  }, [roomStatus, historyMessages]);
 
   // 없거나 권한 없는 훈련방이면 훈련 페이지로 이동
   useEffect(() => {

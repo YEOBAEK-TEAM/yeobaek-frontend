@@ -1,21 +1,15 @@
 import { create } from "zustand";
 
-import type {
-  ComprehensionBookView,
-  ComprehensionMessage,
-  ComprehensionPhase,
-} from "@/types/training/comprehension";
+import type { ComprehensionMessage, ComprehensionPhase } from "@/types/training/comprehension";
 
 type ComprehensionChatState = {
   phase: ComprehensionPhase;
   // 대화 이력은 Query 캐시, 화면 단계와 서버에 없는 메시지만 보관
   messages: ComprehensionMessage[];
-  book: ComprehensionBookView | null;
   // 방 생성 응답에만 담겨 오는 예시 질문
   options: string[];
 
   setPhase: (phase: ComprehensionPhase) => void;
-  setBook: (book: ComprehensionBookView | null) => void;
   setOptions: (options: string[]) => void;
   pushMessage: (message: ComprehensionMessage) => void;
   removeMessage: (id: string) => void;
@@ -26,12 +20,9 @@ type ComprehensionChatState = {
 export const useComprehensionChatStore = create<ComprehensionChatState>((set) => ({
   phase: { type: "selecting" },
   messages: [],
-  book: null,
   options: [],
 
   setPhase: (phase) => set({ phase }),
-
-  setBook: (book) => set({ book }),
 
   setOptions: (options) => set({ options }),
 
@@ -49,5 +40,5 @@ export const useComprehensionChatStore = create<ComprehensionChatState>((set) =>
       ),
     })),
 
-  reset: () => set({ phase: { type: "selecting" }, messages: [], book: null, options: [] }),
+  reset: () => set({ phase: { type: "selecting" }, messages: [], options: [] }),
 }));

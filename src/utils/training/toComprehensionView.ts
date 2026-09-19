@@ -22,7 +22,9 @@ export const toBookmarkViews = (items: BookmarkItemResponse[]): BookmarkView[] =
     targetIds: item.pages.map((page) => page.pageId),
   }));
 
-export const toComprehensionBook = (room: UnderstandStartResponse) => ({
+export const toComprehensionBook = (
+  room: UnderstandStartResponse | UnderstandMessageListResponse,
+) => ({
   title: room.bookTitle,
   author: room.author ?? "",
   coverUrl: room.bookImageUrl ?? "",

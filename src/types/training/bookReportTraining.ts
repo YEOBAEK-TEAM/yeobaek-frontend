@@ -28,11 +28,15 @@ export type TrainingSummationResponse = {
   closingMessage: string;
 };
 
+// 훈련방 진행 단계, 재진입 시 화면 복구에 사용
+export type TrainingRoomStatus = "IN_PROGRESS" | "GROWTH_PROMPT" | "GROWTH_CHECK" | "COMPLETED";
+
 export type TrainingMessageItemResponse = {
   role: TrainingMessageRole;
   type: TrainingMessageType;
   content: string | null;
-  otherPerspective: OtherPerspectiveResponse | null;
+  // 최대 3건
+  otherPerspectives: OtherPerspectiveResponse[] | null;
   growthSummary: TrainingSummationResponse | null;
   createdAt: string;
 };
@@ -41,6 +45,7 @@ export type TrainingMessageItemResponse = {
 export type TrainingMessageListResponse = {
   reviewId: number;
   reviewTitle: string;
+  status: TrainingRoomStatus;
   items: TrainingMessageItemResponse[];
   nextCursor: number | null;
   hasNext: boolean;
@@ -63,6 +68,24 @@ export type SendTrainingMessageResponse = {
   summation: TrainingSummationResponse | null;
   // true면 다른 관점 선택 버튼을 띄우고 전송을 막아야 함
   perspectiveAvailable: boolean;
+};
+
+export type TrainingRoomListItemResponse = {
+  trainingRoomId: number;
+  reviewId: number;
+  reviewTitle: string;
+  bookId: number;
+  bookTitle: string;
+  coverImageUrl: string | null;
+  // 요약본을 만들면 COMPLETED
+  status: "IN_PROGRESS" | "COMPLETED";
+  createdAt: string;
+};
+
+export type TrainingRoomListResponse = {
+  items: TrainingRoomListItemResponse[];
+  nextCursor: number | null;
+  hasNext: boolean;
 };
 
 export type TrainingReviewStatus = "DRAFT" | "PUBLISHED";

@@ -77,7 +77,7 @@ export default function BookReportMessageList({
         if (message.kind === "perspectiveCard") {
           return (
             <RitiMessage key={message.id}>
-              <PerspectiveCard perspectives={[message.perspective]} />
+              <PerspectiveCard perspectives={message.perspectives} />
             </RitiMessage>
           );
         }
