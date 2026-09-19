@@ -1,6 +1,6 @@
 import { api } from "@/api/axios";
 import type { ApiResponse } from "@/types/auth";
-import type { ActivityLikedCommentList } from "@/types/my";
+import type { ActivityLikedCommentList } from "@/types/activity";
 
 export const getLikedComments = async (cursor?: number, signal?: AbortSignal) => {
   const response = await api.get<ApiResponse<ActivityLikedCommentList>>(

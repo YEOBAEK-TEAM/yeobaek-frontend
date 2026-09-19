@@ -1,3 +1,5 @@
+import { contentPageKeys } from "@/hooks/queryKeys/contentPageKeys";
+import { activityKeys } from "@/hooks/queryKeys/activityKeys";
 import { useRef } from "react";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/api/comment";
@@ -50,16 +52,6 @@ export const useCommentReplies = (pageId: number, commentId: number) =>
     initialPageParam: undefined as number | undefined,
     getNextPageParam: nextCursor,
     enabled: validId(pageId) && validId(commentId),
-  });
-
-export const useMySentenceComments = (sentenceId: number, enabled = true) =>
-  useInfiniteQuery({
-    queryKey: commentKeys.sentence(sentenceId),
-    queryFn: ({ pageParam, signal }) =>
-      api.getMySentenceComments(sentenceId, { cursor: pageParam, size: 50 }, signal),
-    initialPageParam: undefined as number | undefined,
-    getNextPageParam: nextCursor,
-    enabled: enabled && validId(sentenceId),
   });
 
 export const uniqueComments = (pages?: CommentListResponse[]) => [
@@ -117,7 +109,7 @@ export const useCommentMutation = () => {
     },
     onSuccess: async (_result, action) => {
       const updates = [client.invalidateQueries({ queryKey: commentKeys.page(action.pageId) })];
-      updates.push(client.invalidateQueries({ queryKey: ["activity", "liked-comments"] }));
+      updates.push(client.invalidateQueries({ queryKey: activityKeys.likedComments.all }));
       if (action.sentenceId != null)
         updates.push(
           client.invalidateQueries({ queryKey: commentKeys.sentence(action.sentenceId) }),
@@ -136,7 +128,10 @@ export const useCommentMutation = () => {
       if (["create", "reply", "delete", "deleteReply"].includes(action.type)) {
         // Refetch the existing page detail (including commentCount when supplied).
         updates.push(
-          client.invalidateQueries({ queryKey: ["content-pages", action.pageId], exact: true }),
+          client.invalidateQueries({
+            queryKey: contentPageKeys.detail(action.pageId),
+            exact: true,
+          }),
         );
       }
       await Promise.all(updates);

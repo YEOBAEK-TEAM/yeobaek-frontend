@@ -15,8 +15,3 @@ export function monthSummary(days: ReadingDay[]) {
     ).size,
   };
 }
-export function readerLink(bookId: number, page: number, commentId?: string) {
-  const params = new URLSearchParams({ bookId: String(bookId), page: String(page) });
-  if (commentId) params.set("commentId", commentId);
-  return `/library/read?${params}`;
-}
