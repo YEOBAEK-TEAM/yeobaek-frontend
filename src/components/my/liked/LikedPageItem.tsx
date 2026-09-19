@@ -23,7 +23,7 @@ export default function LikedPageItem({
   return (
     <article className="relative rounded-xl border border-[#E2E2E2] bg-[#F9F9F6]">
       <Link
-        to={`/library/read?bookId=${item.bookId}&pageId=${item.pageId}&firstRead=false`}
+        to={`/library/read?bookId=${item.bookId}&pageId=${item.pageId}`}
         className="flex gap-5 p-4 pr-6"
       >
         {!compact && (

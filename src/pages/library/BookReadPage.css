@@ -229,7 +229,9 @@
   min-height: 25px;
 }
 .book-reader__progress span {
-  flex-shrink: 0;
+  flex: 0 0 8ch;
+  text-align: right;
+  white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
 .book-reader__progress-bar {
