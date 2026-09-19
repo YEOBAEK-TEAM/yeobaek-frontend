@@ -1,7 +1,8 @@
+import type { ReaderComment } from "../types/readerComment";
 import { Fragment, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { SyntheticEvent, PointerEvent as ReactPointerEvent } from "react";
 import type { ReaderPage } from "../utils/paginateReaderText";
-import type { ReaderComment, ReaderHighlight, ReaderWord } from "../utils/useReaderData";
+import type { ReaderHighlight, ReaderWord } from "../utils/useReaderData";
 import type { ReaderSelection } from "../utils/readerSelection";
 import { getAnnotatedTextParts } from "../utils/readerAnnotations";
 import { getReaderSelection } from "../utils/readerSelection";

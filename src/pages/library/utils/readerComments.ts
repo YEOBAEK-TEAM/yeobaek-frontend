@@ -1,6 +1,6 @@
 import { findReaderPage } from "./paginateReaderText";
 import type { ReaderPage } from "./paginateReaderText";
-import type { ReaderComment } from "./useReaderData";
+import type { ReaderComment } from "../types/readerComment";
 
 export function getCommentReaderPageIndex(comment: ReaderComment, pages: ReaderPage[]) {
   const anchor = comment.readerAnchor ?? comment.ranges?.[0];

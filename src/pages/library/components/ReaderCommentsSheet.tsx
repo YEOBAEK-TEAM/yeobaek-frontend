@@ -1,6 +1,6 @@
 ﻿import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import type { ReaderComment } from "../utils/useReaderData";
+import type { ReaderComment } from "../types/readerComment";
 
 import ProfileImage from "@/components/my/ProfileImage";
 import CommentConfirmModal from "./CommentConfirmModal";

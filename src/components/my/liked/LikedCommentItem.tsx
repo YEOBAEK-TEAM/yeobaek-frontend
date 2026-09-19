@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { getContentPage } from "@/api/contentPage";
 import { useCommentMutation } from "@/hooks/useComments";
-import type { ActivityLikedComment } from "@/types/my";
+import type { ActivityLikedComment } from "@/types/activity";
 import ProfileImage from "../ProfileImage";
 import { dateLabel } from "../myUtils";
 export default function LikedCommentItem({ item }: { item: ActivityLikedComment }) {

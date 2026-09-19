@@ -1,5 +1,6 @@
+import type { ReaderComment } from "../types/readerComment";
 import type { ReaderFragment } from "./paginateReaderText";
-import type { ReaderComment, ReaderHighlight, ReaderWord } from "./useReaderData";
+import type { ReaderHighlight, ReaderWord } from "./useReaderData";
 import type { ReaderSelection } from "./readerSelection";
 
 type Annotation = {

@@ -26,3 +26,19 @@ export type ActivityBook = Pick<ActivityPage, "bookId" | "bookTitle" | "coverIma
 export type LikedActivityBook = ActivityBook & { likeCount: number };
 export type BookmarkedActivityBook = ActivityBook & { bookmarkCount: number };
 export type ActivityKind = "liked-pages" | "bookmarked-pages";
+
+export type ActivityLikedComment = {
+  commentId: number;
+  pageId: number;
+  nickname: string;
+  profileImageUrl: string;
+  content: string;
+  bookTitle: string;
+  pageNumber: number;
+  createdAt: string;
+};
+export type ActivityLikedCommentList = {
+  items: ActivityLikedComment[];
+  nextCursor: number | null;
+  hasNext: boolean;
+};

@@ -18,22 +18,6 @@ export type MyPageResponse = {
 };
 export type MyPageParams = { year?: number; month?: number };
 
-export type ActivityLikedComment = {
-  commentId: number;
-  pageId: number;
-  nickname: string;
-  profileImageUrl: string;
-  content: string;
-  bookTitle: string;
-  pageNumber: number;
-  createdAt: string;
-};
-export type ActivityLikedCommentList = {
-  items: ActivityLikedComment[];
-  nextCursor: number | null;
-  hasNext: boolean;
-};
-
 export type MyProfile = {
   userId: number;
   nickname: string;

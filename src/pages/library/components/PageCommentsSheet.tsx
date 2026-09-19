@@ -10,9 +10,9 @@ import {
   useCommentMutation,
 } from "@/hooks/useComments";
 
-import type { Comment, CommentSort } from "@/types/comment";
+import type { CommentSort } from "@/types/comment";
 import type { ContentChapterPage } from "@/types/contentPage";
-import type { ReaderComment } from "../utils/useReaderData";
+import { toReaderComment } from "../utils/toReaderComment";
 
 import ReaderCommentsSheet from "./ReaderCommentsSheet";
 
@@ -53,37 +53,12 @@ export default function PageCommentsSheet({
   const find = (id: string) =>
     [...comments, ...replies].find((item) => String(item.commentId) === id);
 
-  const toView = (comment: Comment, reply = false): ReaderComment => ({
-    id: String(comment.commentId),
-    page: pageNumber,
-    text: comment.content,
-    createdAt: comment.createdAt,
-    quote:
-      reply || comment.sentenceId == null
-        ? undefined
-        : sentences.find((sentence) => sentence.sentenceId === comment.sentenceId)?.content,
-
-    user: {
-      id: comment.userId,
-      nickname: comment.nickname,
-      profileImage: comment.profileImageUrl,
-    },
-
-    likes: comment.likeCount,
-    dislikes: comment.dislikeCount,
-    replyCount: comment.replyCount,
-
-    ...(reply
-      ? {
-          parentCommentId: String(parentId),
-        }
-      : {}),
-  });
-
   return (
     <ReaderCommentsSheet
-      comments={comments.map((item) => toView(item))}
-      replies={replies.map((item) => toView(item, true))}
+      comments={comments.map((item) => toReaderComment(item, { pageNumber, sentences }))}
+      replies={replies.map((item) =>
+        toReaderComment(item, { pageNumber, sentences, parentId, reply: true }),
+      )}
       pageNumber={pageNumber}
       onClose={onClose}
       reportedCommentIds={[]}

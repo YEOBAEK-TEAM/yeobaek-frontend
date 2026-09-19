@@ -1,7 +1,7 @@
 ﻿import { useState } from "react";
 import type { SetStateAction } from "react";
-import type { ReaderSelection, ReaderSelectionRange } from "./readerSelection";
-import type { ReaderAnchor } from "./paginateReaderText";
+import type { ReaderSelection } from "./readerSelection";
+import type { ReaderComment } from "../types/readerComment";
 
 export type ReaderHighlight = {
   id: string;
@@ -10,24 +10,6 @@ export type ReaderHighlight = {
   end: number;
   text: string;
   color: string;
-};
-export type ReaderComment = {
-  type?: "sentence" | "page" | "reply";
-  parentCommentId?: string;
-  user?: { id: number | string; nickname: string; profileImage?: string; isFan?: boolean };
-  likes?: number;
-  dislikes?: number;
-  replyCount?: number;
-  myVote?: "like" | "dislike";
-  replyTo?: string;
-  createdAt?: string;
-  readerAnchor?: ReaderAnchor;
-  id: string;
-  page: number;
-  pages?: number[];
-  quote?: string;
-  text: string;
-  ranges?: ReaderSelectionRange[];
 };
 export type ReaderWord = ReaderSelection & { id: string };
 type ReaderData = {
