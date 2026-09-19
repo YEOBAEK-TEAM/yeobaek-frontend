@@ -3,6 +3,7 @@ import type { CSSProperties } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import heartIcon from "@/assets/icons/reader/heartIcon.png";
+import heartFilledIcon from "@/assets/icons/reader/heartFilledIcon.png";
 import commentIcon from "@/assets/icons/reader/commentIcon.png";
 import bookmarkIcon from "@/assets/icons/reader/bookmarkIcon.png";
 import { useBookDetail } from "@/hooks/useBookDetail";
@@ -494,7 +495,12 @@ function ContentBookReader({
               likeMutation.mutate({ pageId: actualPageId, liked });
             }}
           >
-            <img src={heartIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
+            <img
+              src={liked ? heartFilledIcon : heartIcon}
+              alt=""
+              aria-hidden="true"
+              className="h-6 w-6 object-contain"
+            />
             <span>{actionsReady ? pageDetail.data.likeCount.toLocaleString("ko-KR") : "—"}</span>
           </button>
           <button
