@@ -27,9 +27,18 @@ export const usePageComments = (pageId: number, sort: CommentSort = "LATEST", en
   useInfiniteQuery({
     queryKey: [...commentKeys.page(pageId), sort],
     queryFn: ({ pageParam, signal }) =>
-      api.getPageComments(pageId, { sort, cursor: pageParam }, signal),
-    initialPageParam: undefined as number | undefined,
-    getNextPageParam: nextCursor,
+      api.getPageComments(
+        pageId,
+        sort === "POPULAR" ? { sort, page: pageParam } : { sort, cursor: pageParam },
+        signal,
+      ),
+    initialPageParam: (sort === "POPULAR" ? 0 : undefined) as number | undefined,
+    getNextPageParam: (last, pages, param, params) =>
+      sort === "POPULAR"
+        ? last.hasNext
+          ? last.page + 1
+          : undefined
+        : nextCursor(last, pages, param, params),
     enabled: enabled && validId(pageId),
   });
 
@@ -59,13 +68,17 @@ export const uniqueComments = (pages?: CommentListResponse[]) => [
   ).values(),
 ];
 
-type CommentAction = { pageId: number; sentenceId: number } & (
+type CommentAction = { pageId: number; sentenceId?: number | null } & (
   | { type: "create"; content: string }
   | { type: "reply" | "edit"; commentId: number; content: string }
   | { type: "delete"; commentId: number }
   | { type: "editReply"; commentId: number; replyId: number; content: string }
   | { type: "deleteReply"; commentId: number; replyId: number }
-  | { type: "like" | "unlike" | "dislike" | "undislike"; commentId: number }
+  | {
+      type: "like" | "unlike" | "dislike" | "undislike";
+      commentId: number;
+      parentCommentId?: number;
+    }
 );
 
 export const useCommentMutation = () => {
@@ -77,7 +90,7 @@ export const useCommentMutation = () => {
       switch (action.type) {
         case "create":
           return api.createPageComment(pageId, {
-            sentenceId: action.sentenceId,
+            ...(action.sentenceId != null ? { sentenceId: action.sentenceId } : {}),
             content: action.content,
           });
         case "reply":
@@ -103,14 +116,21 @@ export const useCommentMutation = () => {
       }
     },
     onSuccess: async (_result, action) => {
-      const updates = [
-        client.invalidateQueries({ queryKey: commentKeys.page(action.pageId) }),
-        client.invalidateQueries({ queryKey: commentKeys.sentence(action.sentenceId) }),
-      ];
+      const updates = [client.invalidateQueries({ queryKey: commentKeys.page(action.pageId) })];
+      updates.push(client.invalidateQueries({ queryKey: ["activity", "liked-comments"] }));
+      if (action.sentenceId != null)
+        updates.push(
+          client.invalidateQueries({ queryKey: commentKeys.sentence(action.sentenceId) }),
+        );
       if ("commentId" in action)
         updates.push(
           client.invalidateQueries({
-            queryKey: commentKeys.replies(action.pageId, action.commentId),
+            queryKey: commentKeys.replies(
+              action.pageId,
+              "parentCommentId" in action
+                ? (action.parentCommentId ?? action.commentId)
+                : action.commentId,
+            ),
           }),
         );
       if (["create", "reply", "delete", "deleteReply"].includes(action.type)) {

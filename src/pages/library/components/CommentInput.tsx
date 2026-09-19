@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { readerUser } from "../../../mocks/readerUser";
+import { useMyPage } from "@/hooks/useMyPage";
+import ProfileImage from "@/components/my/ProfileImage";
 
 export default function CommentInput({
   onSubmit,
@@ -11,6 +12,7 @@ export default function CommentInput({
   error?: boolean;
 }) {
   const [text, setText] = useState("");
+  const { data: profile } = useMyPage();
   const input = useRef<HTMLInputElement>(null);
   const composing = useRef(false);
   const submitting = useRef(false);
@@ -33,10 +35,9 @@ export default function CommentInput({
           }
         }}
       >
-        {/* Decorative fallback only: the comment API has no profile image field. */}
-        <img
+        <ProfileImage
           className="h-6 w-6 shrink-0 rounded-full object-cover"
-          src={readerUser.profileImage}
+          src={profile?.profileImageUrl}
           alt=""
         />
         <input

@@ -1,3 +1,39 @@
+export type MonthlyReadingRecord = {
+  year: number;
+  month: number;
+  completedBooks: number;
+  pagesRead: number;
+  readingHours: number;
+};
+export type WeeklyReadingPage = { date: string; pagesRead: number };
+export type MyPageResponse = {
+  nickname: string;
+  profileImageUrl: string;
+  streakDays: number;
+  totalCompletedBooks: number;
+  totalCollectedSentences: number;
+  totalTrainingCount: number;
+  monthlyRecord: MonthlyReadingRecord;
+  weeklyPages: WeeklyReadingPage[];
+};
+export type MyPageParams = { year?: number; month?: number };
+
+export type ActivityLikedComment = {
+  commentId: number;
+  pageId: number;
+  nickname: string;
+  profileImageUrl: string;
+  content: string;
+  bookTitle: string;
+  pageNumber: number;
+  createdAt: string;
+};
+export type ActivityLikedCommentList = {
+  items: ActivityLikedComment[];
+  nextCursor: number | null;
+  hasNext: boolean;
+};
+
 export type MyProfile = {
   userId: number;
   nickname: string;

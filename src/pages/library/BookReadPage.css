@@ -217,7 +217,7 @@
   width: calc(100% + 40px);
   max-width: 390px;
   padding: 9px 16px calc(5px + env(safe-area-inset-bottom));
-  background: rgb(79 77 78 / 0.8);
+  background: #4f4d4e;
   font:
     14px system-ui,
     sans-serif;
@@ -257,11 +257,12 @@
 .book-reader__actions {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 .book-reader__actions button {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 7px;
   min-height: 40px;
   min-width: 44px;
 }

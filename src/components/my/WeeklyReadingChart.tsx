@@ -1,23 +1,12 @@
-﻿import { useState } from "react";
-import type { ReadingDay } from "@/types/my";
-import { dayPages } from "./myUtils";
-export default function WeeklyReadingChart({
-  days,
-  referenceDate,
-}: {
-  days: ReadingDay[];
-  referenceDate: string;
-}) {
+import { useState } from "react";
+import type { WeeklyReadingPage } from "@/types/my";
+export default function WeeklyReadingChart({ weeklyPages }: { weeklyPages: WeeklyReadingPage[] }) {
   const [selected, setSelected] = useState(2);
-  const current = new Date(`${referenceDate}T12:00:00`);
-  current.setDate(current.getDate() - ((current.getDay() + 6) % 7));
-  const values = Array.from({ length: 7 }, (_, index) => {
-    const date = new Date(current);
-    date.setDate(date.getDate() + index);
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-    const day = days.find((item) => item.date === key);
-    return day ? dayPages(day) : 0;
-  });
+  const values = Array<number>(7).fill(0);
+  for (const day of weeklyPages) {
+    const weekday = new Date(`${day.date}T12:00:00`).getDay();
+    if (!Number.isNaN(weekday)) values[(weekday + 6) % 7] = day.pagesRead;
+  }
   const maximum = Math.max(1, ...values);
   return (
     <section
