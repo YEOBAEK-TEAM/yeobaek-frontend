@@ -33,4 +33,9 @@ export default defineConfig({
       "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
+
+  // sockjs-client가 브라우저에 없는 global을 참조
+  define: {
+    global: "globalThis",
+  },
 });
