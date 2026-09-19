@@ -39,6 +39,9 @@ export default function MyPage() {
           <button type="button" className="mt-2 underline" onClick={() => void refetch()}>
             다시 시도
           </button>
+          <button type="button" className="mt-2 ml-4 underline" onClick={handleLogout}>
+            로그아웃
+          </button>
         </div>
       )}
       {profile && (

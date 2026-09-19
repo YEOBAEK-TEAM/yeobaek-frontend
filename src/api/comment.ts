@@ -23,7 +23,10 @@ export const getPageComments = async (
 ) =>
   unwrap(
     await api.get<ApiResponse<CommentListResponse>>(path(pageId), {
-      params: { sort, page, size, cursor },
+      params:
+        sort === "POPULAR"
+          ? { sort, page, size }
+          : { sort, size, ...(cursor !== undefined ? { cursor } : {}) },
       signal,
     }),
   );

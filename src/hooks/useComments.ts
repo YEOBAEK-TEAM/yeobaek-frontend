@@ -27,9 +27,18 @@ export const usePageComments = (pageId: number, sort: CommentSort = "LATEST", en
   useInfiniteQuery({
     queryKey: [...commentKeys.page(pageId), sort],
     queryFn: ({ pageParam, signal }) =>
-      api.getPageComments(pageId, { sort, cursor: pageParam }, signal),
-    initialPageParam: undefined as number | undefined,
-    getNextPageParam: nextCursor,
+      api.getPageComments(
+        pageId,
+        sort === "POPULAR" ? { sort, page: pageParam } : { sort, cursor: pageParam },
+        signal,
+      ),
+    initialPageParam: (sort === "POPULAR" ? 0 : undefined) as number | undefined,
+    getNextPageParam: (last, pages, param, params) =>
+      sort === "POPULAR"
+        ? last.hasNext
+          ? last.page + 1
+          : undefined
+        : nextCursor(last, pages, param, params),
     enabled: enabled && validId(pageId),
   });
 
@@ -65,7 +74,11 @@ type CommentAction = { pageId: number; sentenceId?: number | null } & (
   | { type: "delete"; commentId: number }
   | { type: "editReply"; commentId: number; replyId: number; content: string }
   | { type: "deleteReply"; commentId: number; replyId: number }
-  | { type: "like" | "unlike" | "dislike" | "undislike"; commentId: number }
+  | {
+      type: "like" | "unlike" | "dislike" | "undislike";
+      commentId: number;
+      parentCommentId?: number;
+    }
 );
 
 export const useCommentMutation = () => {
@@ -112,7 +125,12 @@ export const useCommentMutation = () => {
       if ("commentId" in action)
         updates.push(
           client.invalidateQueries({
-            queryKey: commentKeys.replies(action.pageId, action.commentId),
+            queryKey: commentKeys.replies(
+              action.pageId,
+              "parentCommentId" in action
+                ? (action.parentCommentId ?? action.commentId)
+                : action.commentId,
+            ),
           }),
         );
       if (["create", "reply", "delete", "deleteReply"].includes(action.type)) {

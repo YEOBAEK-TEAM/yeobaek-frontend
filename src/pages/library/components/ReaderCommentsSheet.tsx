@@ -664,10 +664,12 @@ export default function ReaderCommentsSheet({
                           type="button"
                           key={vote}
                           aria-label={vote === "like" ? "좋아요" : "싫어요"}
-                          aria-pressed={apiState ? undefined : reply.myVote === vote}
-                          disabled={!!apiState}
+                          aria-pressed={
+                            apiState ? apiState.reaction(reply.id, vote) : reply.myVote === vote
+                          }
+                          disabled={apiState?.pending}
                           className={`flex items-center gap-1 rounded border border-[#808080] px-1.5 py-1 ${
-                            reply.myVote === vote
+                            (apiState ? apiState.reaction(reply.id, vote) : reply.myVote === vote)
                               ? "bg-[#777777] text-white hover:bg-[#777777] active:bg-[#777777] focus:bg-[#777777]"
                               : "bg-transparent text-[#909090] hover:bg-transparent active:bg-transparent focus:bg-transparent"
                           }`}

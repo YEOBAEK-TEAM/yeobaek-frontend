@@ -154,7 +154,7 @@ export default function PageCommentsSheet({
             });
       }}
       onVote={async (id, vote) => {
-        const item = comments.find((comment) => String(comment.commentId) === id);
+        const item = find(id);
 
         if (!item) return;
 
@@ -168,6 +168,9 @@ export default function PageCommentsSheet({
             pageId,
             sentenceId: item.sentenceId,
             commentId: item.commentId,
+            parentCommentId: replies.some((reply) => reply.commentId === item.commentId)
+              ? parentId
+              : undefined,
           })
         ) {
           setReactions((previous) => ({
@@ -175,6 +178,7 @@ export default function PageCommentsSheet({
             [id]: {
               ...previous[id],
               [vote]: !cancel,
+              ...(!cancel ? { [vote === "like" ? "dislike" : "like"]: false } : {}),
             },
           }));
         }
