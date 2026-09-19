@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useSheetSlideIn } from "@/hooks/common/useSheetSlideIn";
 import { READER_BACKGROUNDS, READER_FONTS, READER_LINE_HEIGHTS } from "../utils/useReaderSettings";
 import type { ReaderSettings } from "../utils/useReaderSettings";
 
@@ -11,27 +11,19 @@ export default function ReaderSettingsPanel({
   onChange: (settings: ReaderSettings) => void;
   onClose: () => void;
 }) {
-  const dialogRef = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const previous = document.activeElement as HTMLElement | null;
-    const dialog = dialogRef.current;
-    dialog?.showModal();
-    return () => {
-      dialog?.close();
-      if (previous?.isConnected) previous.focus();
-    };
-  }, []);
+  const { dialogRef, sheetStyle, backdropClassName, requestClose } = useSheetSlideIn(onClose);
   return (
     <dialog
       ref={dialogRef}
       aria-labelledby="reader-settings-title"
-      className="fixed inset-x-0 top-auto bottom-0 m-0 mx-auto w-full max-w-[390px] max-h-[90dvh] overflow-y-auto rounded-t-2xl border-0 bg-[#f7f6f1] p-0 text-black backdrop:bg-black/35"
+      style={sheetStyle}
+      className={`fixed inset-x-0 top-auto bottom-0 m-0 mx-auto w-full max-w-[390px] max-h-[90dvh] overflow-y-auto rounded-t-2xl border-0 bg-[#f7f6f1] p-0 text-black ${backdropClassName}`}
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        requestClose();
       }}
       onClick={(event) => {
-        if (event.target === event.currentTarget) onClose();
+        if (event.target === event.currentTarget) requestClose();
       }}
     >
       <div>
@@ -43,7 +35,7 @@ export default function ReaderSettingsPanel({
             autoFocus
             type="button"
             aria-label="읽기 설정 닫기"
-            onClick={onClose}
+            onClick={requestClose}
             className="flex h-9 w-9 items-center justify-center"
           >
             <svg
