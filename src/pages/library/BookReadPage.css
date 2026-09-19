@@ -232,7 +232,7 @@
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
-.book-reader__progress input {
+.book-reader__progress-bar {
   appearance: none;
   height: 3px;
   min-width: 0;
@@ -240,14 +240,14 @@
   cursor: pointer;
   border-radius: 0;
 }
-.book-reader__progress input::-webkit-slider-thumb {
+.book-reader__progress-bar::-webkit-slider-thumb {
   appearance: none;
   width: 16px;
   height: 16px;
   border-radius: 50%;
   background: #b7bd9e;
 }
-.book-reader__progress input::-moz-range-thumb {
+.book-reader__progress-bar::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border: 0;

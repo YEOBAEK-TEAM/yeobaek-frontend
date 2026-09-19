@@ -1,14 +1,16 @@
 ﻿import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 import { Bookmark, Heart, MessageSquare } from "lucide-react";
 import { useBookDetail } from "@/hooks/useBookDetail";
-import { useContentChapter } from "@/hooks/useContentChapter";
+import { contentChapterQueryOptions, useContentChapter } from "@/hooks/useContentChapter";
 import { useContentPage } from "@/hooks/useContentPage";
 import { useTogglePageLike } from "@/hooks/useTogglePageLike";
 import { useTogglePageBookmark } from "@/hooks/useTogglePageBookmark";
 import { useUpdateReadingProgress } from "@/hooks/useUpdateReadingProgress";
 import ContentPageReader from "./components/ContentPageReader";
+import PageCommentsSheet from "./components/PageCommentsSheet";
 import ReaderCoverPage from "./components/ReaderCoverPage";
 import type { BookDetail } from "@/types/book";
 import type { ContentChapterPage } from "@/types/contentPage";
@@ -62,30 +64,55 @@ function ContentBookReader({
   onCover: boolean;
 }) {
   const [, setParams] = useSearchParams();
-  const [anchorId, setAnchorId] = useState(pageId);
-  const chapter = useContentChapter(anchorId);
+  const queryClient = useQueryClient();
+  const seekRequest = useRef(0);
+  const pageDetail = useContentPage(pageId);
+  const [navigation, setNavigation] = useState<{
+    urlPageId: number;
+    onCover: boolean;
+    anchorPageNumber: number;
+    targetPageNumber: number;
+    seeking: boolean;
+  } | null>(null);
+  // Ignore local navigation when an external pageId/cover URL is opened.
+  const localNavigation =
+    navigation?.urlPageId === pageId && navigation.onCover === onCover ? navigation : null;
+  const resolvedPage =
+    pageDetail.data?.pageId === pageId && pageDetail.data.bookId === bookId
+      ? pageDetail.data
+      : undefined;
+  const targetPageNumber =
+    localNavigation?.targetPageNumber ??
+    (resolvedPage ? (onCover ? 1 : resolvedPage.pageNumber) : NaN);
+  const anchorPageNumber = localNavigation?.anchorPageNumber ?? targetPageNumber;
+  const chapter = useContentChapter(bookId, anchorPageNumber);
+  const seeking = !!localNavigation?.seeking;
+  const [seekPageNumber, setSeekPageNumber] = useState<number | null>(null);
+  const seekPreview = useRef<number | null>(null);
   const book = useBookDetail(bookId);
   const { settings, updateSettings, storageError } = useReaderSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [commentsPageId, setCommentsPageId] = useState<number | null>(null);
   const { mutate: saveProgress, isError: saveError } = useUpdateReadingProgress(bookId);
   const lastSaved = useRef<{ pageId: number; at: number } | null>(null);
   const pages = [
     ...new Map((chapter.data?.pages ?? []).map((page) => [page.pageId, page])).values(),
   ].sort((a, b) => a.pageNumber - b.pageNumber);
-  const index = pages.findIndex((page) => page.pageId === pageId);
+  const index = pages.findIndex((page) => page.pageNumber === targetPageNumber);
   const currentPage = pages[index];
   const wrongBook = pages.some((page) => page.bookId !== bookId);
-  const ready = !!currentPage && !wrongBook && !chapter.isError;
+  const ready = !!currentPage && !wrongBook && !chapter.isError && !seeking;
   const deckPages: ReaderPageItem[] = [
     { type: "cover", book: book.data },
     ...pages.map((page) => ({ type: "content" as const, page })),
   ];
   const deckIndex = onCover ? 0 : index + 1;
-  const progressPercent = deckPages.length > 1 ? (deckIndex / (deckPages.length - 1)) * 100 : 0;
+  const sliderPageNumber = seekPageNumber ?? (onCover ? 0 : (currentPage?.pageNumber ?? 0));
+  const progressPercent =
+    chapter.data && chapter.data.allPage > 0 ? (sliderPageNumber / chapter.data.allPage) * 100 : 0;
   const deckPage = deckPages[deckIndex];
   const actualPageId = ready && deckPage?.type === "content" ? deckPage.page.pageId : undefined;
   const deckReady = ready && (!onCover || (!!book.data && !book.isError));
-  const pageDetail = useContentPage(actualPageId ?? NaN);
   const likeMutation = useTogglePageLike();
   const bookmarkMutation = useTogglePageBookmark();
   const actionsReady =
@@ -96,10 +123,12 @@ function ContentBookReader({
   const bookmarkError =
     bookmarkMutation.isError && bookmarkMutation.variables?.pageId === actualPageId;
 
-  // Browser navigation can point outside the currently loaded window.
-  if (!chapter.isPending && !chapter.isPlaceholderData && index < 0 && anchorId !== pageId) {
-    setAnchorId(pageId);
-  }
+  useEffect(
+    () => () => {
+      seekRequest.current += 1;
+    },
+    [pageId, onCover],
+  );
 
   useEffect(() => {
     const elements = [document.documentElement, document.body];
@@ -139,28 +168,106 @@ function ContentBookReader({
     };
   }, [actualPageId, saveProgress, settingsOpen]);
 
+  const showCover = () => {
+    setNavigation({
+      urlPageId: pageId,
+      onCover: true,
+      anchorPageNumber: 1,
+      targetPageNumber: 1,
+      seeking: false,
+    });
+    setParams(
+      { bookId: String(bookId), pageId: String(pageId), firstRead: "true" },
+      { replace: true },
+    );
+  };
+
+  const seekTo = async (target: number) => {
+    if (!Number.isSafeInteger(target) || target <= 0) return;
+    const request = ++seekRequest.current;
+    setNavigation({
+      urlPageId: pageId,
+      onCover,
+      anchorPageNumber: target,
+      targetPageNumber: target,
+      seeking: true,
+    });
+    try {
+      // Shares the hook's key and in-flight request; placeholder data is never returned here.
+      const result = await queryClient.fetchQuery(contentChapterQueryOptions(bookId, target));
+      if (request !== seekRequest.current) return;
+      const next = result.pages.find(
+        (page) => page.pageNumber === target && page.bookId === bookId,
+      );
+      if (!next) return;
+      setNavigation({
+        urlPageId: next.pageId,
+        onCover: false,
+        anchorPageNumber: target,
+        targetPageNumber: target,
+        seeking: false,
+      });
+      setParams(
+        { bookId: String(bookId), pageId: String(next.pageId), firstRead: "false" },
+        { replace: true },
+      );
+    } catch {
+      // The chapter query owns the error UI and retry; keep the original URL for recovery.
+    }
+  };
+
+  const commitSeek = () => {
+    const target = seekPreview.current;
+    seekPreview.current = null;
+    setSeekPageNumber(null);
+    if (
+      target === null ||
+      !deckReady ||
+      !chapter.data ||
+      target < 0 ||
+      target > chapter.data.allPage
+    )
+      return;
+    if (target === (onCover ? 0 : currentPage.pageNumber)) return;
+    window.getSelection()?.removeAllRanges();
+    if (target === 0) {
+      showCover();
+      return;
+    }
+    void seekTo(target);
+  };
+
   const navigate = (nextIndex: number) => {
     const item = deckPages[nextIndex];
     if (!deckReady || !item) return;
     if (item.type === "cover") {
-      const firstPage = pages[0];
-      if (!firstPage || onCover) return;
-      setParams(
-        { bookId: String(bookId), pageId: String(firstPage.pageId), firstRead: "true" },
-        { replace: true },
-      );
+      if (onCover) return;
+      // A temporary window edge is not the beginning of the book.
+      if (currentPage.pageNumber > 1) {
+        void seekTo(currentPage.pageNumber - 1);
+        return;
+      }
+      showCover();
       return;
     }
     const next = item.page;
     if (!onCover && next.pageId === pageId) return;
     window.getSelection()?.removeAllRanges();
+    const contentIndex = nextIndex - 1;
+    setNavigation({
+      urlPageId: next.pageId,
+      onCover: false,
+      anchorPageNumber:
+        contentIndex === 0 || contentIndex === pages.length - 1
+          ? next.pageNumber
+          : anchorPageNumber,
+      targetPageNumber: next.pageNumber,
+      seeking: false,
+    });
     setParams(
       { bookId: String(bookId), pageId: String(next.pageId), firstRead: "false" },
       { replace: true },
     );
-    // Recenter at a known boundary ID, never at an ID inferred from a page number.
-    const contentIndex = nextIndex - 1;
-    if (contentIndex === 0 || contentIndex === pages.length - 1) setAnchorId(next.pageId);
   };
 
   return (
@@ -201,20 +308,50 @@ function ContentBookReader({
         </button>
       </header>
       <div className="book-reader__body">
-        {chapter.isPending || (onCover && book.isPending) ? (
+        {!localNavigation && pageDetail.isError ? (
+          <div role="alert" className="book-reader__message">
+            <p>진입 페이지 정보를 불러오지 못했습니다.</p>
+            <button type="button" onClick={() => void pageDetail.refetch()}>
+              다시 시도
+            </button>
+          </div>
+        ) : !localNavigation && pageDetail.isSuccess && !resolvedPage ? (
+          <p role="alert" className="book-reader__message">
+            요청한 책의 페이지를 찾을 수 없습니다.
+          </p>
+        ) : chapter.isPending ||
+          (!currentPage && chapter.isFetching) ||
+          (seeking && !chapter.isError && !wrongBook && (chapter.isFetching || !!currentPage)) ||
+          (onCover && book.isPending) ? (
           <p role="status" className="book-reader__message">
             책 본문을 불러오는 중입니다.
           </p>
         ) : chapter.isError ? (
           <div role="alert" className="book-reader__message">
             <p>책 본문을 불러오지 못했습니다.</p>
-            <button type="button" onClick={() => void chapter.refetch()}>
+            <button
+              type="button"
+              onClick={() => {
+                if (seeking) void seekTo(targetPageNumber);
+                else void chapter.refetch();
+              }}
+            >
               다시 시도
             </button>
+            {seeking && (
+              <button type="button" className="ml-4" onClick={() => setNavigation(null)}>
+                이전 페이지로 돌아가기
+              </button>
+            )}
           </div>
         ) : !ready ? (
           <p role="alert" className="book-reader__message">
             요청한 책의 페이지를 찾을 수 없습니다.
+            {seeking && (
+              <button type="button" className="ml-4" onClick={() => setNavigation(null)}>
+                이전 페이지로 돌아가기
+              </button>
+            )}
           </p>
         ) : onCover && book.isError ? (
           <div role="alert" className="book-reader__message">
@@ -289,21 +426,59 @@ function ContentBookReader({
         <div className="book-reader__progress">
           <input
             type="range"
-            aria-label="불러온 페이지 범위에서 이동"
+            className="book-reader__progress-bar"
+            aria-label="책 전체 페이지 이동"
             aria-valuetext={
-              deckReady ? (onCover ? "표지" : currentPage.pageNumber + "페이지") : "페이지 준비 중"
+              deckReady
+                ? sliderPageNumber === 0
+                  ? "표지"
+                  : `${sliderPageNumber}/${chapter.data?.allPage}페이지`
+                : "페이지 준비 중"
             }
             min={0}
-            max={Math.max(0, deckPages.length - 1)}
-            value={Math.max(0, deckIndex)}
-            disabled={!deckReady || deckPages.length <= 1}
-            style={{
-              background: `linear-gradient(to right, #B7BD9E 0%, #B7BD9E ${progressPercent}%, #F7F6F1 ${progressPercent}%, #F7F6F1 100%)`,
+            max={chapter.data?.allPage ?? 0}
+            step={1}
+            value={sliderPageNumber}
+            disabled={!deckReady || !chapter.data?.allPage}
+            onChange={(event) => {
+              seekPreview.current = Number(event.currentTarget.value);
+              setSeekPageNumber(seekPreview.current);
             }}
-            onChange={(event) => navigate(Number(event.target.value))}
+            onPointerDown={(event) => event.currentTarget.setPointerCapture(event.pointerId)}
+            onPointerUp={commitSeek}
+            onPointerCancel={() => {
+              seekPreview.current = null;
+              setSeekPageNumber(null);
+            }}
+            onKeyUp={(event) => {
+              if (
+                [
+                  "ArrowLeft",
+                  "ArrowRight",
+                  "ArrowUp",
+                  "ArrowDown",
+                  "Home",
+                  "End",
+                  "PageUp",
+                  "PageDown",
+                  "Enter",
+                ].includes(event.key)
+              )
+                commitSeek();
+            }}
+            onBlur={commitSeek}
+            style={
+              {
+                background: `linear-gradient(to right, #B7BD9E 0%, #B7BD9E ${progressPercent}%, #F7F6F1 ${progressPercent}%, #F7F6F1 100%)`,
+              } as CSSProperties
+            }
           />
           <span aria-live="polite">
-            {deckReady ? (onCover ? "표지" : currentPage.pageNumber + "p") : "—"}
+            {deckReady && chapter.data
+              ? sliderPageNumber === 0
+                ? "표지"
+                : `${sliderPageNumber}/${chapter.data.allPage}`
+              : "—"}
           </span>
         </div>
         <div className="book-reader__actions">
@@ -319,7 +494,14 @@ function ContentBookReader({
           >
             <Heart size={24} strokeWidth={1.5} fill={liked ? "currentColor" : "none"} />
           </button>
-          <button type="button" aria-label="댓글 (준비 중)" disabled>
+          <button
+            type="button"
+            aria-label="페이지 댓글"
+            disabled={!actualPageId}
+            onClick={() => {
+              if (actualPageId) setCommentsPageId(actualPageId);
+            }}
+          >
             <MessageSquare size={24} strokeWidth={1.5} />
           </button>
           <button
@@ -338,6 +520,14 @@ function ContentBookReader({
           <ReportUnlockButton bookId={bookId} bookTitle={book.data?.title ?? ""} />
         </div>
       </footer>
+      {actualPageId && commentsPageId === actualPageId && (
+        <PageCommentsSheet
+          key={actualPageId}
+          pageId={actualPageId}
+          pageNumber={currentPage.pageNumber}
+          onClose={() => setCommentsPageId(null)}
+        />
+      )}
       {settingsOpen && (
         <ReaderSettingsPanel
           settings={settings}

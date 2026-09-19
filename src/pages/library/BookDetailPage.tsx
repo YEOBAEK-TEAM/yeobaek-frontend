@@ -67,14 +67,14 @@ export default function BookDetailPage() {
           </p>
 
           {/* 장르 */}
-          {book.genre && (
+          {!!book.genreList?.length && (
             <div className="mt-4 flex flex-wrap gap-2">
-              {[book.genre].map((genre) => (
+              {book.genreList.map((genre) => (
                 <span
-                  key={genre}
+                  key={`${genre.type}:${genre.value}`}
                   className="rounded-full bg-[#E7E1D6] px-3 py-2 text-sm text-[#555354]"
                 >
-                  {genre}
+                  {genre.value}
                 </span>
               ))}
             </div>

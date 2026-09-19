@@ -11,6 +11,7 @@ export function useContentTextSelection(
   const menuRef = useRef<HTMLDivElement>(null);
   const [selection, setSelection] = useState<ContentTextSelection | null>(null);
   const [wordSelection, setWordSelection] = useState<ContentTextSelection | null>(null);
+  const [commentSelection, setCommentSelection] = useState<ContentTextSelection | null>(null);
   const [nativeSelection, setNativeSelection] = useState(false);
   const nativeEnabled = useRef(false);
   const frozen = useRef(false);
@@ -78,6 +79,7 @@ export function useContentTextSelection(
     setNativeSelection(false);
     setSelection(null);
     setWordSelection(null);
+    setCommentSelection(null);
     const native = window.getSelection();
     if (native?.anchorNode && articleRef.current?.contains(native.anchorNode))
       native.removeAllRanges();
@@ -168,8 +170,15 @@ export function useContentTextSelection(
     menuRef,
     selection,
     wordSelection,
+    commentSelection,
     nativeSelection,
     close,
+    openComment: () => {
+      if (!selection) return;
+      frozen.current = true;
+      setCommentSelection(selection);
+      onSwipeDisabledChange(true);
+    },
     openWord: () => {
       if (!selection) return;
       frozen.current = true;
@@ -184,6 +193,7 @@ export function useContentTextSelection(
       window.clearTimeout(touchTimer.current);
       frozen.current = false;
       setWordSelection(null);
+      setCommentSelection(null);
       const { pointerId: id, clientX: x, clientY: y } = event;
       press.current = { id, x, y, moved: false, sentence };
       if (nativeEnabled.current) {
