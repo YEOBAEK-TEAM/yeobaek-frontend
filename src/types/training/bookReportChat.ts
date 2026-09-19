@@ -1,5 +1,5 @@
+import type { OtherPerspectiveResponse } from "@/types/training/bookReportTraining";
 import type { ChatBaseMessage } from "@/types/training/chat";
-import type { ReadingReport } from "@/types/training/readingReport";
 
 export type ThoughtComparison = {
   before: string;
@@ -8,13 +8,16 @@ export type ThoughtComparison = {
 
 export type BookReportMessage =
   | ChatBaseMessage
-  | { id: string; role: "riti"; kind: "reportCard"; report: ReadingReport }
+  | { id: string; role: "riti"; kind: "perspectiveCard"; perspective: OtherPerspectiveResponse }
   | { id: string; role: "riti"; kind: "thoughtSummary"; thought: ThoughtComparison };
 
 export type ChatPhase =
-  | { type: "empty" }
   | { type: "select" }
-  | { type: "analyzing"; report: ReadingReport }
-  | { type: "chatting"; report: ReadingReport }
-  | { type: "summary"; report: ReadingReport; thought: ThoughtComparison }
-  | { type: "ended"; report: ReadingReport };
+  | { type: "chatting" }
+  // 다른 관점 선택 전까지는 전송이 막힘
+  | { type: "perspectivePrompt" }
+  // 관점을 본 뒤 더 보기 버튼과 함께 대화 계속
+  | { type: "perspectiveShown" }
+  | { type: "summarizing" }
+  | { type: "summary"; thought: ThoughtComparison }
+  | { type: "ended" };

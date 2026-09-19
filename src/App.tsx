@@ -25,6 +25,7 @@ import BookmarkedPagesPage from "@/pages/my/BookmarkedPagesPage";
 import BookmarkedBookPagesPage from "@/pages/my/BookmarkedBookPagesPage";
 
 import TrainingPage from "@/pages/training/TrainingPage";
+import BookReportSelectPage from "@/pages/training/BookReportSelectPage";
 import BookReportChatPage from "@/pages/training/BookReportChatPage";
 import TrainingCompletePage from "@/pages/training/TrainingCompletePage";
 import ComprehensionSelectPage from "@/pages/training/ComprehensionSelectPage";
@@ -72,6 +73,7 @@ export default function App() {
             <Route path="/my/bookmarked-pages/:bookId" element={<BookmarkedBookPagesPage />} />
 
             {/* 훈련 */}
+            <Route path="/training/book-report/select" element={<BookReportSelectPage />} />
             <Route path="/training/book-report" element={<BookReportChatPage />} />
             <Route path="/training/complete" element={<TrainingCompletePage />} />
             <Route path="/training/comprehension" element={<ComprehensionSelectPage />} />

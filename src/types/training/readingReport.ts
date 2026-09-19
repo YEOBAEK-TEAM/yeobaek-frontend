@@ -7,8 +7,6 @@ export type ReadingReport = {
   createdAt: string;
 };
 
-export type ReportSortOrder = "latest" | "oldest";
-
 export type LearningSummary = {
   bookTitle: string;
   topic: string;

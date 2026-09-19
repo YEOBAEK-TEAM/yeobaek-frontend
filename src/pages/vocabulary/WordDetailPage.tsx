@@ -13,7 +13,9 @@ export default function WordDetailPage() {
   const vocabularyId = Number(id);
   const { data: word, isPending, isError } = useVocabularyDetail(vocabularyId);
   const page = useContentPage(word?.pageId ?? NaN);
-  const sentence = page.data?.sentences.find((sentence) => sentence.sentenceId === word?.sentenceId);
+  const sentence = page.data?.sentences.find(
+    (sentence) => sentence.sentenceId === word?.sentenceId,
+  );
   const [expanded, setExpanded] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const deleting = useRef(false);
