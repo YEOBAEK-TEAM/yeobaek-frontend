@@ -1,15 +1,25 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 import ComprehensiveFinishCharacter from "@/assets/images/Training/ComprehensiveFinishCharacter.png";
 import TrainingCompleteLayout from "@/components/training/shared/complete/TrainingCompleteLayout";
-import { TRAINING_COMPLETE_TITLE } from "@/constants/training/bookReportChat";
+import {
+  TRAINING_COMPLETE_TITLE,
+  TRAINING_RESTART_LABEL,
+} from "@/constants/training/bookReportChat";
 import { COMPREHENSION_COMPLETE_SUBTITLE } from "@/constants/training/comprehensionChat";
-import { useComprehensionSummary } from "@/hooks/training/useComprehensionLibrary";
+import { TRAINING_PATH } from "@/constants/training/trainingPrograms";
+import { useUnderstandSummation } from "@/hooks/training/useComprehensionQueries";
+
+const toId = (value: string | null) => {
+  const id = Number(value);
+  return value && Number.isSafeInteger(id) && id > 0 ? id : null;
+};
 
 export default function ComprehensionCompletePage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
-  const { data: summary } = useComprehensionSummary();
+  const { data: summary } = useUnderstandSummation(toId(searchParams.get("understandRoomId")));
 
   return (
     <TrainingCompleteLayout
@@ -25,7 +35,10 @@ export default function ComprehensionCompletePage() {
             ]
           : []
       }
-      onComplete={() => navigate("/training", { replace: true })}
+      onComplete={() => navigate(TRAINING_PATH.main, { replace: true })}
+      restartLabel={TRAINING_RESTART_LABEL}
+      // 책갈피 선택부터 다시 시작
+      onRestart={() => navigate(TRAINING_PATH.comprehension, { replace: true })}
     />
   );
 }

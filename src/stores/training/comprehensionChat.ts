@@ -1,98 +1,53 @@
 import { create } from "zustand";
 
-import type { ChatConnectionStatus } from "@/types/training/chatSocket";
 import type {
-  BookSelection,
+  ComprehensionBookView,
   ComprehensionMessage,
   ComprehensionPhase,
 } from "@/types/training/comprehension";
 
-type QueuedMessage = {
-  clientMessageId: string;
-  text: string;
-  replyId?: string;
-};
-
 type ComprehensionChatState = {
   phase: ComprehensionPhase;
-  status: ChatConnectionStatus;
+  // 대화 이력은 Query 캐시, 화면 단계와 서버에 없는 메시지만 보관
   messages: ComprehensionMessage[];
-  selection: BookSelection | null;
-  // 연결이 끊긴 동안 보낸 메시지 대기열
-  queue: QueuedMessage[];
+  book: ComprehensionBookView | null;
+  // 방 생성 응답에만 담겨 오는 예시 질문
+  options: string[];
 
-  setSelection: (selection: BookSelection | null) => void;
   setPhase: (phase: ComprehensionPhase) => void;
-  setStatus: (status: ChatConnectionStatus) => void;
+  setBook: (book: ComprehensionBookView | null) => void;
+  setOptions: (options: string[]) => void;
   pushMessage: (message: ComprehensionMessage) => void;
   removeMessage: (id: string) => void;
-  removeByKind: (kind: ComprehensionMessage["kind"]) => void;
-  replaceMessageId: (from: string, to: string, sentAt: string) => void;
-  setMessageStatus: (id: string, status: "sending" | "sent" | "failed") => void;
-  enqueue: (message: QueuedMessage) => void;
-  clearQueue: () => void;
-  resetConversation: () => void;
-};
-
-// 서버 타임스탬프 기준 정렬 후 삽입
-const insertMessage = (messages: ComprehensionMessage[], message: ComprehensionMessage) => {
-  const next = [...messages, message];
-
-  return next.sort((a, b) => {
-    const left = "sentAt" in a && a.sentAt ? a.sentAt : "";
-    const right = "sentAt" in b && b.sentAt ? b.sentAt : "";
-
-    if (!left || !right) return 0;
-    return left.localeCompare(right);
-  });
+  markFailed: (id: string, failed: boolean) => void;
+  reset: () => void;
 };
 
 export const useComprehensionChatStore = create<ComprehensionChatState>((set) => ({
   phase: { type: "selecting" },
-  status: "idle",
   messages: [],
-  selection: null,
-  queue: [],
-
-  setSelection: (selection) => set({ selection }),
+  book: null,
+  options: [],
 
   setPhase: (phase) => set({ phase }),
 
-  setStatus: (status) => set({ status }),
+  setBook: (book) => set({ book }),
 
-  pushMessage: (message) =>
-    set((state) =>
-      // 서버 id 기준 중복 수신 제거
-      state.messages.some((item) => item.id === message.id)
-        ? state
-        : { messages: insertMessage(state.messages, message) },
-    ),
+  setOptions: (options) => set({ options }),
+
+  pushMessage: (message) => set((state) => ({ messages: [...state.messages, message] })),
 
   removeMessage: (id) =>
     set((state) => ({ messages: state.messages.filter((message) => message.id !== id) })),
 
-  removeByKind: (kind) =>
-    set((state) => ({ messages: state.messages.filter((message) => message.kind !== kind) })),
-
-  replaceMessageId: (from, to, sentAt) =>
+  markFailed: (id, failed) =>
     set((state) => ({
       messages: state.messages.map((message) =>
-        message.id === from && message.kind === "text"
-          ? { ...message, id: to, sentAt, status: "sent" as const }
+        message.id === id && message.kind === "text"
+          ? { ...message, status: failed ? "failed" : "sending" }
           : message,
       ),
     })),
 
-  setMessageStatus: (id, status) =>
-    set((state) => ({
-      messages: state.messages.map((message) =>
-        message.id === id && message.kind === "text" ? { ...message, status } : message,
-      ),
-    })),
-
-  enqueue: (message) => set((state) => ({ queue: [...state.queue, message] })),
-
-  clearQueue: () => set({ queue: [] }),
-
-  resetConversation: () => set({ messages: [], queue: [], phase: { type: "selecting" } }),
+  reset: () => set({ phase: { type: "selecting" }, messages: [], book: null, options: [] }),
 }));

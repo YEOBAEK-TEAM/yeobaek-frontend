@@ -10,6 +10,8 @@ export const TRAINING_PATH = {
   bookReportChat: "/training/book-report",
   bookReportComplete: "/training/complete",
   comprehension: "/training/comprehension",
+  comprehensionChat: "/training/comprehension/chat",
+  comprehensionComplete: "/training/comprehension/complete",
 };
 
 export const TRAINING_TABS: { id: TrainingTab; label: string }[] = [

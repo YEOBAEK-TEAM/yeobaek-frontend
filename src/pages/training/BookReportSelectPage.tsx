@@ -7,6 +7,7 @@ import SectionState from "@/components/common/section/SectionState";
 import ConfirmModal from "@/components/common/confirmModal/ConfirmModal";
 import AnalyzingOverlay from "@/components/training/bookReport/AnalyzingOverlay";
 import {
+  getAnalyzingReportText,
   ONGOING_TRAINING_CONFIRM_TEXT,
   REPORT_SELECT_SECTION_TITLE,
   REPORT_SELECT_SUBMIT_LABEL,
@@ -159,7 +160,7 @@ export default function BookReportSelectPage() {
         </button>
       </div>
 
-      {startTraining.isPending && <AnalyzingOverlay nickname={nickname} />}
+      {startTraining.isPending && <AnalyzingOverlay text={getAnalyzingReportText(nickname)} />}
 
       {isOngoingConfirmOpen && (
         <ConfirmModal onConfirm={goOngoingRoom} onClose={() => setIsOngoingConfirmOpen(false)}>
