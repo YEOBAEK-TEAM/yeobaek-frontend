@@ -1,4 +1,5 @@
 import { Camera, Flame, Settings } from "lucide-react";
+import logoutIcon from "@/assets/icons/logoutIcon.png";
 
 import { useRef } from "react";
 import ProfileImage from "./ProfileImage";
@@ -8,8 +9,10 @@ import type { MyPageResponse } from "@/types/my";
 
 export default function ProfileCard({
   profile,
+  onLogout,
 }: {
   profile: Pick<MyPageResponse, "nickname" | "profileImageUrl" | "streakDays">;
+  onLogout: () => void;
 }) {
   const input = useRef<HTMLInputElement>(null);
   const uploading = useRef(false);
@@ -65,6 +68,14 @@ export default function ProfileCard({
               className="flex size-10 items-center justify-center"
             >
               <Settings size={23} />
+            </button>
+            <button
+              type="button"
+              aria-label="로그아웃"
+              onClick={onLogout}
+              className="-ml-2 flex size-10 shrink-0 items-center justify-center"
+            >
+              <img src={logoutIcon} alt="" className="size-6 object-contain" />
             </button>
           </div>
 
