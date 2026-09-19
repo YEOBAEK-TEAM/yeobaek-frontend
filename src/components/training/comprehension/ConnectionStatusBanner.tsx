@@ -1,10 +1,11 @@
-import {
-  RECONNECT_FAILED_TEXT,
-  RECONNECTING_TEXT,
-  RETRY_BUTTON_LABEL,
-} from "@/constants/training/comprehensionChat";
-
 import type { ChatConnectionStatus } from "@/types/training/chatSocket";
+
+// 토론방 채팅에서만 쓰는 연결 안내 문구
+const RECONNECTING_TEXT = "연결이 끊겨 다시 연결하는 중입니다";
+
+const RECONNECT_FAILED_TEXT = "연결에 실패했습니다";
+
+const RETRY_BUTTON_LABEL = "다시 시도";
 
 type ConnectionStatusBannerProps = {
   status: ChatConnectionStatus;

@@ -1,55 +1,134 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
+import ConfirmModal from "@/components/common/confirmModal/ConfirmModal";
 import Header from "@/components/common/header/Header";
+import SectionState from "@/components/common/section/SectionState";
 import BookSelectSection from "@/components/training/comprehension/BookSelectSection";
-import BookmarkRangeLabel from "@/components/training/comprehension/BookmarkRangeLabel";
 import SelectableBookItem from "@/components/training/comprehension/SelectableBookItem";
 import StartButton from "@/components/training/comprehension/StartButton";
+import AnalyzingOverlay from "@/components/training/bookReport/AnalyzingOverlay";
 import {
   BOOKMARK_EMPTY_TEXT,
+  getAnalyzingPagesText,
   BOOKMARK_SECTION_TITLE,
   COMPREHENSION_TITLE,
-  LIBRARY_EMPTY_TEXT,
-  LIBRARY_SECTION_TITLE,
+  ONGOING_TRAINING_CONFIRM_TEXT,
+  START_ERROR_TEXT,
 } from "@/constants/training/comprehensionChat";
-import { useBookmarks, useLibraryBooks } from "@/hooks/training/useComprehensionLibrary";
+import { TRAINING_PATH } from "@/constants/training/trainingPrograms";
+import { useInfiniteSentinel } from "@/hooks/training/discussion/useInfiniteSentinel";
+import { useOngoingTraining } from "@/hooks/training/useOngoingTraining";
+import { useBookmarks, useCreateUnderstandRoom } from "@/hooks/training/useComprehensionQueries";
+import { myProfile } from "@/mocks/my";
+import { useAuthStore } from "@/stores/auth";
 import { useComprehensionChatStore } from "@/stores/training/comprehensionChat";
+import { toComprehensionBook } from "@/utils/training/toComprehensionView";
 
 const RADIO_NAME = "comprehension-selection";
 
 export default function ComprehensionSelectPage() {
   const navigate = useNavigate();
 
-  const setSelection = useComprehensionChatStore((state) => state.setSelection);
-
-  const { data: books = [] } = useLibraryBooks();
-  const { data: bookmarks = [] } = useBookmarks();
+  const nickname = useAuthStore((state) => state.nickname) ?? myProfile.nickname;
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
 
-  // 서재와 책갈피를 통틀어 하나만 선택
-  const bookKeys = books.map((book) => `book-${book.bookId}`);
-  const bookmarkKeys = bookmarks.map((bookmark) => `bookmark-${bookmark.bookmarkId}`);
+  const {
+    data: bookmarks = [],
+    isPending,
+    isError,
+    refetch,
+    hasNextPage,
+    isFetchingNextPage,
+    fetchNextPage,
+  } = useBookmarks();
 
-  const isDivided = (keys: string[], index: number) =>
-    index < keys.length - 1 && selectedKey !== keys[index] && selectedKey !== keys[index + 1];
+  const createRoom = useCreateUnderstandRoom();
 
+  // 훈련은 한 번에 하나만 진행, 이미 있으면 그 방으로 안내
+  const { data: ongoing } = useOngoingTraining();
+
+  const ongoingRoomId =
+    ongoing?.status === "in-progress" && ongoing.programId === "comprehension"
+      ? ongoing.roomId
+      : null;
+
+  const [isOngoingConfirmOpen, setIsOngoingConfirmOpen] = useState(false);
+
+  const goOngoingRoom = () =>
+    navigate(`${TRAINING_PATH.comprehensionChat}?understandRoomId=${ongoingRoomId}`, {
+      replace: true,
+    });
+
+  const sentinelRef = useInfiniteSentinel({
+    hasNextPage,
+    isFetchingNextPage,
+    isError,
+    fetchNextPage,
+  });
+
+  const isDivided = (index: number) =>
+    index < bookmarks.length - 1 &&
+    selectedKey !== bookmarks[index].key &&
+    selectedKey !== bookmarks[index + 1].key;
+
+  // 묶음의 모든 페이지 ID를 그대로 훈련 범위로 전달
   const start = () => {
-    if (!selectedKey) return;
+    const selected = bookmarks.find((bookmark) => bookmark.key === selectedKey);
+    if (!selected || createRoom.isPending) return;
 
-    const bookmark = bookmarks.find((item) => `bookmark-${item.bookmarkId}` === selectedKey);
-
-    if (bookmark) {
-      setSelection({ bookId: bookmark.bookId, bookmarkId: bookmark.bookmarkId });
-    } else {
-      const book = books.find((item) => `book-${item.bookId}` === selectedKey);
-      if (!book) return;
-
-      setSelection({ bookId: book.bookId, bookmarkId: null });
+    if (ongoingRoomId !== null) {
+      setIsOngoingConfirmOpen(true);
+      return;
     }
 
-    navigate("/training/comprehension/chat");
+    createRoom.mutate(selected.targetIds, {
+      onSuccess: (room) => {
+        const store = useComprehensionChatStore.getState();
+        store.reset();
+        store.setBook(toComprehensionBook(room));
+        store.setOptions(room.options);
+        store.setPhase({ type: "chatting" });
+
+        navigate(`${TRAINING_PATH.comprehensionChat}?understandRoomId=${room.understandRoomId}`, {
+          replace: true,
+        });
+      },
+    });
+  };
+
+  const renderBookmarks = () => {
+    if (isError && bookmarks.length === 0) {
+      return <SectionState isError onRetry={() => void refetch()} className="h-40" />;
+    }
+
+    return (
+      <>
+        {bookmarks.map((bookmark, index) => (
+          <SelectableBookItem
+            key={bookmark.key}
+            name={RADIO_NAME}
+            value={bookmark.key}
+            checked={selectedKey === bookmark.key}
+            divided={isDivided(index)}
+            coverUrl={bookmark.coverUrl}
+            title={
+              <span className="flex items-baseline gap-2">
+                {bookmark.title}
+                <span className="text-[16px] text-[#4F4D4E]">{bookmark.pageLabel}</span>
+              </span>
+            }
+            author={bookmark.author}
+            onSelect={() => setSelectedKey(bookmark.key)}
+          />
+        ))}
+
+        {hasNextPage && (
+          <div ref={sentinelRef} className="mt-2 h-18 animate-pulse rounded-xl bg-[#EFEDE7]" />
+        )}
+      </>
+    );
   };
 
   return (
@@ -58,52 +137,27 @@ export default function ComprehensionSelectPage() {
 
       <div className="flex-1 pb-6">
         <BookSelectSection
-          title={LIBRARY_SECTION_TITLE}
-          isEmpty={books.length === 0}
-          emptyText={LIBRARY_EMPTY_TEXT}
-        >
-          {books.map((book, index) => (
-            <SelectableBookItem
-              key={book.bookId}
-              name={RADIO_NAME}
-              value={bookKeys[index]}
-              checked={selectedKey === bookKeys[index]}
-              divided={isDivided(bookKeys, index)}
-              coverUrl={book.coverUrl}
-              title={book.title}
-              author={book.author}
-              onSelect={() => setSelectedKey(bookKeys[index])}
-            />
-          ))}
-        </BookSelectSection>
-
-        <BookSelectSection
           title={BOOKMARK_SECTION_TITLE}
-          isEmpty={bookmarks.length === 0}
+          isEmpty={!isPending && bookmarks.length === 0}
           emptyText={BOOKMARK_EMPTY_TEXT}
         >
-          {bookmarks.map((bookmark, index) => (
-            <SelectableBookItem
-              key={bookmark.bookmarkId}
-              name={RADIO_NAME}
-              value={bookmarkKeys[index]}
-              checked={selectedKey === bookmarkKeys[index]}
-              divided={isDivided(bookmarkKeys, index)}
-              coverUrl={bookmark.coverUrl}
-              title={
-                <span className="flex items-baseline gap-2">
-                  {bookmark.title}
-                  <BookmarkRangeLabel startPage={bookmark.startPage} endPage={bookmark.endPage} />
-                </span>
-              }
-              author={bookmark.author}
-              onSelect={() => setSelectedKey(bookmarkKeys[index])}
-            />
-          ))}
+          {renderBookmarks()}
         </BookSelectSection>
       </div>
 
-      <StartButton disabled={!selectedKey} onClick={start} />
+      {createRoom.isError && (
+        <p className="px-5 text-center text-[13px] text-[#D9534F]">{START_ERROR_TEXT}</p>
+      )}
+
+      <StartButton disabled={!selectedKey || createRoom.isPending} onClick={start} />
+
+      {createRoom.isPending && <AnalyzingOverlay text={getAnalyzingPagesText(nickname)} />}
+
+      {isOngoingConfirmOpen && (
+        <ConfirmModal onConfirm={goOngoingRoom} onClose={() => setIsOngoingConfirmOpen(false)}>
+          {ONGOING_TRAINING_CONFIRM_TEXT}
+        </ConfirmModal>
+      )}
     </main>
   );
 }

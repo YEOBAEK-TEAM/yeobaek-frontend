@@ -1,13 +1,11 @@
 import { LoaderCircle } from "lucide-react";
 
-import { getAnalyzingReportText } from "@/constants/training/bookReportChat";
-
 type AnalyzingOverlayProps = {
-  nickname: string;
+  text: string;
 };
 
 // 훈련방 생성과 첫 질문 생성이 끝날 때까지 화면 전체를 덮는 대기 표시
-export default function AnalyzingOverlay({ nickname }: AnalyzingOverlayProps) {
+export default function AnalyzingOverlay({ text }: AnalyzingOverlayProps) {
   return (
     <div
       role="status"
@@ -21,7 +19,7 @@ export default function AnalyzingOverlay({ nickname }: AnalyzingOverlayProps) {
       />
 
       <p className="text-center text-[16px] leading-[25px] font-medium whitespace-pre-line text-[#4F4D4E]">
-        {getAnalyzingReportText(nickname)}
+        {text}
       </p>
     </div>
   );
