@@ -1,11 +1,5 @@
-import {
-  queryOptions,
-  useMutation,
-  useMutationState,
-  useQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { useEffect } from "react";
+import { queryOptions, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
 
 import {
   completeReading,
@@ -83,7 +77,7 @@ export const useSubmitUnlockQuiz = () => {
   });
 };
 
-// 실제 읽기 기록이 완독이거나 진행률 저장 응답이 100%면 완독으로 판단
+// 최초 완독 이력은 해금 UI에, 현재 세션의 진행 저장은 회차별 완독 처리에 사용
 export const useReadingCompletion = (bookId: number) => {
   const queryClient = useQueryClient();
 
@@ -93,36 +87,76 @@ export const useReadingCompletion = (bookId: number) => {
       getReadingRecords({ status: "COMPLETED", size: COMPLETED_RECORD_SIZE }, signal),
     enabled: isValidBookId(bookId),
   });
-  const hasCompletedRecord =
+  const hasEverCompleted =
     completedRecordsQuery.data?.items.some(
       (record) => record.bookId === bookId && record.completedAt,
     ) ?? false;
 
-  const progressRates = useMutationState({
-    filters: { mutationKey: ["reading-progress", bookId], status: "success" },
-    select: (mutation) =>
-      (mutation.state.data as UpdateReadingProgressResponse | undefined)?.progressRate ?? 0,
-  });
+  const [hasCompletedInSession, setHasCompletedInSession] = useState(false);
 
-  const hasReachedEnd = progressRates.some((rate) => rate >= 100);
-
-  const { mutate, isIdle } = useMutation({
+  const { mutate } = useMutation({
     mutationFn: completeReading,
-    onSuccess: () =>
+    retry: 0,
+    onSuccess: () => {
+      setHasCompletedInSession(true);
       [["reading-records"], libraryReportKeys.pendingUnlockBooks()].forEach(
         (queryKey) => void queryClient.invalidateQueries({ queryKey }),
-      ),
+      );
+    },
   });
 
   useEffect(() => {
-    // 기록상 이미 완독한 책이거나 한 번 요청했으면 다시 보내지 않음
-    if (hasCompletedRecord || !hasReachedEnd || !isIdle) return;
+    if (!isValidBookId(bookId)) return;
 
-    mutate(bookId);
-  }, [bookId, hasCompletedRecord, hasReachedEnd, isIdle, mutate]);
+    // Only mutations created after this Reader session starts can trigger completion.
+    const sessionMutations = new Set<number>();
+    let completionRequested = false;
+    let completionPending = false;
+    let latestRate: number | undefined;
+
+    return queryClient.getMutationCache().subscribe((event) => {
+      if (!event.mutation) return;
+      const key = event.mutation.options.mutationKey;
+      if (key?.length !== 2 || key[0] !== "reading-progress" || key[1] !== bookId) return;
+      if (event.type === "added") {
+        sessionMutations.add(event.mutation.mutationId);
+        return;
+      }
+      if (event.type === "removed") {
+        sessionMutations.delete(event.mutation.mutationId);
+        return;
+      }
+      if (
+        event.type !== "updated" ||
+        event.action.type !== "success" ||
+        !sessionMutations.has(event.mutation.mutationId)
+      )
+        return;
+
+      const rate = (event.mutation.state.data as UpdateReadingProgressResponse | undefined)
+        ?.progressRate;
+      if (rate === undefined || !Number.isFinite(rate)) return;
+      latestRate = rate;
+      if (rate < 100) {
+        if (!completionPending) completionRequested = false;
+        return;
+      }
+      if (completionRequested || completionPending) return;
+
+      // Lock synchronously before mutate: repeated 100% saves must not submit twice.
+      completionRequested = true;
+      completionPending = true;
+      mutate(bookId, {
+        onSettled: () => {
+          completionPending = false;
+          if (latestRate !== undefined && latestRate < 100) completionRequested = false;
+        },
+      });
+    });
+  }, [bookId, mutate, queryClient]);
 
   return {
-    isCompleted: hasCompletedRecord || hasReachedEnd,
+    isCompleted: hasEverCompleted || hasCompletedInSession,
     isReady: !completedRecordsQuery.isPending,
   };
 };

@@ -261,7 +261,7 @@ export default function LibraryPage() {
               disabled={isRereadPending}
               className="mt-2 flex h-14 w-full cursor-pointer items-center justify-center bg-[#4F4D4E] text-base font-bold text-white"
             >
-              {isCurrentRoundCompleted
+              {isCurrentRoundCompleted || selectedBook.repeatCount >= 1
                 ? `${selectedBook.repeatCount + 1}회독 하러가기`
                 : isFirstRead
                   ? "읽기 시작하기"
