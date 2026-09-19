@@ -1,13 +1,12 @@
 ﻿import { useCallback, useEffect, useRef, useState } from "react";
 import type { PointerEvent, ReactNode } from "react";
-import type { ReaderPage } from "../utils/paginateReaderText";
-
-export type DeckPage = ReaderPage | { id: "cover"; pdfPage?: undefined; start?: undefined };
 
 type Props<T> = {
   pages: T[];
   ariaLabel?: string;
   index: number;
+  hasPrevious?: boolean;
+  hasNext?: boolean;
   onNavigate: (index: number) => void;
   renderPage: (
     page: T,
@@ -21,6 +20,8 @@ const hasSelection = () => Boolean(window.getSelection()?.toString());
 export default function ReaderPageDeck<T>({
   pages,
   index,
+  hasPrevious = index > 0,
+  hasNext = index < pages.length - 1,
   onNavigate,
   renderPage,
   ariaLabel = "전자책 본문. 좌우 드래그로 페이지 이동, 클릭으로 문장 선택, 더블클릭으로 단어 선택",
@@ -97,7 +98,7 @@ export default function ReaderPageDeck<T>({
       event.currentTarget.setPointerCapture(event.pointerId);
     }
     event.preventDefault();
-    const atEdge = (index === 0 && dx > 0) || (index === pages.length - 1 && dx < 0);
+    const atEdge = (!hasPrevious && dx > 0) || (!hasNext && dx < 0);
     const delta = Math.max(-current.width, Math.min(current.width, dx)) * (atEdge ? 0.22 : 1);
     setMotion({ delta, settling: false, dragging: true });
   };
@@ -111,7 +112,7 @@ export default function ReaderPageDeck<T>({
     const dx = event.clientX - current.x;
     const threshold = 90;
     let direction = !blocked() && Math.abs(dx) >= threshold ? (dx < 0 ? 1 : -1) : 0;
-    if (index + direction < 0 || index + direction >= pages.length) direction = 0;
+    if ((direction < 0 && !hasPrevious) || (direction > 0 && !hasNext)) direction = 0;
     settle(direction, current.width);
     if (event.currentTarget.hasPointerCapture(event.pointerId))
       event.currentTarget.releasePointerCapture(event.pointerId);
@@ -144,7 +145,7 @@ export default function ReaderPageDeck<T>({
       onKeyDown={(event) => {
         if (event.target !== event.currentTarget || motion.settling || blocked()) return;
         const direction = event.key === "ArrowLeft" ? -1 : event.key === "ArrowRight" ? 1 : 0;
-        if (direction && index + direction >= 0 && index + direction < pages.length) {
+        if ((direction < 0 && hasPrevious) || (direction > 0 && hasNext)) {
           event.preventDefault();
           settle(direction, event.currentTarget.clientWidth);
         }

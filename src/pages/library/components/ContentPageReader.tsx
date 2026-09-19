@@ -19,6 +19,15 @@ import { normalizeSavedWord, savedWordRanges } from "../utils/contentSavedWords"
 import SavedWordText from "./SavedWordText";
 import SavedVocabularyInteraction from "./SavedVocabularyInteraction";
 
+const getImageUrl = (value: string | null | undefined): string | undefined => {
+  try {
+    const url = new URL(value?.trim() ?? "");
+    if (url.protocol === "https:" || url.protocol === "http:") return url.href;
+  } catch {
+    // Empty or invalid image URLs have no image to render.
+  }
+};
+
 export default function ContentPageReader({
   page,
   active,
@@ -119,13 +128,7 @@ export default function ContentPageReader({
       },
     });
   };
-  let imageUrl: string | undefined;
-  try {
-    const url = new URL(page.imageUrl?.trim() ?? "");
-    if (url.protocol === "https:" || url.protocol === "http:") imageUrl = url.href;
-  } catch {
-    // Empty or invalid image URLs have no image to render.
-  }
+  const imageUrl = getImageUrl(page.imageUrl);
 
   return (
     <article
@@ -168,6 +171,20 @@ export default function ContentPageReader({
       {[...page.sentences]
         .sort((a, b) => a.sentenceIndex - b.sentenceIndex)
         .map((sentence) => {
+          if (sentence.status === "IMG") {
+            const src = getImageUrl(sentence.content);
+            return src ? (
+              <img
+                key={sentence.sentenceId}
+                src={src}
+                alt=""
+                className="h-auto max-w-full"
+                draggable={false}
+              />
+            ) : null;
+          }
+          if (sentence.status !== "SENTENCE") return null;
+
           const highlight = highlights.data?.find(
             (item) => item.sentenceId === sentence.sentenceId,
           );

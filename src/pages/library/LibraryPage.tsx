@@ -1,16 +1,23 @@
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent } from "react";
 import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 
 import Header from "@/components/common/header/Header";
 import ReportTabPanel from "@/components/library/report/ReportTabPanel";
 import { REPORT_WRITE_PARAM } from "@/constants/library/report";
 import { useReadingRecords } from "@/hooks/useReadingRecords";
+import { contentChapterQueryOptions } from "@/hooks/useContentChapter";
+import { useToastStore } from "@/stores/common/toast";
 
 const tabs = ["전체", "완독", "독후감"] as const;
 
 export default function LibraryPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const showToast = useToastStore((state) => state.showToast);
+  const rereadPending = useRef(false);
+  const [isRereadPending, setIsRereadPending] = useState(false);
   const location = useLocation();
   const [showAddedNotice, setShowAddedNotice] = useState(location.state?.bookAdded === true);
 
@@ -53,15 +60,38 @@ export default function LibraryPage() {
 
   const selectedBook =
     libraryBooks.find((book) => book.recordId === selectedRecordId) ?? libraryBooks[0];
+  const isCurrentRoundCompleted = selectedBook?.progressRate === 100;
   const isFirstRead =
-    !!selectedBook && !selectedBook.completedAt && selectedBook.lastPageNumber <= 1;
+    !!selectedBook &&
+    !isCurrentRoundCompleted &&
+    selectedBook.repeatCount === 0 &&
+    selectedBook.lastPageNumber <= 1;
 
-  const handleReadBook = () => {
-    if (!selectedBook) return;
+  const handleReadBook = async () => {
+    if (!selectedBook || rereadPending.current) return;
 
-    navigate(
-      `/library/read?bookId=${selectedBook.bookId}&pageId=${selectedBook.lastPageId}&firstRead=${isFirstRead}`,
-    );
+    if (!isCurrentRoundCompleted) {
+      navigate(`/library/read?bookId=${selectedBook.bookId}&pageId=${selectedBook.lastPageId}`);
+      return;
+    }
+
+    rereadPending.current = true;
+    setIsRereadPending(true);
+    try {
+      const chapter = await queryClient.fetchQuery(
+        contentChapterQueryOptions(selectedBook.bookId, 1),
+      );
+      const firstPage = chapter.pages.find(
+        (page) => page.bookId === selectedBook.bookId && page.pageNumber === 1,
+      );
+      if (!firstPage) throw new Error("First page not found");
+      navigate(`/library/read?bookId=${selectedBook.bookId}&pageId=${firstPage.pageId}`);
+    } catch {
+      showToast("첫 페이지를 불러오지 못했습니다.", "error");
+    } finally {
+      rereadPending.current = false;
+      setIsRereadPending(false);
+    }
   };
 
   return (
@@ -217,7 +247,7 @@ export default function LibraryPage() {
 
             {/* 독서 진행 정보 */}
             <p className="mt-4 text-sm font-semibold text-[#555555]">
-              {selectedBook.completedAt
+              {isCurrentRoundCompleted
                 ? "완독"
                 : isFirstRead
                   ? "아직 읽기 전이에요"
@@ -228,10 +258,11 @@ export default function LibraryPage() {
             <button
               type="button"
               onClick={handleReadBook}
+              disabled={isRereadPending}
               className="mt-2 flex h-14 w-full cursor-pointer items-center justify-center bg-[#4F4D4E] text-base font-bold text-white"
             >
-              {selectedBook.completedAt
-                ? "다시 읽기"
+              {isCurrentRoundCompleted || selectedBook.repeatCount >= 1
+                ? `${selectedBook.repeatCount + 1}회독 하러가기`
                 : isFirstRead
                   ? "읽기 시작하기"
                   : `${selectedBook.lastPageNumber}p부터 이어 읽기`}

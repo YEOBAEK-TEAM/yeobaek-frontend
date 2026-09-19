@@ -4,6 +4,7 @@ import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { useBookDetail } from "@/hooks/useBookDetail";
 import { useAddReadingRecord } from "@/hooks/useAddReadingRecord";
+import { getMockBookRating } from "@/mocks/bookRatings";
 import BookCover from "./components/BookCover";
 
 import { ArrowIcon } from "./components/LibraryIcons";
@@ -21,6 +22,7 @@ export default function BookDetailPage() {
   const numericBookId = bookId && /^\d+$/.test(bookId) ? Number(bookId) : NaN;
   const validBookId = Number.isSafeInteger(numericBookId) && numericBookId > 0;
   const { data: book, isPending, isError } = useBookDetail(numericBookId);
+  const rating = getMockBookRating(numericBookId);
 
   const { mutateAsync: addReadingRecord, isPending: isAdding } = useAddReadingRecord();
 
@@ -91,9 +93,11 @@ export default function BookDetailPage() {
       <div className="mt-5 flex items-center gap-2 text-[#555354]">
         <span>★</span>
 
-        <span className="font-bold">—</span>
+        <span className="font-bold">{rating.rating.toFixed(1)}</span>
 
-        <span className="text-sm text-[#999999]">(미제공)</span>
+        <span className="text-sm text-[#999999]">
+          ({rating.ratingCount.toLocaleString("ko-KR")})
+        </span>
       </div>
 
       {/* 줄거리 */}
