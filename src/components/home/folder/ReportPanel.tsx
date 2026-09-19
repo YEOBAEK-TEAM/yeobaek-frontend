@@ -1,17 +1,20 @@
 import BookCover from "@/components/common/bookCover/BookCover";
 import { REPORT_STATUS_LABEL } from "@/constants/home/home";
 
-import type { RecentReport } from "@/types/home/home";
+import type { RecentReportView } from "@/types/home/home";
 
 type ReportPanelProps = {
   nickname: string;
-  report: RecentReport;
+  report: RecentReportView;
 };
 
 export default function ReportPanel({ nickname, report }: ReportPanelProps) {
   return (
     <div className="flex h-full items-center gap-4 px-4 py-3">
-      <BookCover src={report.coverUrl} className="h-full max-h-24 w-17 shrink-0 rounded-sm" />
+      <BookCover
+        src={report.coverUrl}
+        className="h-full max-h-24 w-17 shrink-0 rounded-sm bg-[#EFEDE7]"
+      />
 
       <div className="min-w-0 flex-1">
         <p className="text-[14px] font-bold text-[#4F4D4E]">{nickname}님의 독후감</p>
