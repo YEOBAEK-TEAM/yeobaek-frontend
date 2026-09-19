@@ -54,16 +54,6 @@ export const useCommentReplies = (pageId: number, commentId: number) =>
     enabled: validId(pageId) && validId(commentId),
   });
 
-export const useMySentenceComments = (sentenceId: number, enabled = true) =>
-  useInfiniteQuery({
-    queryKey: commentKeys.sentence(sentenceId),
-    queryFn: ({ pageParam, signal }) =>
-      api.getMySentenceComments(sentenceId, { cursor: pageParam, size: 50 }, signal),
-    initialPageParam: undefined as number | undefined,
-    getNextPageParam: nextCursor,
-    enabled: enabled && validId(sentenceId),
-  });
-
 export const uniqueComments = (pages?: CommentListResponse[]) => [
   ...new Map(
     pages?.flatMap((page) => page.comments).map((comment) => [comment.commentId, comment]),

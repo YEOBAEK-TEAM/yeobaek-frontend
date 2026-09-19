@@ -37,14 +37,5 @@ export type ReadingSession = MyBook & {
   createdAt: string;
 };
 export type ReadingDay = { date: string; sessions: ReadingSession[] };
-export type LikedComment = MyBook & {
-  id: string;
-  commentId: string;
-  userId: number;
-  userName: string;
-  page: number;
-  content: string;
-  createdAt: string;
-  liked: boolean;
-};
+
 export type ReadingCategory = { name: string; percentage: number; color: string };
