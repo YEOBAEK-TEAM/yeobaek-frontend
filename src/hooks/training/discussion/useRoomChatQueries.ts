@@ -33,6 +33,8 @@ export const useRoomMessages = (roomId: number, enabled: boolean) =>
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     enabled,
     staleTime: Infinity,
+    // 재진입 때마다 새 메시지와 읽음 위치를 다시 받음
+    refetchOnMount: "always",
     refetchOnWindowFocus: false,
   });
 

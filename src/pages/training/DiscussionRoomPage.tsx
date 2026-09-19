@@ -89,7 +89,8 @@ export default function DiscussionRoomPage() {
   // 입장 시점에 안 읽은 메시지가 있을 때만 구분선 위치 고정
   const [dividerAfterId, setDividerAfterId] = useState<string | null | undefined>(undefined);
 
-  if (dividerAfterId === undefined && session && messages) {
+  // 캐시된 옛 읽음 시각으로 굳지 않도록 재조회가 끝난 뒤 확정
+  if (dividerAfterId === undefined && session && messages && !messagesQuery.isFetching) {
     const readUntil = lastReadAt ? Date.parse(lastReadAt) : null;
     const lastRead =
       readUntil === null

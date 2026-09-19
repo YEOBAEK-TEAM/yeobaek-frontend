@@ -19,7 +19,8 @@ import type {
 } from "@/types/training/discussion/discussion";
 import type { DiscussionRoomResponse, PageResponse } from "@/types/training/discussion/room";
 
-const STALE_TIME = 30_000;
+// 승인·참가 결과가 바로 보이도록 화면 복귀 때마다 재조회
+const STALE_TIME = 0;
 
 // 토론장 query key 팩토리
 export const discussionKeys = {

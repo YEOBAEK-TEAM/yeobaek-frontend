@@ -63,6 +63,7 @@ export const useRoomDetail = (roomId: number) =>
     queryKey: roomKeys.detail(roomId),
     queryFn: ({ signal }) => getRoomDetail(roomId, signal),
     select: toRoomDetailView,
+    refetchOnMount: "always",
   });
 
 // 방장만 조회 가능해 방장 여부가 확인된 뒤에만 호출
