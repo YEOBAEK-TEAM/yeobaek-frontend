@@ -66,8 +66,7 @@ export default function PageCommentsSheet({
     user: {
       id: comment.userId,
       nickname: comment.nickname,
-
-      // PageCommentResponse has no author image field; use ProfileImage's default.
+      profileImage: comment.profileImageUrl,
     },
 
     likes: comment.likeCount,

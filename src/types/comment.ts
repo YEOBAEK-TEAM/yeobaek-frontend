@@ -4,6 +4,7 @@ export type Comment = {
   sentenceId?: number | null;
   userId: number;
   nickname: string;
+  profileImageUrl?: string;
   content: string;
   status: string;
   createdAt: string;
