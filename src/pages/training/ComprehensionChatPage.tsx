@@ -21,6 +21,7 @@ export default function ComprehensionChatPage() {
 
   const {
     phase,
+    isReadOnly,
     messages,
     book,
     isWaiting,
@@ -33,18 +34,20 @@ export default function ComprehensionChatPage() {
   } = useComprehensionChat();
 
   useEffect(() => {
-    if (phase.type !== "ended") return;
+    if (isReadOnly || phase.type !== "ended") return;
 
     const timer = window.setTimeout(() => void goSummary(), ENDED_REDIRECT_MS);
 
     return () => window.clearTimeout(timer);
-  }, [phase.type, goSummary]);
+  }, [isReadOnly, phase.type, goSummary]);
 
   return (
     <main className="flex h-dvh flex-col">
       <Header
         title={COMPREHENSION_TITLE}
-        onBack={() => navigate(TRAINING_PATH.main, { replace: true })}
+        onBack={() =>
+          navigate(isReadOnly ? TRAINING_PATH.history : TRAINING_PATH.main, { replace: true })
+        }
       />
 
       {book && (
@@ -62,7 +65,7 @@ export default function ComprehensionChatPage() {
         onRetry={retryMessage}
       />
 
-      {phase.type === "confirmEnd" && (
+      {!isReadOnly && phase.type === "confirmEnd" && (
         <ChatActionButtons
           actions={[
             {
@@ -81,7 +84,7 @@ export default function ComprehensionChatPage() {
         />
       )}
 
-      {phase.type !== "confirmEnd" && phase.type !== "ended" && (
+      {!isReadOnly && phase.type !== "confirmEnd" && phase.type !== "ended" && (
         <ChatInput disabled={!isChatReady || isWaiting} onSend={sendMessage} />
       )}
     </main>

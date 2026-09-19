@@ -27,6 +27,7 @@ import BookmarkedBookPagesPage from "@/pages/my/BookmarkedBookPagesPage";
 import TrainingPage from "@/pages/training/TrainingPage";
 import BookReportSelectPage from "@/pages/training/BookReportSelectPage";
 import BookReportChatPage from "@/pages/training/BookReportChatPage";
+import TrainingHistoryPage from "@/pages/training/TrainingHistoryPage";
 import TrainingCompletePage from "@/pages/training/TrainingCompletePage";
 import ComprehensionSelectPage from "@/pages/training/ComprehensionSelectPage";
 import ComprehensionChatPage from "@/pages/training/ComprehensionChatPage";
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="/my/liked-comments" element={<LikedCommentsPage />} />
             <Route path="/my/liked-pages" element={<LikedPagesPage />} />
             <Route path="/my/liked-pages/:bookId" element={<LikedBookPagesPage />} />
+            <Route path="/my/training-history" element={<TrainingHistoryPage />} />
             <Route path="/my/bookmarked-pages" element={<BookmarkedPagesPage />} />
             <Route path="/my/bookmarked-pages/:bookId" element={<BookmarkedBookPagesPage />} />
 

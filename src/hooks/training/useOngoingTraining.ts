@@ -8,7 +8,7 @@ import { toBookReportTraining, toComprehensionTraining } from "@/utils/training/
 export const useBookReportRoom = () =>
   useQuery({
     queryKey: ["trainings", "book-report", "latest"],
-    queryFn: ({ signal }) => getTrainingRooms(signal),
+    queryFn: ({ signal }) => getTrainingRooms({ size: 1, signal }),
     select: (data) => toBookReportTraining(data.items[0]),
   });
 

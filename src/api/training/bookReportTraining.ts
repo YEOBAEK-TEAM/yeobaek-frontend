@@ -114,9 +114,17 @@ export const getTrainingSummation = async (
 };
 
 // 최근 생성순, 같은 종류의 진행 중 방은 하나뿐이라 첫 항목이 가장 최신 상태
-export const getTrainingRooms = async (signal?: AbortSignal): Promise<TrainingRoomListResponse> => {
+export const getTrainingRooms = async ({
+  cursor,
+  size,
+  signal,
+}: {
+  cursor?: number | null;
+  size?: number;
+  signal?: AbortSignal;
+}): Promise<TrainingRoomListResponse> => {
   const response = await api.get<ApiResponse<TrainingRoomListResponse>>("/api/v1/trainings/list", {
-    params: { size: 1 },
+    params: { cursor: cursor ?? undefined, size },
     signal,
   });
   if (!response.data.success) throw new Error(response.data.message);

@@ -22,6 +22,12 @@ export default function ActivityMenu() {
         >
           북마크 페이지
         </Link>
+        <Link
+          to="/my/training-history"
+          className="rounded-full bg-[#F7F5F0] px-4 py-2 text-xs font-semibold"
+        >
+          훈련 기록
+        </Link>
       </div>
     </section>
   );
