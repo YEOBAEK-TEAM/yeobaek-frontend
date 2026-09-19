@@ -90,6 +90,7 @@ export const useTrainingMessages = (trainingRoomId: number | null) =>
       messages: toTrainingChatMessages(data.pages),
       reviewId: data.pages[0]?.reviewId ?? null,
       reviewTitle: data.pages[0]?.reviewTitle ?? "",
+      status: data.pages[0]?.status ?? null,
     }),
     enabled: trainingRoomId !== null,
     retry: retryUnlessNotFound,
@@ -118,7 +119,7 @@ export const useSendTrainingMessage = () => {
               role: "AI",
               content: reply.content,
               type: reply.messageType,
-              otherPerspective: null,
+              otherPerspectives: null,
               growthSummary: null,
               createdAt: reply.createdAt,
             },
@@ -126,7 +127,7 @@ export const useSendTrainingMessage = () => {
               role: "USER",
               content,
               type: "TEXT",
-              otherPerspective: null,
+              otherPerspectives: null,
               growthSummary: null,
               createdAt: reply.createdAt,
             },
@@ -162,6 +163,8 @@ export const useCreateTrainingSummation = () => {
         bookReportTrainingKeys.summation(summation.trainingRoomId),
         summation,
       );
+      // 훈련이 끝나 배너 상태가 바뀜
+      void queryClient.invalidateQueries({ queryKey: ["trainings", "book-report", "latest"] });
     },
   });
 };

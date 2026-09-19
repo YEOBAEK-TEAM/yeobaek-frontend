@@ -13,6 +13,7 @@ import {
   SUMMATION_ERROR_TEXT,
 } from "@/constants/training/bookReportChat";
 import { REPORT_PATH } from "@/constants/library/report";
+import { HISTORY_ENTRY_PARAM, HISTORY_ENTRY_VALUE } from "@/constants/training/trainingHistory";
 import { TRAINING_PATH } from "@/constants/training/trainingPrograms";
 import {
   useCreateTrainingSummation,
@@ -83,6 +84,9 @@ export const useBookReportChat = () => {
 
   const trainingRoomId = toId(searchParams.get(TRAINING_ROOM_PARAM));
 
+  // 훈련 기록에서 들어오면 대화를 보기만 함
+  const isReadOnly = searchParams.get(HISTORY_ENTRY_PARAM) === HISTORY_ENTRY_VALUE;
+
   const phase = useBookReportChatStore((state) => state.phase);
   const localMessages = useBookReportChatStore((state) => state.messages);
 
@@ -113,10 +117,35 @@ export const useBookReportChat = () => {
     if (trainingRoomId === null) navigate(TRAINING_PATH.bookReportSelect, { replace: true });
   }, [trainingRoomId, navigate]);
 
+  const roomStatus = messagesQuery.data?.status ?? null;
+  const historyMessages = messagesQuery.data?.messages;
+
+  // 서버 방 상태 기준으로 재진입 시 단계 복구
   useEffect(() => {
+    if (roomStatus === null || isReadOnly) return;
+
     const store = useBookReportChatStore.getState();
-    if (store.phase.type === "select") store.setPhase({ type: "chatting" });
-  }, [trainingRoomId]);
+    if (store.phase.type !== "select" && store.phase.type !== "chatting") return;
+
+    if (roomStatus === "GROWTH_PROMPT") {
+      store.setPhase({ type: "perspectivePrompt" });
+      return;
+    }
+
+    if (roomStatus === "COMPLETED") {
+      // 요약 카드는 이력에 남아 있어 그 값으로 복구
+      const summary = historyMessages?.findLast((message) => message.kind === "thoughtSummary");
+
+      store.setPhase(
+        summary?.kind === "thoughtSummary"
+          ? { type: "summary", thought: summary.thought }
+          : { type: "chatting" },
+      );
+      return;
+    }
+
+    store.setPhase({ type: "chatting" });
+  }, [roomStatus, historyMessages, isReadOnly]);
 
   // 없거나 권한 없는 훈련방이면 훈련 페이지로 이동
   useEffect(() => {
@@ -310,10 +339,14 @@ export const useBookReportChat = () => {
   }, [navigate, reviewId]);
 
   // 뒤로가기 이탈 처리
-  const leaveChat = useCallback(
-    () => (location.key === "default" ? navigate(TRAINING_PATH.main) : navigate(-1)),
-    [location.key, navigate],
-  );
+  const leaveChat = useCallback(() => {
+    if (isReadOnly) {
+      navigate(TRAINING_PATH.history, { replace: true });
+      return;
+    }
+
+    return location.key === "default" ? navigate(TRAINING_PATH.main) : navigate(-1);
+  }, [isReadOnly, location.key, navigate]);
 
   const handleQuickReply = useCallback(
     async (reply: ChatQuickReply) => {
@@ -340,6 +373,7 @@ export const useBookReportChat = () => {
 
   return {
     phase,
+    isReadOnly,
     messages,
     pinnedReport,
     reviewTitle: messagesQuery.data?.reviewTitle ?? "",

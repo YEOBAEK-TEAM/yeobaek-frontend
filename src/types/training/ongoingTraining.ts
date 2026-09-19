@@ -1,29 +1,15 @@
 import type { TrainingProgramId } from "@/types/training/trainingProgram";
 
-// 방이 없으면 null, 4·5순위에 해당
-export type TrainingRoomType = "TRAINING" | "UNDERSTAND";
+export type TrainingStatus = "in-progress" | "completed";
 
-export type TrainingRoomStatus = "IN_PROGRESS" | "COMPLETED";
-
-export type TrainingRecommendResponse = {
-  roomType: TrainingRoomType | null;
-  roomId: number | null;
-  bookId: number | null;
-  bookTitle: string | null;
-  // roomType이 TRAINING이거나 추천일 때만 채워짐
-  reviewId: number | null;
-  bookmarkId: number | null;
-  status: TrainingRoomStatus | null;
-};
-
-export type TrainingStatus = "in-progress" | "completed" | "empty";
-
+// 훈련 종류별 최근 방 하나
 export type OngoingTraining = {
-  roomId: number | null;
-  reviewId: number | null;
+  roomId: number;
+  // 같은 내용으로 다시 시작하는지 판단하는 값
+  targetKey: string;
   status: TrainingStatus;
-  programId: TrainingProgramId | null;
-  bookTitle: string | null;
+  programId: TrainingProgramId;
+  bookTitle: string;
 };
 
 // 배너 표시용 데이터

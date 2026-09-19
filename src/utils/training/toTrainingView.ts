@@ -22,8 +22,8 @@ export const toThoughtComparison = (summation: TrainingSummationResponse): Thoug
 });
 
 const toChatMessage = (item: TrainingMessageItemResponse, id: string): BookReportMessage => {
-  if (item.type === "OTHER_PERSPECTIVE" && item.otherPerspective) {
-    return { id, role: "riti", kind: "perspectiveCard", perspective: item.otherPerspective };
+  if (item.type === "OTHER_PERSPECTIVE" && item.otherPerspectives?.length) {
+    return { id, role: "riti", kind: "perspectiveCard", perspectives: item.otherPerspectives };
   }
 
   if (item.type === "GROWTH_SUMMARY" && item.growthSummary) {

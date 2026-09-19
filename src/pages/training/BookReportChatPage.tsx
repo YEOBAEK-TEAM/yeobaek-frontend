@@ -21,6 +21,7 @@ export default function BookReportChatPage() {
 
   const {
     phase,
+    isReadOnly,
     messages,
     pinnedReport,
     reviewTitle,
@@ -41,7 +42,8 @@ export default function BookReportChatPage() {
   const isTrainingStarted = phase.type !== "select";
 
   const handleBack = () => {
-    if (phase.type === "ended") {
+    // 기록 열람은 확인 없이 바로 나감
+    if (isReadOnly || phase.type === "ended") {
       leaveChat();
       return;
     }
@@ -69,7 +71,7 @@ export default function BookReportChatPage() {
         onRetry={retryMessage}
       />
 
-      {phase.type === "summary" && (
+      {!isReadOnly && phase.type === "summary" && (
         <ChatActionButtons
           actions={[
             {
@@ -88,7 +90,7 @@ export default function BookReportChatPage() {
         />
       )}
 
-      {phase.type !== "summary" && phase.type !== "ended" && (
+      {!isReadOnly && phase.type !== "summary" && phase.type !== "ended" && (
         <ChatInput disabled={!isChatReady || isReplying} onSend={sendMessage} />
       )}
 

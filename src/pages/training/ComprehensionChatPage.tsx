@@ -3,60 +3,61 @@ import { useNavigate } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
 import ComprehensionMessageList from "@/components/training/comprehension/ComprehensionMessageList";
-import ConnectionStatusBanner from "@/components/training/comprehension/ConnectionStatusBanner";
 import ChatActionButtons from "@/components/training/shared/chat/ChatActionButtons";
 import ChatInput from "@/components/training/shared/chat/ChatInput";
 import PinnedBookSummary from "@/components/training/shared/chat/PinnedBookSummary";
-import { COMPREHENSION_TITLE } from "@/constants/training/comprehensionChat";
+import {
+  COMPREHENSION_END_ANSWER,
+  COMPREHENSION_TITLE,
+} from "@/constants/training/comprehensionChat";
+import { TRAINING_PATH } from "@/constants/training/trainingPrograms";
 import { useComprehensionChat } from "@/hooks/training/useComprehensionChat";
-import { useBookmarks, useLibraryBooks } from "@/hooks/training/useComprehensionLibrary";
-import { formatPageRange } from "@/utils/training/formatPageRange";
+
+// 종료 후 요약 화면으로 넘어가기 전 마무리 대사 노출
+const ENDED_REDIRECT_MS = 1500;
 
 export default function ComprehensionChatPage() {
   const navigate = useNavigate();
 
   const {
     phase,
-    status,
+    isReadOnly,
     messages,
-    selection,
+    book,
     isWaiting,
+    isChatReady,
     sendMessage,
     handleQuickReply,
     retryMessage,
     answerConfirmEnd,
-    continueAnotherTopic,
-    retryConnection,
+    goSummary,
   } = useComprehensionChat();
 
-  const { data: books = [] } = useLibraryBooks();
-  const { data: bookmarks = [] } = useBookmarks();
-
-  // 선택 정보 없이 들어오면 선택 화면으로 되돌림
   useEffect(() => {
-    if (!selection) navigate("/training/comprehension", { replace: true });
-  }, [selection, navigate]);
+    if (isReadOnly || phase.type !== "ended") return;
 
-  const bookmark = selection?.bookmarkId
-    ? bookmarks.find((item) => item.bookmarkId === selection.bookmarkId)
-    : undefined;
+    const timer = window.setTimeout(() => void goSummary(), ENDED_REDIRECT_MS);
 
-  const pinned = bookmark ?? books.find((item) => item.bookId === selection?.bookId);
+    return () => window.clearTimeout(timer);
+  }, [isReadOnly, phase.type, goSummary]);
 
   return (
     <main className="flex h-dvh flex-col">
-      <Header title={COMPREHENSION_TITLE} onBack={() => navigate(-1)} />
+      <Header
+        title={COMPREHENSION_TITLE}
+        onBack={() =>
+          navigate(isReadOnly ? TRAINING_PATH.history : TRAINING_PATH.main, { replace: true })
+        }
+      />
 
-      {pinned && (
+      {book && (
         <PinnedBookSummary
-          coverUrl={pinned.coverUrl}
-          title={pinned.title}
-          subtitle={pinned.author}
-          pageRange={bookmark ? formatPageRange(bookmark.startPage, bookmark.endPage) : undefined}
+          coverUrl={book.coverUrl}
+          title={book.title}
+          subtitle={book.author}
+          pageRange={book.pageLabel}
         />
       )}
-
-      <ConnectionStatusBanner status={status} onRetry={retryConnection} />
 
       <ComprehensionMessageList
         messages={messages}
@@ -64,28 +65,27 @@ export default function ComprehensionChatPage() {
         onRetry={retryMessage}
       />
 
-      {phase.type === "confirmEnd" && (
+      {!isReadOnly && phase.type === "confirmEnd" && (
         <ChatActionButtons
           actions={[
             {
               id: "decline",
-              label: "아니요",
+              label: COMPREHENSION_END_ANSWER.decline,
               variant: "primary",
-              onClick: () => answerConfirmEnd(false),
+              onClick: () => void answerConfirmEnd(false),
             },
-            { id: "accept", label: "예", variant: "dark", onClick: () => answerConfirmEnd(true) },
             {
-              id: "another",
-              label: "다른 주제로 이어가기",
-              variant: "outline",
-              onClick: continueAnotherTopic,
+              id: "accept",
+              label: COMPREHENSION_END_ANSWER.accept,
+              variant: "dark",
+              onClick: () => void answerConfirmEnd(true),
             },
           ]}
         />
       )}
 
-      {phase.type !== "confirmEnd" && phase.type !== "ended" && (
-        <ChatInput disabled={isWaiting || phase.type === "connecting"} onSend={sendMessage} />
+      {!isReadOnly && phase.type !== "confirmEnd" && phase.type !== "ended" && (
+        <ChatInput disabled={!isChatReady || isWaiting} onSend={sendMessage} />
       )}
     </main>
   );

@@ -28,6 +28,7 @@ export const getRoomMessages = async (
 
   return {
     messages: data.items.toReversed().map(toRoomMessage),
+    myUserId: data.myUserId,
     nextCursor: data.hasNext ? data.nextCursor : null,
     lastReadAt: data.lastReadAt,
   };

@@ -5,8 +5,11 @@ import BookCover from "@/components/common/bookCover/BookCover";
 import Header from "@/components/common/header/Header";
 import SectionState from "@/components/common/section/SectionState";
 import ConfirmModal from "@/components/common/confirmModal/ConfirmModal";
+import NoticeModal from "@/components/training/discussion/shared/NoticeModal";
 import AnalyzingOverlay from "@/components/training/bookReport/AnalyzingOverlay";
 import {
+  getAnalyzingReportText,
+  ONGOING_TRAINING_BLOCKED_TEXT,
   ONGOING_TRAINING_CONFIRM_TEXT,
   REPORT_SELECT_SECTION_TITLE,
   REPORT_SELECT_SUBMIT_LABEL,
@@ -16,7 +19,7 @@ import {
 } from "@/constants/training/bookReportChat";
 import { TRAINING_PATH } from "@/constants/training/trainingPrograms";
 import { useInfiniteSentinel } from "@/hooks/training/discussion/useInfiniteSentinel";
-import { useOngoingTraining } from "@/hooks/training/useOngoingTraining";
+import { useBookReportRoom } from "@/hooks/training/useOngoingTraining";
 import {
   useStartTraining,
   useTrainingReviews,
@@ -44,17 +47,17 @@ export default function BookReportSelectPage() {
   const startTraining = useStartTraining();
 
   // 훈련은 한 번에 하나만 진행, 이미 있으면 그 방으로 안내
-  const { data: ongoing } = useOngoingTraining();
+  const { data: latestRoom } = useBookReportRoom();
 
-  const ongoingRoomId =
-    ongoing?.status === "in-progress" && ongoing.programId === "book-report"
-      ? ongoing.roomId
-      : null;
+  const ongoingRoom = latestRoom?.status === "in-progress" ? latestRoom : null;
 
-  const [isOngoingConfirmOpen, setIsOngoingConfirmOpen] = useState(false);
+  // 같은 독후감이면 이어가기, 다른 독후감이면 차단
+  const [ongoingAction, setOngoingAction] = useState<"continue" | "blocked" | null>(null);
 
   const goOngoingRoom = () =>
-    navigate(`${TRAINING_PATH.bookReportChat}?trainingRoomId=${ongoingRoomId}`, { replace: true });
+    navigate(`${TRAINING_PATH.bookReportChat}?trainingRoomId=${ongoingRoom?.roomId}`, {
+      replace: true,
+    });
 
   const sentinelRef = useInfiniteSentinel({
     hasNextPage,
@@ -67,8 +70,8 @@ export default function BookReportSelectPage() {
   const start = () => {
     if (selectedId === null || startTraining.isPending) return;
 
-    if (ongoingRoomId !== null) {
-      setIsOngoingConfirmOpen(true);
+    if (ongoingRoom) {
+      setOngoingAction(ongoingRoom.targetKey === String(selectedId) ? "continue" : "blocked");
       return;
     }
 
@@ -159,12 +162,19 @@ export default function BookReportSelectPage() {
         </button>
       </div>
 
-      {startTraining.isPending && <AnalyzingOverlay nickname={nickname} />}
+      {startTraining.isPending && <AnalyzingOverlay text={getAnalyzingReportText(nickname)} />}
 
-      {isOngoingConfirmOpen && (
-        <ConfirmModal onConfirm={goOngoingRoom} onClose={() => setIsOngoingConfirmOpen(false)}>
+      {ongoingAction === "continue" && (
+        <ConfirmModal onConfirm={goOngoingRoom} onClose={() => setOngoingAction(null)}>
           {ONGOING_TRAINING_CONFIRM_TEXT}
         </ConfirmModal>
+      )}
+
+      {ongoingAction === "blocked" && (
+        <NoticeModal
+          message={ONGOING_TRAINING_BLOCKED_TEXT}
+          onClose={() => setOngoingAction(null)}
+        />
       )}
     </main>
   );

@@ -8,7 +8,7 @@ export type ThoughtComparison = {
 
 export type BookReportMessage =
   | ChatBaseMessage
-  | { id: string; role: "riti"; kind: "perspectiveCard"; perspective: OtherPerspectiveResponse }
+  | { id: string; role: "riti"; kind: "perspectiveCard"; perspectives: OtherPerspectiveResponse[] }
   | { id: string; role: "riti"; kind: "thoughtSummary"; thought: ThoughtComparison };
 
 export type ChatPhase =

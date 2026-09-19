@@ -61,6 +61,8 @@ export const getMemberJoinedNotice = (nickname: string, withRule: boolean) =>
     withRule ? ". 방 규칙을 지키지 않을 시 방장권한으로 강제퇴장이 가능합니다." : ""
   }`;
 
+export const getMemberLeftNotice = (nickname: string) => `${nickname}님이 방을 나갔습니다`;
+
 export const getMemberKickedNotice = (nickname: string) =>
   `${nickname}님이 방장에 의해 퇴장되었습니다`;
 

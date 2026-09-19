@@ -2,6 +2,7 @@ import { ChevronRight } from "lucide-react";
 
 import BookCover from "@/components/common/bookCover/BookCover";
 import TagList from "@/components/training/discussion/shared/TagList";
+import { ROOM_PRIVATE_SUFFIX } from "@/constants/training/discussion/room";
 
 import type { RoomSummaryView } from "@/types/training/discussion/room";
 
@@ -23,7 +24,12 @@ export default function RoomListItem({ room, onSelect }: RoomListItemProps) {
       <BookCover src={room.coverUrl} className="h-18 w-12 shrink-0" />
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[17px] leading-6 text-[#4F4D4E]">{room.title}</p>
+        <p className="truncate text-[17px] leading-6 text-[#4F4D4E]">
+          {room.title}
+          {room.visibility === "private" && (
+            <span className="ml-1 text-[#8F8B85]">{ROOM_PRIVATE_SUFFIX}</span>
+          )}
+        </p>
         <p className="text-[15px] leading-6 text-[#4F4D4E]">{room.participantText}</p>
 
         <TagList tags={room.tags} maxVisible={MAX_VISIBLE_TAGS} className="mt-1.5" />

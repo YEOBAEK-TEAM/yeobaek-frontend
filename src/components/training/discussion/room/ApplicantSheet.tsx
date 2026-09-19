@@ -9,6 +9,7 @@ import {
   useApproveApplicant,
   useRejectApplicant,
 } from "@/hooks/training/discussion/useRoomMutations";
+import { useInfiniteSentinel } from "@/hooks/training/discussion/useInfiniteSentinel";
 import { useRoomApplicants } from "@/hooks/training/discussion/useRoomQueries";
 
 type ApplicantSheetProps = {
@@ -19,7 +20,17 @@ type ApplicantSheetProps = {
 export default function ApplicantSheet({ roomId, onClose }: ApplicantSheetProps) {
   const titleId = useId();
 
-  const { data = [], isPending, isError, refetch } = useRoomApplicants(roomId, true);
+  const { data, isPending, isError, refetch, hasNextPage, isFetchingNextPage, fetchNextPage } =
+    useRoomApplicants(roomId, true);
+
+  const applicants = data?.applicants ?? [];
+
+  const sentinelRef = useInfiniteSentinel({
+    hasNextPage,
+    isFetchingNextPage,
+    isError,
+    fetchNextPage,
+  });
 
   const approve = useApproveApplicant();
   const reject = useRejectApplicant();
@@ -37,11 +48,11 @@ export default function ApplicantSheet({ roomId, onClose }: ApplicantSheetProps)
           <div className="mt-3">
             <SectionState isError={isError} onRetry={() => void refetch()} className="h-32" />
           </div>
-        ) : data.length === 0 ? (
+        ) : applicants.length === 0 ? (
           <EmptyMessage text={APPLICANT_SHEET.emptyText} className="py-14" />
         ) : (
           <ul className="mt-2 max-h-80 overflow-y-auto">
-            {data.map((applicant) => (
+            {applicants.map((applicant) => (
               <li key={applicant.memberId} className="flex items-center gap-3 px-2 py-2.5">
                 <ProfileAvatar src={applicant.imageUrl} className="h-10 w-10" />
 
@@ -73,6 +84,12 @@ export default function ApplicantSheet({ roomId, onClose }: ApplicantSheetProps)
                 </div>
               </li>
             ))}
+
+            {hasNextPage && (
+              <li>
+                <div ref={sentinelRef} className="h-14 animate-pulse rounded-xl bg-[#F2F0EA]" />
+              </li>
+            )}
           </ul>
         )}
       </div>

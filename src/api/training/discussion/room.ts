@@ -67,7 +67,7 @@ export const getRooms = ({
     ? requestRoomApi(() =>
         api.get<ApiResponse<PageResponse<DiscussionRoomResponse>>>(
           "/api/v1/discussion-rooms/search",
-          { params: { keyword, page }, signal },
+          { params: { keyword, sort: ROOM_SORT[filter], page }, signal },
         ),
       )
     : requestRoomApi(() =>
@@ -128,11 +128,19 @@ export const joinRoomByCode = (inviteCode: string) =>
     "INVALID_CODE",
   );
 
-export const getRoomApplicants = (roomId: number, signal?: AbortSignal) =>
+export const getRoomApplicants = ({
+  roomId,
+  page,
+  signal,
+}: {
+  roomId: number;
+  page: number;
+  signal?: AbortSignal;
+}) =>
   requestRoomApi(() =>
-    api.get<ApiResponse<DiscussionRoomApplicantResponse[]>>(
+    api.get<ApiResponse<PageResponse<DiscussionRoomApplicantResponse>>>(
       `/api/v1/discussion-rooms/${roomId}/applicants`,
-      { signal },
+      { params: { page }, signal },
     ),
   );
 
