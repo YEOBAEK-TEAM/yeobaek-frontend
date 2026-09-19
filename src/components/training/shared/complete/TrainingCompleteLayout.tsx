@@ -27,7 +27,7 @@ export default function TrainingCompleteLayout({
 }: TrainingCompleteLayoutProps) {
   return (
     <main className="flex min-h-dvh flex-col">
-      <div className="flex-1 pt-24">
+      <div className="flex-1 pt-14">
         <div className="mx-auto flex w-56 flex-col items-center">
           <div className="relative flex h-56 w-56 items-end justify-center">
             {/* 캐릭터 뒤 원형 글로우 */}

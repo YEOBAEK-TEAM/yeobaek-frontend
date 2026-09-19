@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from "react";
+﻿import { useSheetSlideIn } from "@/hooks/common/useSheetSlideIn";
 import type { ReadingDay } from "@/types/my";
 import { dayPages } from "../myUtils";
 export default function ReadingRecordSheet({
@@ -8,27 +8,18 @@ export default function ReadingRecordSheet({
   day: ReadingDay;
   onClose: () => void;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const dialog = ref.current;
-    const previous = document.activeElement;
-    const overflow = document.body.style.overflow;
-    dialog?.showModal();
-    document.body.style.overflow = "hidden";
-    return () => {
-      dialog?.close();
-      document.body.style.overflow = overflow;
-      if (previous instanceof HTMLElement) previous.focus();
-    };
-  }, []);
+  const { dialogRef, sheetStyle, backdropClassName, requestClose } = useSheetSlideIn(onClose, {
+    lockScroll: true,
+  });
   const date = new Date(`${day.date}T12:00:00`);
   return (
     <dialog
-      ref={ref}
+      ref={dialogRef}
       aria-labelledby="reading-day-title"
+      style={sheetStyle}
       onCancel={(event) => {
         event.preventDefault();
-        onClose();
+        requestClose();
       }}
       onClick={(event) => {
         if (event.target === event.currentTarget) {
@@ -38,10 +29,10 @@ export default function ReadingRecordSheet({
             event.clientX < bounds.left ||
             event.clientX > bounds.right
           )
-            onClose();
+            requestClose();
         }
       }}
-      className="fixed inset-x-0 top-auto bottom-0 mx-auto max-h-[75dvh] w-full max-w-97.5 overflow-y-auto rounded-t-3xl border-0 bg-[#FFFEFB] p-0 text-[#30201D] backdrop:bg-black/35"
+      className={`fixed inset-x-0 top-auto bottom-0 mx-auto max-h-[75dvh] w-full max-w-97.5 overflow-y-auto rounded-t-3xl border-0 bg-[#FFFEFB] p-0 text-[#30201D] ${backdropClassName}`}
     >
       <div className="mx-auto mt-5 h-2 w-24 rounded-full bg-[#E5E1DC]" />
       <div className="flex items-center justify-between px-7 py-5">

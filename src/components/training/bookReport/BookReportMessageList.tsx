@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 
 import PerspectiveCard from "@/components/training/bookReport/PerspectiveCard";
 import ThoughtCompareBubble from "@/components/training/bookReport/ThoughtCompareBubble";
@@ -32,16 +32,6 @@ export default function BookReportMessageList({
 }: BookReportMessageListProps) {
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = olderMessages;
 
-  // 이력이 도착한 시점을 기준으로 삼아 지난 대화는 한 번에 보여줌
-  const [seenIds, setSeenIds] = useState<Set<string> | null>(null);
-
-  if (seenIds === null && messages.length > 0) {
-    setSeenIds(new Set(messages.map((message) => message.id)));
-  }
-
-  // 글자가 늘어날 때마다 스크롤을 따라가게 하는 신호
-  const [typingTick, setTypingTick] = useState(0);
-
   const topRef = useRef<HTMLDivElement>(null);
   // 이전 대화 추가 전 아래 끝 기준 스크롤 거리
   const bottomOffsetRef = useRef<number | null>(null);
@@ -74,7 +64,7 @@ export default function BookReportMessageList({
   }, [messages, isFetchingNextPage]);
 
   return (
-    <MessageScroller dependency={`${messages.length}:${typingTick}`}>
+    <MessageScroller dependency={messages}>
       <div ref={topRef} aria-hidden="true" className="h-px" />
 
       {messages.map((message) => {
@@ -100,8 +90,6 @@ export default function BookReportMessageList({
             message={message}
             onQuickReply={onQuickReply}
             onRetry={onRetry}
-            isTyped={message.role === "riti" && seenIds !== null && !seenIds.has(message.id)}
-            onTypingTick={() => setTypingTick((tick) => tick + 1)}
           />
         );
       })}
