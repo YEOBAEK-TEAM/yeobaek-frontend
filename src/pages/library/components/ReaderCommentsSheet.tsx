@@ -1,14 +1,11 @@
-﻿import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import CommentEditForm from "./CommentEditForm";
+import CommentReactionButtons from "./CommentReactionButtons";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import type { ReaderComment } from "../utils/useReaderData";
+import type { ReaderComment } from "../types/readerComment";
 
-import { readerUser } from "../../../mocks/readerUser";
+import ProfileImage from "@/components/my/ProfileImage";
 import CommentConfirmModal from "./CommentConfirmModal";
-
-const editButtonClass =
-  "min-h-7 rounded border border-[#909090] bg-transparent text-[#F7F6F1] active:text-white";
-const saveButtonClass = `${editButtonClass} active:bg-[#777777]`;
-const cancelButtonClass = `${editButtonClass} active:bg-[#493d3c]`;
 
 type Props = {
   comments: ReaderComment[];
@@ -178,8 +175,11 @@ export default function ReaderCommentsSheet({
   const shown = parent
     ? [parent]
     : apiState
-      ? comments
+      ? tab === "popular"
+        ? comments.filter((comment) => (comment.likes ?? 0) > 0)
+        : comments
       : comments
+          .filter((comment) => tab !== "popular" || (comment.likes ?? 0) > 0)
           .filter((comment) => tab !== "fan" || comment.user?.isFan)
           .sort((a, b) => {
             if (tab === "popular" && (a.likes ?? 0) !== (b.likes ?? 0)) {
@@ -239,7 +239,7 @@ export default function ReaderCommentsSheet({
         <header className="flex shrink-0 items-center justify-between px-7 pt-5 pb-3">
           <h2 id="reader-comments-title" className="text-xl font-semibold">
             {parent
-              ? `답글 (${apiState?.total ?? threadReplies.length})`
+              ? `답글 (${parent.replyCount ?? threadReplies.length})`
               : `댓글 (${apiState?.total ?? comments.length})`}
           </h2>
 
@@ -316,7 +316,11 @@ export default function ReaderCommentsSheet({
           )}
           {!parent && shown.length === 0 && !apiState?.loading && !apiState?.error && (
             <p className="px-7 py-10 text-center text-sm text-[#A3A3A3]">
-              {tab === "fan" ? "아직 찐팬 댓글이 없습니다." : "이 페이지에 첫 의견을 남겨보세요."}
+              {tab === "popular"
+                ? "아직 인기 댓글이 없습니다."
+                : tab === "fan"
+                  ? "아직 찐팬 댓글이 없습니다."
+                  : "이 페이지에 첫 의견을 남겨보세요."}
             </p>
           )}
 
@@ -326,14 +330,14 @@ export default function ReaderCommentsSheet({
               <div className="flex gap-4">
                 {/* Profile */}
                 <div className="flex w-12 shrink-0 flex-col items-center gap-3">
-                  <img
-                    src={comment.user?.profileImage || readerUser.profileImage}
+                  <ProfileImage
+                    src={comment.user?.profileImage}
                     alt=""
                     className="h-12 w-12 rounded-full object-cover"
                   />
 
-                  {(comment.likes ?? 0) >= 10 && (
-                    <span className="rounded-full border border-[#F7F6F1] px-2 text-sm text-[#F7F6F1]">
+                  {tab === "popular" && (comment.likes ?? 0) > 0 && (
+                    <span className="rounded-full border border-[#F7F6F1] px-2 py-0.5 text-xs font-semibold text-[#F7F6F1]">
                       BEST
                     </span>
                   )}
@@ -350,63 +354,28 @@ export default function ReaderCommentsSheet({
 
                   {/* 문장 댓글 quote */}
                   {comment.quote && (
-                    <p title={comment.quote} className="mt-2 truncate text-sm text-[#A3A3A3]">
+                    <p
+                      title={comment.quote}
+                      className="mt-2 line-clamp-2 text-xs break-words text-[#C7C7C7]"
+                    >
                       {comment.quote}
                     </p>
                   )}
 
                   {/* 수정 모드 */}
                   {editingId === comment.id ? (
-                    <form
-                      className="mt-2"
-                      onSubmit={async (event) => {
-                        event.preventDefault();
-
-                        if (!editText.trim() || editText.length > 200) {
-                          return;
-                        }
-
-                        if (apiState?.pending || (await onEdit(comment.id, editText)) === false)
-                          return;
-
+                    <CommentEditForm
+                      value={editText}
+                      label="댓글 수정"
+                      pending={apiState?.pending}
+                      onChange={setEditText}
+                      onCancel={() => setEditingId(undefined)}
+                      onSave={async () => {
+                        if ((await onEdit(comment.id, editText)) === false) return;
                         setEditingId(undefined);
                         setNotice("댓글이 수정되었습니다.");
                       }}
-                    >
-                      <div className="bg-[#606060] px-2 pt-2 pb-1">
-                        <textarea
-                          autoFocus
-                          aria-label="댓글 수정"
-                          className="min-h-16 w-full resize-y bg-transparent text-sm leading-5 outline-none"
-                          maxLength={200}
-                          value={editText}
-                          readOnly={apiState?.pending}
-                          onChange={(event) => setEditText(event.target.value)}
-                        />
-
-                        <div className="text-right text-[10px] text-[#A3A3A3]" aria-live="polite">
-                          {editText.length}/200
-                        </div>
-                      </div>
-
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                        <button
-                          type="submit"
-                          disabled={apiState?.pending || !editText.trim() || editText.length > 200}
-                          className={saveButtonClass}
-                        >
-                          수정완료
-                        </button>
-
-                        <button
-                          type="button"
-                          className={cancelButtonClass}
-                          onClick={() => setEditingId(undefined)}
-                        >
-                          취소하기
-                        </button>
-                      </div>
-                    </form>
+                    />
                   ) : (
                     <p
                       className={`${
@@ -518,38 +487,15 @@ export default function ReaderCommentsSheet({
                   </button>
 
                   <div className="flex gap-2">
-                    {(["like", "dislike"] as const).map((vote) => (
-                      <button
-                        type="button"
-                        key={vote}
-                        aria-label={vote === "like" ? "좋아요" : "싫어요"}
-                        aria-pressed={
-                          apiState ? apiState.reaction(comment.id, vote) : comment.myVote === vote
-                        }
-                        disabled={apiState?.pending}
-                        className={`flex items-center gap-1 rounded border border-[#808080] px-1.5 py-1 ${
-                          (apiState ? apiState.reaction(comment.id, vote) : comment.myVote === vote)
-                            ? "bg-[#777777] text-white hover:bg-[#777777] active:bg-[#777777] focus:bg-[#777777]"
-                            : "bg-transparent text-[#909090] hover:bg-transparent active:bg-transparent focus:bg-transparent"
-                        }`}
-                        onClick={() => onVote(comment.id, vote)}
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          className={vote === "dislike" ? "rotate-180" : undefined}
-                          aria-hidden="true"
-                        >
-                          <path d="M2 10h4v12H2zm6 0 5-8c3 0 3 3 2 6h5c2 0 2 2 2 3l-2 9c0 1-1 2-3 2H8z" />
-                        </svg>
-
-                        <span className="text-[#F7F6F1]">
-                          {(vote === "like" ? comment.likes : comment.dislikes) ?? 0}
-                        </span>
-                      </button>
-                    ))}
+                    <CommentReactionButtons
+                      likes={comment.likes}
+                      dislikes={comment.dislikes}
+                      pending={apiState?.pending}
+                      reaction={(vote) =>
+                        apiState ? apiState.reaction(comment.id, vote) : comment.myVote === vote
+                      }
+                      onVote={(vote) => onVote(comment.id, vote)}
+                    />
                   </div>
                 </div>
               )}
@@ -575,8 +521,8 @@ export default function ReaderCommentsSheet({
                 </span>
 
                 {/* 프로필 */}
-                <img
-                  src={reply.user?.profileImage || readerUser.profileImage}
+                <ProfileImage
+                  src={reply.user?.profileImage}
                   alt=""
                   className="h-10 w-10 shrink-0 rounded-full object-cover"
                 />
@@ -592,56 +538,18 @@ export default function ReaderCommentsSheet({
 
                   {/* 답글 수정 */}
                   {editingId === reply.id ? (
-                    <form
-                      className="mt-2"
-                      onSubmit={async (event) => {
-                        event.preventDefault();
-
-                        if (!editText.trim() || editText.length > 200) {
-                          return;
-                        }
-
-                        if (apiState?.pending || (await onEdit(reply.id, editText)) === false)
-                          return;
-
+                    <CommentEditForm
+                      value={editText}
+                      label="답글 수정"
+                      pending={apiState?.pending}
+                      onChange={setEditText}
+                      onCancel={() => setEditingId(undefined)}
+                      onSave={async () => {
+                        if ((await onEdit(reply.id, editText)) === false) return;
                         setEditingId(undefined);
                         setNotice("답글이 수정되었습니다.");
                       }}
-                    >
-                      <div className="bg-[#606060] px-2 pt-2 pb-1">
-                        <textarea
-                          autoFocus
-                          aria-label="답글 수정"
-                          className="min-h-16 w-full resize-y bg-transparent text-sm leading-5 outline-none"
-                          maxLength={200}
-                          value={editText}
-                          readOnly={apiState?.pending}
-                          onChange={(event) => setEditText(event.target.value)}
-                        />
-
-                        <div className="text-right text-[10px] text-[#A3A3A3]" aria-live="polite">
-                          {editText.length}/200
-                        </div>
-                      </div>
-
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                        <button
-                          type="submit"
-                          disabled={apiState?.pending || !editText.trim() || editText.length > 200}
-                          className={saveButtonClass}
-                        >
-                          수정완료
-                        </button>
-
-                        <button
-                          type="button"
-                          className={cancelButtonClass}
-                          onClick={() => setEditingId(undefined)}
-                        >
-                          취소하기
-                        </button>
-                      </div>
-                    </form>
+                    />
                   ) : (
                     <p className="mt-2 whitespace-pre-wrap break-words leading-5">{reply.text}</p>
                   )}
@@ -649,36 +557,15 @@ export default function ReaderCommentsSheet({
                   {/* 답글 좋아요 / 싫어요 */}
                   {editingId !== reply.id && (
                     <div className="mt-4 flex justify-end gap-2 text-xs font-semibold text-[#909090]">
-                      {(["like", "dislike"] as const).map((vote) => (
-                        <button
-                          type="button"
-                          key={vote}
-                          aria-label={vote === "like" ? "좋아요" : "싫어요"}
-                          aria-pressed={apiState ? undefined : reply.myVote === vote}
-                          disabled={!!apiState}
-                          className={`flex items-center gap-1 rounded border border-[#808080] px-1.5 py-1 ${
-                            reply.myVote === vote
-                              ? "bg-[#777777] text-white hover:bg-[#777777] active:bg-[#777777] focus:bg-[#777777]"
-                              : "bg-transparent text-[#909090] hover:bg-transparent active:bg-transparent focus:bg-transparent"
-                          }`}
-                          onClick={() => onVote(reply.id, vote)}
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            className={vote === "dislike" ? "rotate-180" : undefined}
-                            aria-hidden="true"
-                          >
-                            <path d="M2 10h4v12H2zm6 0 5-8c3 0 3 3 2 6h5c2 0 2 2 2 3l-2 9c0 1-1 2-3 2H8z" />
-                          </svg>
-
-                          <span className="text-[#F7F6F1]">
-                            {(vote === "like" ? reply.likes : reply.dislikes) ?? 0}
-                          </span>
-                        </button>
-                      ))}
+                      <CommentReactionButtons
+                        likes={reply.likes}
+                        dislikes={reply.dislikes}
+                        pending={apiState?.pending}
+                        reaction={(vote) =>
+                          apiState ? apiState.reaction(reply.id, vote) : reply.myVote === vote
+                        }
+                        onVote={(vote) => onVote(reply.id, vote)}
+                      />
                     </div>
                   )}
                 </div>
@@ -779,12 +666,7 @@ export default function ReaderCommentsSheet({
 
             scrollToNewReply.current = !!parent;
 
-            if (
-              apiState?.pending ||
-              (!!apiState && !parent) ||
-              (await onSubmit(draft.trim(), parent?.id)) === false
-            )
-              return;
+            if (apiState?.pending || (await onSubmit(draft.trim(), parent?.id)) === false) return;
 
             setDraft("");
 
@@ -798,16 +680,9 @@ export default function ReaderCommentsSheet({
               ref={inputRef}
               className="min-w-0 flex-1 rounded-full border border-[#B4B4B4] bg-[#F7F6F1] px-5 py-3 text-sm text-[#4F4D4E] outline-none placeholder:text-[#b4b4b4]"
               aria-label={parent ? "답글 내용" : "댓글 내용"}
-              placeholder={
-                parent
-                  ? "답글을 남겨주세요"
-                  : apiState
-                    ? "본문의 문장을 선택해 댓글을 남겨주세요"
-                    : "댓글을 남겨주세요"
-              }
+              placeholder={parent ? "답글을 남겨주세요" : "댓글을 남겨주세요"}
               maxLength={parent ? 200 : 2000}
               value={draft}
-              disabled={!!apiState && !parent}
               readOnly={apiState?.pending}
               onChange={(event) => setDraft(event.target.value)}
               onCompositionStart={() => {
@@ -830,7 +705,7 @@ export default function ReaderCommentsSheet({
 
             <button
               type="submit"
-              disabled={!draft.trim() || apiState?.pending || (!!apiState && !parent)}
+              disabled={!draft.trim() || apiState?.pending}
               aria-label={parent ? "답글 전송" : "댓글 전송"}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#B4B4B4] bg-[#F7F6F1] text-[#4F4D4E] disabled:!opacity-100 disabled:text-[#b4b4b4]"
             >

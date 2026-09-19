@@ -1,5 +1,18 @@
 import { api } from "@/api/axios";
 import type { ApiResponse } from "@/types/auth";
+import type { ActivityLikedCommentList } from "@/types/activity";
+
+export const getLikedComments = async (cursor?: number, signal?: AbortSignal) => {
+  const response = await api.get<ApiResponse<ActivityLikedCommentList>>(
+    "/api/v1/activity/comments",
+    {
+      params: { type: "LIKE", size: 20, ...(cursor === undefined ? {} : { cursor }) },
+      signal,
+    },
+  );
+  if (!response.data.success) throw new Error(response.data.message);
+  return response.data.data;
+};
 import type {
   ActivityPageList,
   ActivityPageParams,

@@ -1,3 +1,4 @@
+import { activityKeys } from "@/hooks/queryKeys/activityKeys";
 import { useQuery } from "@tanstack/react-query";
 import {
   getLikedPages,
@@ -33,28 +34,28 @@ async function getAllPages(
 
 export const useLikedPages = (enabled = true, bookId?: number) =>
   useQuery({
-    queryKey: ["activity", "liked-pages", { bookId }],
+    queryKey: activityKeys.likedPages.list(bookId),
     queryFn: ({ signal }) => getAllPages(getLikedPages, bookId, signal),
     enabled,
   });
 
 export const useBookmarkedPages = (enabled = true, bookId?: number) =>
   useQuery({
-    queryKey: ["activity", "bookmarked-pages", { bookId }],
+    queryKey: activityKeys.bookmarkedPages.list(bookId),
     queryFn: ({ signal }) => getAllPages(getBookmarkedPages, bookId, signal),
     enabled,
   });
 
 export const useLikedPagesByBook = (enabled = true) =>
   useQuery({
-    queryKey: ["activity", "liked-pages", "books"],
+    queryKey: activityKeys.likedPages.books,
     queryFn: ({ signal }) => getLikedPagesByBook(signal),
     enabled,
   });
 
 export const useBookmarkedPagesByBook = (enabled = true) =>
   useQuery({
-    queryKey: ["activity", "bookmarked-pages", "books"],
+    queryKey: activityKeys.bookmarkedPages.books,
     queryFn: ({ signal }) => getBookmarkedPagesByBook(signal),
     enabled,
   });

@@ -1,3 +1,5 @@
+import { contentPageKeys } from "@/hooks/queryKeys/contentPageKeys";
+import { activityKeys } from "@/hooks/queryKeys/activityKeys";
 import { useRef } from "react";
 import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as api from "@/api/comment";
@@ -27,9 +29,18 @@ export const usePageComments = (pageId: number, sort: CommentSort = "LATEST", en
   useInfiniteQuery({
     queryKey: [...commentKeys.page(pageId), sort],
     queryFn: ({ pageParam, signal }) =>
-      api.getPageComments(pageId, { sort, cursor: pageParam }, signal),
-    initialPageParam: undefined as number | undefined,
-    getNextPageParam: nextCursor,
+      api.getPageComments(
+        pageId,
+        sort === "POPULAR" ? { sort, page: pageParam } : { sort, cursor: pageParam },
+        signal,
+      ),
+    initialPageParam: (sort === "POPULAR" ? 0 : undefined) as number | undefined,
+    getNextPageParam: (last, pages, param, params) =>
+      sort === "POPULAR"
+        ? last.hasNext
+          ? last.page + 1
+          : undefined
+        : nextCursor(last, pages, param, params),
     enabled: enabled && validId(pageId),
   });
 
@@ -43,29 +54,23 @@ export const useCommentReplies = (pageId: number, commentId: number) =>
     enabled: validId(pageId) && validId(commentId),
   });
 
-export const useMySentenceComments = (sentenceId: number, enabled = true) =>
-  useInfiniteQuery({
-    queryKey: commentKeys.sentence(sentenceId),
-    queryFn: ({ pageParam, signal }) =>
-      api.getMySentenceComments(sentenceId, { cursor: pageParam, size: 50 }, signal),
-    initialPageParam: undefined as number | undefined,
-    getNextPageParam: nextCursor,
-    enabled: enabled && validId(sentenceId),
-  });
-
 export const uniqueComments = (pages?: CommentListResponse[]) => [
   ...new Map(
     pages?.flatMap((page) => page.comments).map((comment) => [comment.commentId, comment]),
   ).values(),
 ];
 
-type CommentAction = { pageId: number; sentenceId: number } & (
+type CommentAction = { pageId: number; sentenceId?: number | null } & (
   | { type: "create"; content: string }
   | { type: "reply" | "edit"; commentId: number; content: string }
   | { type: "delete"; commentId: number }
   | { type: "editReply"; commentId: number; replyId: number; content: string }
   | { type: "deleteReply"; commentId: number; replyId: number }
-  | { type: "like" | "unlike" | "dislike" | "undislike"; commentId: number }
+  | {
+      type: "like" | "unlike" | "dislike" | "undislike";
+      commentId: number;
+      parentCommentId?: number;
+    }
 );
 
 export const useCommentMutation = () => {
@@ -77,7 +82,7 @@ export const useCommentMutation = () => {
       switch (action.type) {
         case "create":
           return api.createPageComment(pageId, {
-            sentenceId: action.sentenceId,
+            ...(action.sentenceId != null ? { sentenceId: action.sentenceId } : {}),
             content: action.content,
           });
         case "reply":
@@ -103,20 +108,30 @@ export const useCommentMutation = () => {
       }
     },
     onSuccess: async (_result, action) => {
-      const updates = [
-        client.invalidateQueries({ queryKey: commentKeys.page(action.pageId) }),
-        client.invalidateQueries({ queryKey: commentKeys.sentence(action.sentenceId) }),
-      ];
+      const updates = [client.invalidateQueries({ queryKey: commentKeys.page(action.pageId) })];
+      updates.push(client.invalidateQueries({ queryKey: activityKeys.likedComments.all }));
+      if (action.sentenceId != null)
+        updates.push(
+          client.invalidateQueries({ queryKey: commentKeys.sentence(action.sentenceId) }),
+        );
       if ("commentId" in action)
         updates.push(
           client.invalidateQueries({
-            queryKey: commentKeys.replies(action.pageId, action.commentId),
+            queryKey: commentKeys.replies(
+              action.pageId,
+              "parentCommentId" in action
+                ? (action.parentCommentId ?? action.commentId)
+                : action.commentId,
+            ),
           }),
         );
       if (["create", "reply", "delete", "deleteReply"].includes(action.type)) {
         // Refetch the existing page detail (including commentCount when supplied).
         updates.push(
-          client.invalidateQueries({ queryKey: ["content-pages", action.pageId], exact: true }),
+          client.invalidateQueries({
+            queryKey: contentPageKeys.detail(action.pageId),
+            exact: true,
+          }),
         );
       }
       await Promise.all(updates);
