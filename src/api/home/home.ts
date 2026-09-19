@@ -1,5 +1,5 @@
 import { api } from "@/api/axios";
-import { mockTodaySentence } from "@/mocks/home/home";
+import { getMockTodaySentence } from "@/mocks/home/home";
 
 import type { ApiResponse } from "@/types/auth";
 import type {
@@ -20,12 +20,12 @@ export const getCurrentReading = async (
   return response.data.data;
 };
 
-// 내 서재에 없는 책 중 추천 10권
+// 읽은 책 장르 비율을 반영한 추천 10권, 내 서재에 있는 책은 제외
 export const getRecommendedBooks = async (
   signal?: AbortSignal,
 ): Promise<RecommendedBookResponse[]> => {
   const response = await api.get<ApiResponse<RecommendedBookResponse[]>>(
-    "/api/v1/reading-records/recommendations",
+    "/api/v1/reading-records/recommendations/last-read",
     { signal },
   );
   if (!response.data.success) throw new Error(response.data.message);
@@ -34,5 +34,5 @@ export const getRecommendedBooks = async (
 
 // 대응 API가 없어 목데이터 유지
 export const getTodaySentence = async (): Promise<TodaySentence> => {
-  return mockTodaySentence;
+  return getMockTodaySentence();
 };

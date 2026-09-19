@@ -37,9 +37,12 @@ export default function TodaySentenceCard({ sentence }: { sentence: TodaySentenc
         }}
       >
         <div className="flex items-baseline gap-3">
-          <h2 className="text-[17px] font-extrabold text-[#2C2A2B]">{TODAY_SENTENCE_TITLE}</h2>
+          <h2 className="shrink-0 text-[17px] font-extrabold text-[#2C2A2B]">
+            {TODAY_SENTENCE_TITLE}
+          </h2>
 
-          <span className="truncate text-[12px] text-[#8F8F8F]">
+          {/* 작가·책 제목이 길어도 한 줄 유지 */}
+          <span className="min-w-0 flex-1 truncate text-[12px] text-[#8F8F8F]">
             {sentence.author} {sentence.genre}, {sentence.bookTitle} 中
           </span>
         </div>
