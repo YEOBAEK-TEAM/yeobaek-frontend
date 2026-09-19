@@ -6,6 +6,7 @@ import heartIcon from "@/assets/icons/reader/heartIcon.png";
 import heartFilledIcon from "@/assets/icons/reader/heartFilledIcon.png";
 import commentIcon from "@/assets/icons/reader/commentIcon.png";
 import bookmarkIcon from "@/assets/icons/reader/bookmarkIcon.png";
+import bookmarkFilledIcon from "@/assets/icons/reader/bookmarkFilledIcon.png";
 import { useBookDetail } from "@/hooks/useBookDetail";
 import { contentChapterQueryOptions, useContentChapter } from "@/hooks/useContentChapter";
 import { useContentPage } from "@/hooks/useContentPage";
@@ -525,7 +526,12 @@ function ContentBookReader({
               bookmarkMutation.mutate({ pageId: actualPageId, bookmarked });
             }}
           >
-            <img src={bookmarkIcon} alt="" aria-hidden="true" className="h-6 w-6 object-contain" />
+            <img
+              src={bookmarked ? bookmarkFilledIcon : bookmarkIcon}
+              alt=""
+              aria-hidden="true"
+              className="h-6 w-6 object-contain"
+            />
           </button>
           <ReportUnlockButton bookId={bookId} bookTitle={book.data?.title ?? ""} />
         </div>
