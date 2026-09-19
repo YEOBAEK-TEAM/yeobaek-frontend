@@ -59,9 +59,7 @@ export default function LibraryPage() {
   const handleReadBook = () => {
     if (!selectedBook) return;
 
-    navigate(
-      `/library/read?bookId=${selectedBook.bookId}&pageId=${selectedBook.lastPageId}&firstRead=${isFirstRead}`,
-    );
+    navigate(`/library/read?bookId=${selectedBook.bookId}&pageId=${selectedBook.lastPageId}`);
   };
 
   return (

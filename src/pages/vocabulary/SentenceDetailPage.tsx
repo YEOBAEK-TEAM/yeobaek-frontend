@@ -87,9 +87,7 @@ export default function SentenceDetailPage() {
                 type="button"
                 aria-label="책의 해당 페이지로 이동"
                 onClick={() =>
-                  navigate(
-                    `/library/read?bookId=${sentence.bookId}&pageId=${sentence.pageId}&firstRead=false`,
-                  )
+                  navigate(`/library/read?bookId=${sentence.bookId}&pageId=${sentence.pageId}`)
                 }
                 className="flex h-10 w-9 items-center justify-center"
               >
