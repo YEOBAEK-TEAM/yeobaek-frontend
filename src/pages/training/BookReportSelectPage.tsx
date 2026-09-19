@@ -20,6 +20,7 @@ import {
 import { TRAINING_PATH } from "@/constants/training/trainingPrograms";
 import { useInfiniteSentinel } from "@/hooks/training/discussion/useInfiniteSentinel";
 import { useBookReportRoom } from "@/hooks/training/useOngoingTraining";
+import { useOngoingTrainingGuard } from "@/hooks/training/useOngoingTrainingGuard";
 import {
   useStartTraining,
   useTrainingReviews,
@@ -46,18 +47,12 @@ export default function BookReportSelectPage() {
 
   const startTraining = useStartTraining();
 
-  // 훈련은 한 번에 하나만 진행, 이미 있으면 그 방으로 안내
-  const { data: latestRoom } = useBookReportRoom();
-
-  const ongoingRoom = latestRoom?.status === "in-progress" ? latestRoom : null;
-
-  // 같은 독후감이면 이어가기, 다른 독후감이면 차단
-  const [ongoingAction, setOngoingAction] = useState<"continue" | "blocked" | null>(null);
-
-  const goOngoingRoom = () =>
-    navigate(`${TRAINING_PATH.bookReportChat}?trainingRoomId=${ongoingRoom?.roomId}`, {
-      replace: true,
-    });
+  // 훈련은 한 번에 하나만 진행, 같은 독후감이면 이어가기 다른 독후감이면 차단
+  const guard = useOngoingTrainingGuard({
+    roomQuery: useBookReportRoom(),
+    chatPath: TRAINING_PATH.bookReportChat,
+    roomIdKey: "trainingRoomId",
+  });
 
   const sentinelRef = useInfiniteSentinel({
     hasNextPage,
@@ -70,16 +65,20 @@ export default function BookReportSelectPage() {
   const start = () => {
     if (selectedId === null || startTraining.isPending) return;
 
-    if (ongoingRoom) {
-      setOngoingAction(ongoingRoom.targetKey === String(selectedId) ? "continue" : "blocked");
-      return;
-    }
+    const targetKey = String(selectedId);
+    if (guard.blockBeforeStart(targetKey)) return;
 
     startTraining.mutate(selectedId, {
       onSuccess: ({ trainingRoomId }) =>
         navigate(`${TRAINING_PATH.bookReportChat}?trainingRoomId=${trainingRoomId}`, {
           replace: true,
         }),
+      onError: (error) => {
+        // 안내로 처리했으면 실패 문구는 감춤
+        void guard.resolveConflict(error, targetKey).then((resolved) => {
+          if (resolved) startTraining.reset();
+        });
+      },
     });
   };
 
@@ -164,17 +163,14 @@ export default function BookReportSelectPage() {
 
       {startTraining.isPending && <AnalyzingOverlay text={getAnalyzingReportText(nickname)} />}
 
-      {ongoingAction === "continue" && (
-        <ConfirmModal onConfirm={goOngoingRoom} onClose={() => setOngoingAction(null)}>
+      {guard.action === "continue" && (
+        <ConfirmModal onConfirm={guard.openConflictRoom} onClose={guard.closeAction}>
           {ONGOING_TRAINING_CONFIRM_TEXT}
         </ConfirmModal>
       )}
 
-      {ongoingAction === "blocked" && (
-        <NoticeModal
-          message={ONGOING_TRAINING_BLOCKED_TEXT}
-          onClose={() => setOngoingAction(null)}
-        />
+      {guard.action === "blocked" && (
+        <NoticeModal message={ONGOING_TRAINING_BLOCKED_TEXT} onClose={guard.closeAction} />
       )}
     </main>
   );
