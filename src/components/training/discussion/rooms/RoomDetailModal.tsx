@@ -49,10 +49,13 @@ export default function RoomDetailModal({
   const requestJoin = () => {
     setErrorMessage(null);
 
-    joinRequest.mutate(roomId, {
-      onSuccess: ({ status }) => (status === "joined" ? enterRoom() : onRequested()),
-      onError: (error) => setErrorMessage(getRoomErrorMessage(error)),
-    });
+    joinRequest.mutate(
+      { roomId },
+      {
+        onSuccess: ({ status }) => (status === "APPROVED" ? enterRoom() : onRequested()),
+        onError: (error) => setErrorMessage(getRoomErrorMessage(error)),
+      },
+    );
   };
 
   return (

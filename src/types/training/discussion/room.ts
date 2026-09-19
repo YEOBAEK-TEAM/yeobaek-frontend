@@ -26,7 +26,13 @@ export type RoomVisibility = "public" | "private";
 
 export type RoomFilter = "all" | "hot" | "recent";
 
-export type RoomJoinStatus = "none" | "pending" | "joined" | "full" | "closed";
+// 목록 정렬 파라미터, 필터 칩과 1:1 대응
+export type RoomSort = "ALL" | "HOT" | "RECENT";
+
+export type RoomJoinStatus = "none" | "pending" | "joined";
+
+// 서버 참가 상태, APPROVED면 채팅 입장 가능
+export type MyJoinStatus = "NONE" | "PENDING" | "APPROVED";
 
 export type RoomErrorCode =
   | "ALREADY_REQUESTED"
@@ -37,30 +43,30 @@ export type RoomErrorCode =
   | "INVALID_CODE"
   | "EXPIRED_CODE";
 
-export type RoomSummaryResponse = {
+export type DiscussionRoomResponse = {
   roomId: number;
-  roomTitle: string;
+  title: string;
+  bookId: number;
   bookTitle: string;
-  author: string;
-  coverUrl: string;
-  // 방장 포함 전체 참여 인원
-  participantCount: number;
+  bookAuthor: string | null;
+  bookCoverImageUrl: string | null;
   tags: string[];
-  visibility: RoomVisibility;
-  joinStatus: RoomJoinStatus;
-};
-
-export type RoomDetailResponse = RoomSummaryResponse & {
-  description: string;
+  description: string | null;
   hostNickname: string;
   hostProfileImageUrl: string | null;
   createdAt: string;
+  // 방장 포함 승인된 멤버 수
+  memberCount: number;
+  myStatus: MyJoinStatus;
+  isPrivate: boolean;
+  isHost: boolean;
 };
 
-export type RoomPageResponse = {
-  rooms: RoomSummaryResponse[];
+export type PageResponse<T> = {
+  items: T[];
   page: number;
   hasNext: boolean;
+  totalCount: number;
 };
 
 export type RoomListParams = {
@@ -87,29 +93,44 @@ export type RoomDetailView = RoomSummaryView & {
   openedLabel: string;
 };
 
-export type CreateRoomRequest = {
-  topicType: TopicType;
+export type DiscussionRoomCreateRequest = {
   bookId: number;
-  reportId: number | null;
   title: string;
   tags: string[];
   description: string;
-  visibility: RoomVisibility;
+  isPrivate: boolean;
 };
 
-export type CreateRoomResponse = {
-  roomId: number;
-  // 비공개방만 발급
+export type DiscussionRoomCreateResponse = {
+  room: DiscussionRoomResponse;
+  bookTitle: string;
   inviteCode: string | null;
 };
 
-export type JoinRequestResponse = {
-  status: "requested" | "joined";
+export type DiscussionRoomJoinResponse = {
+  roomId: number;
+  status: MyJoinStatus;
+  appliedAt: string | null;
 };
 
-export type JoinByCodeResponse = {
-  result: "entered" | "alreadyJoined";
+export type DiscussionRoomInviteCodeResponse = {
   roomId: number;
+  inviteCode: string;
+};
+
+export type DiscussionRoomApplicantResponse = {
+  memberId: number;
+  userId: number;
+  nickname: string;
+  profileImageUrl: string | null;
+  appliedAt: string;
+};
+
+export type ApplicantView = {
+  memberId: number;
+  nickname: string;
+  imageUrl: string | null;
+  appliedLabel: string;
 };
 
 export type RoomCreateForm = {
