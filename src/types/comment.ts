@@ -10,6 +10,7 @@ export type Comment = {
   parentCommentId: number;
   likeCount: number;
   dislikeCount: number;
+  replyCount: number;
 };
 
 export type CommentListResponse = {

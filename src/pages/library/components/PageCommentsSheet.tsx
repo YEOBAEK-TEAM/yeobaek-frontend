@@ -69,6 +69,7 @@ export default function PageCommentsSheet({
 
     likes: comment.likeCount,
     dislikes: comment.dislikeCount,
+    replyCount: comment.replyCount,
 
     ...(reply
       ? {
@@ -201,7 +202,6 @@ export default function PageCommentsSheet({
         reaction: (id, vote) => reactions[id]?.[vote],
 
         total: commentCount,
-        replyTotal: repliesQuery.data?.pages[0]?.totalElements,
       }}
     />
   );

@@ -17,6 +17,7 @@ export type ReaderComment = {
   user?: { id: number | string; nickname: string; profileImage?: string; isFan?: boolean };
   likes?: number;
   dislikes?: number;
+  replyCount?: number;
   myVote?: "like" | "dislike";
   replyTo?: string;
   createdAt?: string;
