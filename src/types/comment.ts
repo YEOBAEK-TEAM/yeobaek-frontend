@@ -1,7 +1,7 @@
 export type Comment = {
   commentId: number;
   pageId: number;
-  sentenceId: number;
+  sentenceId?: number | null;
   userId: number;
   nickname: string;
   content: string;
@@ -26,5 +26,5 @@ export type CommentListResponse = {
 export type CommentSort = "LATEST" | "POPULAR";
 export type CommentCursorParams = { cursor?: number; size?: number };
 export type PageCommentParams = CommentCursorParams & { sort?: CommentSort; page?: number };
-export type CreateCommentRequest = { sentenceId: number; content: string };
+export type CreateCommentRequest = { sentenceId?: number | null; content: string };
 export type CommentContentRequest = { content: string };

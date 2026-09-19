@@ -59,7 +59,7 @@ export const uniqueComments = (pages?: CommentListResponse[]) => [
   ).values(),
 ];
 
-type CommentAction = { pageId: number; sentenceId: number } & (
+type CommentAction = { pageId: number; sentenceId?: number | null } & (
   | { type: "create"; content: string }
   | { type: "reply" | "edit"; commentId: number; content: string }
   | { type: "delete"; commentId: number }
@@ -77,7 +77,7 @@ export const useCommentMutation = () => {
       switch (action.type) {
         case "create":
           return api.createPageComment(pageId, {
-            sentenceId: action.sentenceId,
+            ...(action.sentenceId != null ? { sentenceId: action.sentenceId } : {}),
             content: action.content,
           });
         case "reply":
@@ -103,10 +103,11 @@ export const useCommentMutation = () => {
       }
     },
     onSuccess: async (_result, action) => {
-      const updates = [
-        client.invalidateQueries({ queryKey: commentKeys.page(action.pageId) }),
-        client.invalidateQueries({ queryKey: commentKeys.sentence(action.sentenceId) }),
-      ];
+      const updates = [client.invalidateQueries({ queryKey: commentKeys.page(action.pageId) })];
+      if (action.sentenceId != null)
+        updates.push(
+          client.invalidateQueries({ queryKey: commentKeys.sentence(action.sentenceId) }),
+        );
       if ("commentId" in action)
         updates.push(
           client.invalidateQueries({

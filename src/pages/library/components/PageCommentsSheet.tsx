@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { useAuthStore } from "@/stores/auth";
+import { useToastStore } from "@/stores/common/toast";
 
 import {
   uniqueComments,
@@ -29,6 +30,7 @@ export default function PageCommentsSheet({
   onClose: () => void;
 }) {
   const userId = useAuthStore((state) => state.userId);
+  const showToast = useToastStore((state) => state.showToast);
 
   const [sort, setSort] = useState<CommentSort>("LATEST");
   const [parentId, setParentId] = useState<number>();
@@ -56,9 +58,10 @@ export default function PageCommentsSheet({
     page: pageNumber,
     text: comment.content,
     createdAt: comment.createdAt,
-    quote: reply
-      ? undefined
-      : sentences.find((sentence) => sentence.sentenceId === comment.sentenceId)?.content,
+    quote:
+      reply || comment.sentenceId == null
+        ? undefined
+        : sentences.find((sentence) => sentence.sentenceId === comment.sentenceId)?.content,
 
     user: {
       id: comment.userId,
@@ -87,6 +90,11 @@ export default function PageCommentsSheet({
       reportedCommentIds={[]}
       onReport={() => {}}
       onSubmit={async (content, replyTo) => {
+        if (replyTo === undefined) {
+          const success = await mutation.run({ type: "create", pageId, content });
+          if (success) showToast("댓글이 등록되었습니다.", "success");
+          return success;
+        }
         const parent = replyTo && find(replyTo);
 
         if (!parent) return false;

@@ -789,12 +789,7 @@ export default function ReaderCommentsSheet({
 
             scrollToNewReply.current = !!parent;
 
-            if (
-              apiState?.pending ||
-              (!!apiState && !parent) ||
-              (await onSubmit(draft.trim(), parent?.id)) === false
-            )
-              return;
+            if (apiState?.pending || (await onSubmit(draft.trim(), parent?.id)) === false) return;
 
             setDraft("");
 
@@ -808,16 +803,9 @@ export default function ReaderCommentsSheet({
               ref={inputRef}
               className="min-w-0 flex-1 rounded-full border border-[#B4B4B4] bg-[#F7F6F1] px-5 py-3 text-sm text-[#4F4D4E] outline-none placeholder:text-[#b4b4b4]"
               aria-label={parent ? "답글 내용" : "댓글 내용"}
-              placeholder={
-                parent
-                  ? "답글을 남겨주세요"
-                  : apiState
-                    ? "본문의 문장을 선택해 댓글을 남겨주세요"
-                    : "댓글을 남겨주세요"
-              }
+              placeholder={parent ? "답글을 남겨주세요" : "댓글을 남겨주세요"}
               maxLength={parent ? 200 : 2000}
               value={draft}
-              disabled={!!apiState && !parent}
               readOnly={apiState?.pending}
               onChange={(event) => setDraft(event.target.value)}
               onCompositionStart={() => {
@@ -840,7 +828,7 @@ export default function ReaderCommentsSheet({
 
             <button
               type="submit"
-              disabled={!draft.trim() || apiState?.pending || (!!apiState && !parent)}
+              disabled={!draft.trim() || apiState?.pending}
               aria-label={parent ? "답글 전송" : "댓글 전송"}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#B4B4B4] bg-[#F7F6F1] text-[#4F4D4E] disabled:!opacity-100 disabled:text-[#b4b4b4]"
             >
