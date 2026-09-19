@@ -1,20 +1,23 @@
 import BookCover from "@/components/common/bookCover/BookCover";
 import ReadingProgressBar from "@/components/home/folder/ReadingProgressBar";
-import { calculateProgress } from "@/utils/home/calculateProgress";
 
-import type { ReadingProgress } from "@/types/home/home";
+import type { ReadingProgressView } from "@/types/home/home";
 
 type ReadingProgressPanelProps = {
   nickname: string;
-  progress: ReadingProgress;
+  progress: ReadingProgressView;
 };
 
 export default function ReadingProgressPanel({ nickname, progress }: ReadingProgressPanelProps) {
-  const { percent, remainingPages } = calculateProgress(progress.currentPage, progress.totalPages);
+  const { percent, remainingPages } = progress;
 
   return (
     <div className="flex h-full items-center gap-4 px-4 py-3">
-      <BookCover src={progress.coverUrl} framed className="h-full max-h-24 w-17 shrink-0" />
+      <BookCover
+        src={progress.coverUrl}
+        framed
+        className="h-full max-h-24 w-17 shrink-0 bg-[#EFEDE7]"
+      />
 
       <div className="min-w-0 flex-1">
         <p className="text-[15px] font-bold text-[#4F4D4E]">{nickname}님의 독서 진행률</p>

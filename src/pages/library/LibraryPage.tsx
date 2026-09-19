@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import type { PointerEvent } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
 import ReportTabPanel from "@/components/library/report/ReportTabPanel";
-import { useReportWriteStore } from "@/stores/library/reportWrite";
+import { REPORT_WRITE_PARAM } from "@/constants/library/report";
 import { useReadingRecords } from "@/hooks/useReadingRecords";
 
 const tabs = ["전체", "완독", "독후감"] as const;
@@ -22,7 +22,7 @@ export default function LibraryPage() {
     return () => window.clearTimeout(timeout);
   }, [navigate, showAddedNotice]);
 
-  const openReportSheet = useReportWriteStore((state) => state.openSheet);
+  const [, setSearchParams] = useSearchParams();
 
   const [tab, setTab] = useState<(typeof tabs)[number]>(
     tabs.find((item) => item === location.state?.tab) ?? "전체",
@@ -88,7 +88,11 @@ export default function LibraryPage() {
         title="서재"
         // 독후감 탭에서는 검색 대신 독후감 쓰기
         action={tab === "독후감" ? "write" : "search"}
-        onActionClick={() => (tab === "독후감" ? openReportSheet() : navigate("/library/search"))}
+        onActionClick={() =>
+          tab === "독후감"
+            ? setSearchParams({ [REPORT_WRITE_PARAM]: "1" })
+            : navigate("/library/search")
+        }
       />
       <div role="tablist" aria-label="서재 도서 분류" className="mx-5 mt-4 flex">
         {tabs.map((item) => (

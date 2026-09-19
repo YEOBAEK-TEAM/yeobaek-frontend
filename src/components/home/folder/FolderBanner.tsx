@@ -20,12 +20,12 @@ import {
 } from "@/constants/home/home";
 import { useFolderBannerStore } from "@/stores/home/folderBanner";
 
-import type { ReadingProgress, RecentReport } from "@/types/home/home";
+import type { ReadingProgressView, RecentReportView } from "@/types/home/home";
 
 type FolderBannerProps = {
   nickname: string;
-  progress: ReadingProgress | null;
-  report: RecentReport | null;
+  progress: ReadingProgressView | null;
+  report: RecentReportView | null;
   onLinkClick: () => void;
 };
 
