@@ -1,5 +1,4 @@
 import {
-  EMPTY_ONGOING_TRAINING,
   ONGOING_TRAINING_ACTION_LABEL,
   ONGOING_TRAINING_CHARACTER,
   ONGOING_TRAINING_LABEL,
@@ -14,16 +13,6 @@ const withBracket = (bookTitle: string) => `『${bookTitle}』`;
 
 export const resolveOngoingTraining = (training: OngoingTraining): OngoingTrainingView => {
   const { status, programId, bookTitle } = training;
-
-  if (status === "empty" || !programId || !bookTitle) {
-    return {
-      label: null,
-      ...EMPTY_ONGOING_TRAINING,
-      character: ONGOING_TRAINING_CHARACTER.empty.src,
-      characterClassName: ONGOING_TRAINING_CHARACTER.empty.className,
-      actionLabel: null,
-    };
-  }
 
   const book = withBracket(bookTitle);
 

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import ConfirmModal from "@/components/common/confirmModal/ConfirmModal";
+import NoticeModal from "@/components/training/discussion/shared/NoticeModal";
 import Header from "@/components/common/header/Header";
 import SectionState from "@/components/common/section/SectionState";
 import BookSelectSection from "@/components/training/comprehension/BookSelectSection";
@@ -13,17 +14,17 @@ import {
   getAnalyzingPagesText,
   BOOKMARK_SECTION_TITLE,
   COMPREHENSION_TITLE,
+  ONGOING_TRAINING_BLOCKED_TEXT,
   ONGOING_TRAINING_CONFIRM_TEXT,
   START_ERROR_TEXT,
 } from "@/constants/training/comprehensionChat";
 import { TRAINING_PATH } from "@/constants/training/trainingPrograms";
 import { useInfiniteSentinel } from "@/hooks/training/discussion/useInfiniteSentinel";
-import { useOngoingTraining } from "@/hooks/training/useOngoingTraining";
+import { useComprehensionRoom } from "@/hooks/training/useOngoingTraining";
 import { useBookmarks, useCreateUnderstandRoom } from "@/hooks/training/useComprehensionQueries";
 import { myProfile } from "@/mocks/my";
 import { useAuthStore } from "@/stores/auth";
 import { useComprehensionChatStore } from "@/stores/training/comprehensionChat";
-import { toComprehensionBook } from "@/utils/training/toComprehensionView";
 
 const RADIO_NAME = "comprehension-selection";
 
@@ -47,17 +48,15 @@ export default function ComprehensionSelectPage() {
   const createRoom = useCreateUnderstandRoom();
 
   // 훈련은 한 번에 하나만 진행, 이미 있으면 그 방으로 안내
-  const { data: ongoing } = useOngoingTraining();
+  const { data: latestRoom } = useComprehensionRoom();
 
-  const ongoingRoomId =
-    ongoing?.status === "in-progress" && ongoing.programId === "comprehension"
-      ? ongoing.roomId
-      : null;
+  const ongoingRoom = latestRoom?.status === "in-progress" ? latestRoom : null;
 
-  const [isOngoingConfirmOpen, setIsOngoingConfirmOpen] = useState(false);
+  // 같은 책갈피 범위면 이어가기, 다른 범위면 차단
+  const [ongoingAction, setOngoingAction] = useState<"continue" | "blocked" | null>(null);
 
   const goOngoingRoom = () =>
-    navigate(`${TRAINING_PATH.comprehensionChat}?understandRoomId=${ongoingRoomId}`, {
+    navigate(`${TRAINING_PATH.comprehensionChat}?understandRoomId=${ongoingRoom?.roomId}`, {
       replace: true,
     });
 
@@ -78,8 +77,8 @@ export default function ComprehensionSelectPage() {
     const selected = bookmarks.find((bookmark) => bookmark.key === selectedKey);
     if (!selected || createRoom.isPending) return;
 
-    if (ongoingRoomId !== null) {
-      setIsOngoingConfirmOpen(true);
+    if (ongoingRoom) {
+      setOngoingAction(ongoingRoom.targetKey === selected.key ? "continue" : "blocked");
       return;
     }
 
@@ -87,7 +86,6 @@ export default function ComprehensionSelectPage() {
       onSuccess: (room) => {
         const store = useComprehensionChatStore.getState();
         store.reset();
-        store.setBook(toComprehensionBook(room));
         store.setOptions(room.options);
         store.setPhase({ type: "chatting" });
 
@@ -153,10 +151,17 @@ export default function ComprehensionSelectPage() {
 
       {createRoom.isPending && <AnalyzingOverlay text={getAnalyzingPagesText(nickname)} />}
 
-      {isOngoingConfirmOpen && (
-        <ConfirmModal onConfirm={goOngoingRoom} onClose={() => setIsOngoingConfirmOpen(false)}>
+      {ongoingAction === "continue" && (
+        <ConfirmModal onConfirm={goOngoingRoom} onClose={() => setOngoingAction(null)}>
           {ONGOING_TRAINING_CONFIRM_TEXT}
         </ConfirmModal>
+      )}
+
+      {ongoingAction === "blocked" && (
+        <NoticeModal
+          message={ONGOING_TRAINING_BLOCKED_TEXT}
+          onClose={() => setOngoingAction(null)}
+        />
       )}
     </main>
   );

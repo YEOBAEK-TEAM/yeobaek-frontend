@@ -6,6 +6,7 @@ import type {
   SendTrainingMessageRequest,
   SendTrainingMessageResponse,
   StartTrainingResponse,
+  TrainingRoomListResponse,
   TrainingMessageListResponse,
   TrainingReviewItemResponse,
   TrainingReviewListResponse,
@@ -31,8 +32,8 @@ export const startTraining = async (reviewId: number): Promise<StartTrainingResp
 // 다른 관점 보기, 선택과 관점 카드가 모두 이력에 남음
 export const showOtherPerspective = async (
   trainingRoomId: number,
-): Promise<OtherPerspectiveResponse> => {
-  const response = await api.post<ApiResponse<OtherPerspectiveResponse>>(
+): Promise<OtherPerspectiveResponse[]> => {
+  const response = await api.post<ApiResponse<OtherPerspectiveResponse[]>>(
     `/api/v1/trainings/${trainingRoomId}/other-perspective`,
     undefined,
     { timeout: AI_REQUEST_TIMEOUT_MS },
@@ -108,6 +109,16 @@ export const getTrainingSummation = async (
     `/api/v1/trainings/${trainingRoomId}/summation`,
     { signal },
   );
+  if (!response.data.success) throw new Error(response.data.message);
+  return response.data.data;
+};
+
+// 최근 생성순, 같은 종류의 진행 중 방은 하나뿐이라 첫 항목이 가장 최신 상태
+export const getTrainingRooms = async (signal?: AbortSignal): Promise<TrainingRoomListResponse> => {
+  const response = await api.get<ApiResponse<TrainingRoomListResponse>>("/api/v1/trainings/list", {
+    params: { size: 1 },
+    signal,
+  });
   if (!response.data.success) throw new Error(response.data.message);
   return response.data.data;
 };

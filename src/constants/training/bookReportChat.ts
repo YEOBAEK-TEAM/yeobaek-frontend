@@ -15,6 +15,9 @@ export const REPORT_SHEET_TITLE = "내 독후감 목록";
 
 export const REPORT_SELECT_TITLE = "독후감 훈련";
 
+export const ONGOING_TRAINING_BLOCKED_TEXT =
+  "진행 중인 훈련이 있어요.\n먼저 마무리한 뒤에 새 훈련을 시작할 수 있어요.";
+
 export const ONGOING_TRAINING_CONFIRM_TEXT = "진행 중인 훈련이 있어요.\n이어서 진행하시겠어요?";
 
 export const REPORT_SELECT_SECTION_TITLE = "내 독후감";

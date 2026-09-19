@@ -4,7 +4,8 @@ export type UnderstandMessageRole = "AI" | "USER";
 
 export type UnderstandMessageType = "TEXT" | "IMAGE" | "FILE";
 
-export type UnderstandRoomStatus = "IN_PROGRESS" | "COMPLETED";
+// END_CONFIRM은 예·아니요 응답을 기다리는 상태
+export type UnderstandRoomStatus = "IN_PROGRESS" | "END_CONFIRM" | "COMPLETED";
 
 export type BookmarkPageInfo = {
   pageId: number;
@@ -66,6 +67,12 @@ export type UnderstandMessageItemResponse = {
 
 export type UnderstandMessageListResponse = {
   items: UnderstandMessageItemResponse[];
+  status: UnderstandRoomStatus;
+  bookTitle: string;
+  author: string | null;
+  bookImageUrl: string | null;
+  startPageNumber: number;
+  endPageNumber: number;
   nextCursor: number | null;
   hasNext: boolean;
 };

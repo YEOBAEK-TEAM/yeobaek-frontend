@@ -1,7 +1,8 @@
 import { useNavigate } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
-import { useOngoingTraining } from "@/hooks/training/useOngoingTraining";
+import { useBookReportRoom, useComprehensionRoom } from "@/hooks/training/useOngoingTraining";
+import EmptyTrainingCard from "@/components/training/EmptyTrainingCard";
 import OngoingTrainingCard from "@/components/training/OngoingTrainingCard";
 import TrainingGreeting from "@/components/training/TrainingGreeting";
 import TrainingProgramCard from "@/components/training/TrainingProgramCard";
@@ -15,19 +16,17 @@ export default function TrainingPage() {
 
   const activeTab = useTrainingStore((state) => state.activeTab);
 
-  const { data: ongoingTraining } = useOngoingTraining();
+  const { data: bookReportRoom } = useBookReportRoom();
+  const { data: comprehensionRoom } = useComprehensionRoom();
 
   // 진행 중이던 방으로 바로 이어가기
-  const continueTraining = () => {
-    if (!ongoingTraining?.roomId) return;
+  const continueBookReport = (roomId: number) =>
+    navigate(`${TRAINING_PATH.bookReportChat}?trainingRoomId=${roomId}`);
 
-    if (ongoingTraining.programId === "book-report") {
-      navigate(`${TRAINING_PATH.bookReportChat}?trainingRoomId=${ongoingTraining.roomId}`);
-      return;
-    }
+  const continueComprehension = (roomId: number) =>
+    navigate(`${TRAINING_PATH.comprehensionChat}?understandRoomId=${roomId}`);
 
-    navigate(TRAINING_PATH.comprehension);
-  };
+  const hasBanner = Boolean(bookReportRoom || comprehensionRoom);
 
   return (
     <main className="flex flex-1 flex-col">
@@ -44,9 +43,26 @@ export default function TrainingPage() {
 
         {activeTab === "lity" && (
           <>
-            {ongoingTraining && (
+            {hasBanner ? (
+              // 훈련 종류별로 한 장씩, 독후감이 위
+              <div className="mt-5 flex flex-col gap-3">
+                {bookReportRoom && (
+                  <OngoingTrainingCard
+                    training={bookReportRoom}
+                    onContinue={() => continueBookReport(bookReportRoom.roomId)}
+                  />
+                )}
+
+                {comprehensionRoom && (
+                  <OngoingTrainingCard
+                    training={comprehensionRoom}
+                    onContinue={() => continueComprehension(comprehensionRoom.roomId)}
+                  />
+                )}
+              </div>
+            ) : (
               <div className="mt-5">
-                <OngoingTrainingCard training={ongoingTraining} onContinue={continueTraining} />
+                <EmptyTrainingCard />
               </div>
             )}
 

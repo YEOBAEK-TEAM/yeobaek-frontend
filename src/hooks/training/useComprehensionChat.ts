@@ -45,7 +45,6 @@ export const useComprehensionChat = () => {
 
   const phase = useComprehensionChatStore((state) => state.phase);
   const localMessages = useComprehensionChatStore((state) => state.messages);
-  const book = useComprehensionChatStore((state) => state.book);
   const options = useComprehensionChatStore((state) => state.options);
 
   const messagesQuery = useUnderstandMessages(understandRoomId);
@@ -68,10 +67,28 @@ export const useComprehensionChat = () => {
     if (understandRoomId === null) navigate(TRAINING_PATH.comprehension, { replace: true });
   }, [understandRoomId, navigate]);
 
+  const roomStatus = messagesQuery.data?.status ?? null;
+  const book = messagesQuery.data?.book ?? null;
+
+  // 서버 방 상태 기준으로 재진입 시 단계 복구
   useEffect(() => {
+    if (roomStatus === null) return;
+
     const store = useComprehensionChatStore.getState();
-    if (store.phase.type === "selecting") store.setPhase({ type: "chatting" });
-  }, [understandRoomId]);
+    if (store.phase.type === "ended") return;
+
+    if (roomStatus === "END_CONFIRM") {
+      store.setPhase({ type: "confirmEnd" });
+      return;
+    }
+
+    if (roomStatus === "COMPLETED") {
+      store.setPhase({ type: "ended" });
+      return;
+    }
+
+    store.setPhase({ type: "chatting" });
+  }, [roomStatus]);
 
   // 없거나 권한 없는 방이면 훈련 페이지로 이동
   useEffect(() => {
@@ -84,7 +101,7 @@ export const useComprehensionChat = () => {
   const isWaiting = sendMessageMutation.isPending || createSummation.isPending;
 
   const messages = useMemo<ComprehensionMessage[]>(() => {
-    const history = messagesQuery.data ?? [];
+    const history = messagesQuery.data?.messages ?? [];
     const list: ComprehensionMessage[] = [...history, ...localMessages];
 
     if (isWaiting) list.push(REPLY_LOADING);

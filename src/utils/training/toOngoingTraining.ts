@@ -1,20 +1,31 @@
-import type { OngoingTraining, TrainingRecommendResponse } from "@/types/training/ongoingTraining";
+import type { TrainingRoomListItemResponse } from "@/types/training/bookReportTraining";
+import type { UnderstandRoomListItemResponse } from "@/types/training/comprehension";
+import type { OngoingTraining } from "@/types/training/ongoingTraining";
 
-const PROGRAM_ID = {
-  TRAINING: "book-report",
-  UNDERSTAND: "comprehension",
-} as const;
+const toStatus = (status: string) => (status === "COMPLETED" ? "completed" : "in-progress");
 
-// 방이 없으면 추천만 있거나 아무것도 없는 상태
-export const toOngoingTraining = (response: TrainingRecommendResponse): OngoingTraining => ({
-  roomId: response.roomId,
-  reviewId: response.reviewId,
-  status:
-    response.roomType === null || response.status === null
-      ? "empty"
-      : response.status === "IN_PROGRESS"
-        ? "in-progress"
-        : "completed",
-  programId: response.roomType ? PROGRAM_ID[response.roomType] : null,
-  bookTitle: response.bookTitle,
-});
+export const toBookReportTraining = (
+  item: TrainingRoomListItemResponse | undefined,
+): OngoingTraining | null =>
+  item
+    ? {
+        roomId: item.trainingRoomId,
+        targetKey: String(item.reviewId),
+        status: toStatus(item.status),
+        programId: "book-report",
+        bookTitle: item.bookTitle,
+      }
+    : null;
+
+export const toComprehensionTraining = (
+  item: UnderstandRoomListItemResponse | undefined,
+): OngoingTraining | null =>
+  item
+    ? {
+        roomId: item.understandRoomId,
+        targetKey: `${item.bookId}-${item.startPageNumber}-${item.endPageNumber}`,
+        status: toStatus(item.status),
+        programId: "comprehension",
+        bookTitle: item.bookTitle,
+      }
+    : null;

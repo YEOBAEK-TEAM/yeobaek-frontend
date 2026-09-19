@@ -11,6 +11,7 @@ import {
 import { getApiErrorStatus } from "@/utils/common/getApiErrorMessage";
 import {
   toBookmarkViews,
+  toComprehensionBook,
   toComprehensionMessages,
   toComprehensionSummary,
 } from "@/utils/training/toComprehensionView";
@@ -52,7 +53,11 @@ export const useUnderstandMessages = (understandRoomId: number | null) =>
       getUnderstandMessages({ understandRoomId: understandRoomId ?? 0, cursor: pageParam, signal }),
     initialPageParam: null as number | null,
     getNextPageParam: (lastPage) => (lastPage.hasNext ? lastPage.nextCursor : undefined),
-    select: (data) => toComprehensionMessages(data.pages),
+    select: (data) => ({
+      messages: toComprehensionMessages(data.pages),
+      status: data.pages[0]?.status ?? null,
+      book: data.pages[0] ? toComprehensionBook(data.pages[0]) : null,
+    }),
     enabled: understandRoomId !== null,
     retry: retryUnlessNotFound,
     refetchOnWindowFocus: false,
@@ -118,7 +123,7 @@ export const useCreateUnderstandSummation = () => {
     retry: 0,
     onSuccess: (summation) => {
       queryClient.setQueryData(understandKeys.summation(summation.understandRoomId), summation);
-      void queryClient.invalidateQueries({ queryKey: ["trainings", "recommend"] });
+      void queryClient.invalidateQueries({ queryKey: ["trainings", "understand", "latest"] });
     },
   });
 };
