@@ -3,6 +3,15 @@ import ReadingCharacter from "@/assets/images/Training/ReadingCharacter.png";
 
 import type { TrainingProgram, TrainingTab } from "@/types/training/trainingProgram";
 
+// 훈련 화면 경로
+export const TRAINING_PATH = {
+  main: "/training",
+  bookReportSelect: "/training/book-report/select",
+  bookReportChat: "/training/book-report",
+  bookReportComplete: "/training/complete",
+  comprehension: "/training/comprehension",
+};
+
 export const TRAINING_TABS: { id: TrainingTab; label: string }[] = [
   { id: "lity", label: "리티와 훈련" },
   { id: "debate", label: "토론장 참여" },

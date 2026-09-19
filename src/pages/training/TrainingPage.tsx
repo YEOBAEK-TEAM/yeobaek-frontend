@@ -7,7 +7,7 @@ import TrainingGreeting from "@/components/training/TrainingGreeting";
 import TrainingProgramCard from "@/components/training/TrainingProgramCard";
 import TrainingSegmentTabs from "@/components/training/TrainingSegmentTabs";
 import DiscussionPanel from "@/components/training/discussion/DiscussionPanel";
-import { TRAINING_PROGRAMS } from "@/constants/training/trainingPrograms";
+import { TRAINING_PATH, TRAINING_PROGRAMS } from "@/constants/training/trainingPrograms";
 import { useTrainingStore } from "@/stores/training/trainingTab";
 
 export default function TrainingPage() {
@@ -16,6 +16,18 @@ export default function TrainingPage() {
   const activeTab = useTrainingStore((state) => state.activeTab);
 
   const { data: ongoingTraining } = useOngoingTraining();
+
+  // 진행 중이던 방으로 바로 이어가기
+  const continueTraining = () => {
+    if (!ongoingTraining?.roomId) return;
+
+    if (ongoingTraining.programId === "book-report") {
+      navigate(`${TRAINING_PATH.bookReportChat}?trainingRoomId=${ongoingTraining.roomId}`);
+      return;
+    }
+
+    navigate(TRAINING_PATH.comprehension);
+  };
 
   return (
     <main className="flex flex-1 flex-col">
@@ -34,7 +46,7 @@ export default function TrainingPage() {
           <>
             {ongoingTraining && (
               <div className="mt-5">
-                <OngoingTrainingCard training={ongoingTraining} />
+                <OngoingTrainingCard training={ongoingTraining} onContinue={continueTraining} />
               </div>
             )}
 
@@ -49,8 +61,8 @@ export default function TrainingPage() {
                     onClick={() =>
                       navigate(
                         program.id === "book-report"
-                          ? "/training/book-report"
-                          : "/training/comprehension",
+                          ? TRAINING_PATH.bookReportSelect
+                          : TRAINING_PATH.comprehension,
                       )
                     }
                   />

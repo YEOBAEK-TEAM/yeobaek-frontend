@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import ConfirmModal from "@/components/common/confirmModal/ConfirmModal";
 import Header from "@/components/common/header/Header";
@@ -7,58 +6,48 @@ import ChatActionButtons from "@/components/training/shared/chat/ChatActionButto
 import ChatInput from "@/components/training/shared/chat/ChatInput";
 import BookReportMessageList from "@/components/training/bookReport/BookReportMessageList";
 import PinnedBookSummary from "@/components/training/shared/chat/PinnedBookSummary";
-import ReportListBottomSheet from "@/components/training/bookReport/ReportListBottomSheet";
 import {
   BOOK_REPORT_CHAT_TITLE,
   EXIT_BEFORE_START_TEXT,
   EXIT_IN_PROGRESS_TEXT,
+  SUMMARY_ACTION_LABEL,
 } from "@/constants/training/bookReportChat";
 import { useBookReportChat } from "@/hooks/training/useBookReportChat";
 import { myProfile } from "@/mocks/my";
 import { useAuthStore } from "@/stores/auth";
 
 export default function BookReportChatPage() {
-  const navigate = useNavigate();
-
   const nickname = useAuthStore((state) => state.nickname) ?? myProfile.nickname;
 
   const {
     phase,
     messages,
-    reports,
-    isStreaming,
-    isSheetOpen,
-    closeSheet,
-    selectReport,
+    pinnedReport,
+    reviewTitle,
+    isReplying,
+    isChatReady,
+    olderMessages,
     sendMessage,
     retryMessage,
     leaveChat,
     handleQuickReply,
     applyToReport,
-    continueAnotherTopic,
     saveAndStop,
   } = useBookReportChat();
 
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false);
 
   // 뒤로가기 확인 문구 분기
-  const isTrainingStarted =
-    phase.type === "analyzing" || phase.type === "chatting" || phase.type === "summary";
+  const isTrainingStarted = phase.type !== "select";
 
   const handleBack = () => {
     if (phase.type === "ended") {
-      navigate(-1);
+      leaveChat();
       return;
     }
 
     setIsExitConfirmOpen(true);
   };
-
-  // 상단 고정 배너 노출 단계
-  const pinnedReport =
-    phase.type === "chatting" || phase.type === "summary" || phase.type === "ended"
-      ? phase.report
-      : null;
 
   return (
     <main className="flex h-dvh flex-col">
@@ -68,13 +57,14 @@ export default function BookReportChatPage() {
         <PinnedBookSummary
           coverUrl={pinnedReport.coverUrl}
           title={pinnedReport.bookTitle}
-          subtitle={pinnedReport.reportTitle}
+          subtitle={reviewTitle || pinnedReport.reportTitle}
         />
       )}
 
       <BookReportMessageList
         messages={messages}
         nickname={nickname}
+        olderMessages={olderMessages}
         onQuickReply={handleQuickReply}
         onRetry={retryMessage}
       />
@@ -84,19 +74,13 @@ export default function BookReportChatPage() {
           actions={[
             {
               id: "apply",
-              label: "독후감에 반영하기",
+              label: SUMMARY_ACTION_LABEL.applyToReport,
               variant: "primary",
-              onClick: () => void applyToReport(),
+              onClick: applyToReport,
             },
             {
-              id: "continue",
-              label: "다른 주제로 이어가기",
-              variant: "dark",
-              onClick: () => void continueAnotherTopic(),
-            },
-            {
-              id: "save",
-              label: "대화 내용 저장하고 중단하기",
+              id: "finish",
+              label: SUMMARY_ACTION_LABEL.finish,
               variant: "outline",
               onClick: () => void saveAndStop(),
             },
@@ -105,18 +89,14 @@ export default function BookReportChatPage() {
       )}
 
       {phase.type !== "summary" && phase.type !== "ended" && (
-        <ChatInput disabled={isStreaming || phase.type === "analyzing"} onSend={sendMessage} />
-      )}
-
-      {isSheetOpen && (
-        <ReportListBottomSheet reports={reports} onSelect={selectReport} onClose={closeSheet} />
+        <ChatInput disabled={!isChatReady || isReplying} onSend={sendMessage} />
       )}
 
       {isExitConfirmOpen && (
         <ConfirmModal
           onConfirm={() => {
             setIsExitConfirmOpen(false);
-            void leaveChat(isTrainingStarted);
+            leaveChat();
           }}
           onClose={() => setIsExitConfirmOpen(false)}
         >

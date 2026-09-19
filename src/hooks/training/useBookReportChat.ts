@@ -1,308 +1,362 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import {
-  applyChatToReport,
-  endBookReportSession,
-  startBookReportSession,
-} from "@/api/training/bookReportChat";
-import {
-  ANALYZED_TEXT,
-  ANALYZING_TEXT,
-  COMPREHENSION_GUIDE_TEXT,
-  EMPTY_REPORT_TEXT,
   ENDED_SYSTEM_TEXT,
   ENDING_TEXT,
+  MESSAGES_ERROR_TEXT,
+  MORE_PERSPECTIVE_LABEL,
+  OTHER_PERSPECTIVE_EMPTY_TEXT,
+  OTHER_PERSPECTIVE_LABEL,
+  RETRY_LABEL,
+  SKIP_PERSPECTIVE_LABEL,
+  SUMMATION_ERROR_TEXT,
 } from "@/constants/training/bookReportChat";
-import { useChatStream } from "@/hooks/training/useChatStream";
-import { useReadingReports } from "@/hooks/training/useReadingReports";
-import { myProfile } from "@/mocks/my";
-import { mockThoughtComparison } from "@/mocks/training/bookReportChatScript";
-import { useAuthStore } from "@/stores/auth";
-import { useBookReportChatStore } from "@/stores/training/bookReportChat";
-import { ritiReportCard, ritiThoughtSummary } from "@/utils/training/createBookReportMessage";
+import { REPORT_PATH } from "@/constants/library/report";
+import { TRAINING_PATH } from "@/constants/training/trainingPrograms";
 import {
-  ritiLoading,
-  ritiPlainText,
-  ritiQuickReplies,
-  ritiText,
-  systemText,
-  userText,
-} from "@/utils/training/createChatMessage";
-import { josa } from "@/utils/training/josa";
+  useCreateTrainingSummation,
+  useSendTrainingMessage,
+  useShowOtherPerspective,
+  useSkipOtherPerspective,
+  useTrainingMessages,
+  useTrainingReview,
+} from "@/hooks/training/useBookReportTrainingQueries";
+import { useToastStore } from "@/stores/common/toast";
+import { useBookReportChatStore } from "@/stores/training/bookReportChat";
+import { getApiErrorMessage, getApiErrorStatus } from "@/utils/common/getApiErrorMessage";
+import { wait } from "@/utils/common/withMinimumDelay";
+import { ritiThoughtSummary } from "@/utils/training/createBookReportMessage";
+import { ritiLoading, ritiText, systemText, userText } from "@/utils/training/createChatMessage";
+import { toThoughtComparison } from "@/utils/training/toTrainingView";
 
+import type { BookReportMessage } from "@/types/training/bookReportChat";
 import type { ChatQuickReply } from "@/types/training/chat";
-import type { ReadingReport } from "@/types/training/readingReport";
-
-const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-
-const ANALYZE_DURATION_MS = 1400;
 
 const ENDED_REDIRECT_MS = 1500;
 
-// 내 말풍선과 다음 응답 사이 간격
-const USER_ECHO_DELAY_MS = 400;
+// 새로고침해도 이어가도록 주소에 보관하는 값
+const TRAINING_ROOM_PARAM = "trainingRoomId";
 
-// 분석완료 표시 유지 시간
-const ANALYZED_HOLD_MS = 800;
+// 서버 메시지 뒤에 붙는 화면 전용 메시지
+const REPLY_LOADING: BookReportMessage = { id: "reply-loading", role: "riti", kind: "loading" };
 
-// 다른 관점 보기 칩이 붙는 대화 차례
-const ANOTHER_VIEW_TURN = 2;
+const PERSPECTIVE_CHIP: BookReportMessage = {
+  id: "perspective-chip",
+  role: "riti",
+  kind: "quickReplies",
+  direction: "row",
+  replies: [
+    { id: "show-perspective", label: OTHER_PERSPECTIVE_LABEL },
+    { id: "skip-perspective", label: SKIP_PERSPECTIVE_LABEL },
+  ],
+};
+
+const MORE_PERSPECTIVE_CHIP: BookReportMessage = {
+  id: "more-perspective-chip",
+  role: "riti",
+  kind: "quickReplies",
+  replies: [{ id: "show-perspective", label: MORE_PERSPECTIVE_LABEL }],
+};
+
+const MESSAGES_ERROR: BookReportMessage[] = [
+  { id: "messages-error", role: "riti", kind: "text", text: MESSAGES_ERROR_TEXT },
+  {
+    id: "messages-retry",
+    role: "riti",
+    kind: "quickReplies",
+    replies: [{ id: "retry-messages", label: RETRY_LABEL }],
+  },
+];
+
+const toId = (value: string | null) => {
+  const id = Number(value);
+  return value && Number.isSafeInteger(id) && id > 0 ? id : null;
+};
 
 export const useBookReportChat = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
 
-  const nickname = useAuthStore((state) => state.nickname) ?? myProfile.nickname;
+  const showToast = useToastStore((state) => state.showToast);
 
-  const { data: reports = [], isPending } = useReadingReports();
+  const trainingRoomId = toId(searchParams.get(TRAINING_ROOM_PARAM));
 
   const phase = useBookReportChatStore((state) => state.phase);
-  const messages = useBookReportChatStore((state) => state.messages);
+  const localMessages = useBookReportChatStore((state) => state.messages);
 
-  const { start, isStreaming } = useChatStream();
+  const messagesQuery = useTrainingMessages(trainingRoomId);
+  const reviewId = messagesQuery.data?.reviewId ?? null;
+  const reviewQuery = useTrainingReview(reviewId);
 
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const sendMessageMutation = useSendTrainingMessage();
+  const showPerspective = useShowOtherPerspective();
+  const skipPerspective = useSkipOtherPerspective();
+  const createSummation = useCreateTrainingSummation();
 
-  const recentReport = reports.at(0) ?? null;
+  // 렌더 전 연속 입력에도 한 번만 요청
+  const isBusyRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
 
-  // 단계별 초기 메시지 구성
-  useEffect(() => {
-    if (isPending) return;
-
-    const store = useBookReportChatStore.getState();
-
-    if (!recentReport) {
-      store.setPhase({ type: "empty" });
-      store.pushMessage(ritiText(EMPTY_REPORT_TEXT));
-      store.pushMessage(
-        ritiQuickReplies([{ id: "guide-other-training", label: "다른 훈련 안내" }]),
-      );
-
-      return () => store.reset();
-    }
-
-    store.setPhase({ type: "select" });
-    store.pushMessage(
-      ritiText(
-        `${nickname}님, 가장 최근에 ${recentReport.bookTitle}${josa(recentReport.bookTitle, "을", "를")} 완독하시고\n독후감을 작성하셨네요!!\n\n어느 독후감으로 논리를 확장해볼까요?`,
-      ),
-    );
-    store.pushMessage(
-      ritiQuickReplies([
-        { id: "select-recent-report", label: recentReport.bookTitle },
-        { id: "open-report-list", label: "독후감 목록보기" },
-      ]),
-    );
-
-    return () => store.reset();
-  }, [isPending, recentReport, nickname]);
-
-  const streamReply = useCallback(
-    async (report: ReadingReport, text: string, userMessageId?: string) => {
-      const store = useBookReportChatStore.getState();
-      const currentTurn = store.turn;
-
-      const reply = ritiText("", true);
-      store.pushMessage(reply);
-
-      await start(
-        { reportId: report.reportId, text, turn: currentTurn },
-        {
-          onDelta: (delta) => useBookReportChatStore.getState().appendText(reply.id, delta),
-          onDone: () => {
-            const next = useBookReportChatStore.getState();
-            next.finishStreaming(reply.id);
-            next.nextTurn();
-
-            if (currentTurn !== ANOTHER_VIEW_TURN) return;
-
-            next.pushMessage(ritiQuickReplies([{ id: "another-view", label: "다른 관점 보기" }]));
-          },
-          onError: () => {
-            const next = useBookReportChatStore.getState();
-            next.removeMessage(reply.id);
-            if (userMessageId) next.markFailed(userMessageId, true);
-          },
-        },
-      );
+  // 화면 이탈 시 진행 중 요청 취소와 단계 초기화
+  useEffect(
+    () => () => {
+      abortRef.current?.abort();
+      useBookReportChatStore.getState().reset();
     },
-    [start],
+    [],
   );
 
-  const selectReport = useCallback(
-    async (report: ReadingReport) => {
-      const store = useBookReportChatStore.getState();
+  // 훈련방 없이 들어오면 독후감 선택부터
+  useEffect(() => {
+    if (trainingRoomId === null) navigate(TRAINING_PATH.bookReportSelect, { replace: true });
+  }, [trainingRoomId, navigate]);
 
-      store.pushMessage(userText(report.bookTitle));
-      store.setPhase({ type: "analyzing", report });
+  useEffect(() => {
+    const store = useBookReportChatStore.getState();
+    if (store.phase.type === "select") store.setPhase({ type: "chatting" });
+  }, [trainingRoomId]);
 
-      await delay(USER_ECHO_DELAY_MS);
+  // 없거나 권한 없는 훈련방이면 훈련 페이지로 이동
+  useEffect(() => {
+    if (getApiErrorStatus(messagesQuery.error) !== 404) return;
 
-      const analyzing = useBookReportChatStore.getState();
-      analyzing.pushMessage(ritiReportCard(report));
+    showToast(getApiErrorMessage(messagesQuery.error, MESSAGES_ERROR_TEXT), "error");
+    navigate(TRAINING_PATH.main, { replace: true });
+  }, [messagesQuery.error, navigate, showToast]);
 
-      const loading = ritiLoading();
-      analyzing.pushMessage(loading);
+  const isReplying =
+    sendMessageMutation.isPending || showPerspective.isPending || skipPerspective.isPending;
 
-      await startBookReportSession(report);
-      await delay(ANALYZE_DURATION_MS);
+  const messages = useMemo<BookReportMessage[]>(() => {
+    if (messagesQuery.isError) return MESSAGES_ERROR;
 
-      const next = useBookReportChatStore.getState();
-      next.removeMessage(loading.id);
-      next.pushMessage(ritiPlainText(ANALYZING_TEXT));
-      next.pushMessage(ritiPlainText(ANALYZED_TEXT));
+    const history = messagesQuery.data?.messages ?? [];
+    const list: BookReportMessage[] = [...history, ...localMessages];
 
-      await delay(ANALYZED_HOLD_MS);
+    if (isReplying) list.push(REPLY_LOADING);
 
-      // 새 채팅창으로 전환
-      const chatting = useBookReportChatStore.getState();
-      chatting.clearMessages();
-      chatting.setPhase({ type: "chatting", report });
+    // 선택 전까지는 전송이 막혀 버튼만 노출
+    if (phase.type === "perspectivePrompt" && !isReplying) list.push(PERSPECTIVE_CHIP);
 
-      await streamReply(report, "", undefined);
+    // 관점을 본 뒤에는 더 보기 버튼과 함께 대화를 이어감
+    if (phase.type === "perspectiveShown" && !isReplying) list.push(MORE_PERSPECTIVE_CHIP);
+
+    return list;
+  }, [messagesQuery.isError, messagesQuery.data, localMessages, isReplying, phase.type]);
+
+  // 요약이 만들어지면 말풍선으로 보여주고 단계 전환
+  const applySummary = useCallback((thought: { before: string; after: string }) => {
+    const store = useBookReportChatStore.getState();
+    store.pushMessage(ritiThoughtSummary(thought));
+    store.setPhase({ type: "summary", thought });
+  }, []);
+
+  const deliverMessage = useCallback(
+    async (messageId: string, text: string) => {
+      if (trainingRoomId === null) return;
+
+      isBusyRef.current = true;
+
+      const controller = new AbortController();
+      abortRef.current = controller;
+
+      try {
+        const reply = await sendMessageMutation.mutateAsync({
+          trainingRoomId,
+          content: text,
+          signal: controller.signal,
+        });
+
+        // 서버 이력 캐시에 반영됐으므로 임시 메시지 제거
+        useBookReportChatStore.getState().removeMessage(messageId);
+
+        if (reply.end && reply.summation) {
+          applySummary(toThoughtComparison(reply.summation));
+          return;
+        }
+
+        if (reply.perspectiveAvailable) {
+          useBookReportChatStore.getState().setPhase({ type: "perspectivePrompt" });
+        }
+      } catch {
+        if (controller.signal.aborted) return;
+
+        useBookReportChatStore.getState().markFailed(messageId, true);
+      } finally {
+        isBusyRef.current = false;
+        if (abortRef.current === controller) abortRef.current = null;
+      }
     },
-    [streamReply],
+    [applySummary, sendMessageMutation, trainingRoomId],
   );
 
   const sendMessage = useCallback(
     async (text: string) => {
-      const current = useBookReportChatStore.getState().phase;
-      if (current.type !== "chatting" || isStreaming) return;
+      const store = useBookReportChatStore.getState();
+      const canSend = store.phase.type === "chatting" || store.phase.type === "perspectiveShown";
+      if (!canSend || !messagesQuery.data || isBusyRef.current) return;
 
-      const message = userText(text);
-      useBookReportChatStore.getState().pushMessage(message);
+      store.setPhase({ type: "chatting" });
 
-      await streamReply(current.report, text, message.id);
+      const message = { ...userText(text), status: "sending" as const };
+      store.pushMessage(message);
+
+      await deliverMessage(message.id, text);
     },
-    [isStreaming, streamReply],
+    [deliverMessage, messagesQuery.data],
   );
 
   const retryMessage = useCallback(
     async (messageId: string, text: string) => {
-      const current = useBookReportChatStore.getState().phase;
-      if (current.type !== "chatting" || isStreaming) return;
+      const store = useBookReportChatStore.getState();
+      if (store.phase.type !== "chatting" || isBusyRef.current) return;
 
-      useBookReportChatStore.getState().markFailed(messageId, false);
+      store.markFailed(messageId, false);
 
-      await streamReply(current.report, text, messageId);
+      await deliverMessage(messageId, text);
     },
-    [isStreaming, streamReply],
+    [deliverMessage],
   );
 
-  const showSummary = useCallback(() => {
+  // 선택과 관점 카드가 모두 서버 이력에 남아 다시 조회
+  const selectPerspective = useCallback(async () => {
+    if (trainingRoomId === null || isBusyRef.current) return;
+
+    isBusyRef.current = true;
+
+    try {
+      await showPerspective.mutateAsync(trainingRoomId);
+      await messagesQuery.refetch();
+
+      useBookReportChatStore.getState().setPhase({ type: "perspectiveShown" });
+    } catch (error) {
+      const store = useBookReportChatStore.getState();
+
+      // 소개할 관점이 없으면 대화만 이어감
+      if (getApiErrorStatus(error) === 404) {
+        store.pushMessage(ritiText(OTHER_PERSPECTIVE_EMPTY_TEXT));
+        store.setPhase({ type: "chatting" });
+        return;
+      }
+
+      showToast(getApiErrorMessage(error, SUMMATION_ERROR_TEXT), "error");
+    } finally {
+      isBusyRef.current = false;
+    }
+  }, [messagesQuery, showPerspective, showToast, trainingRoomId]);
+
+  // 미리보기만 받고 저장은 요약 화면으로 넘어갈 때 처리
+  const skipPerspectiveStep = useCallback(async () => {
+    if (trainingRoomId === null || isBusyRef.current) return;
+
+    isBusyRef.current = true;
+
+    const loading = ritiLoading();
+    useBookReportChatStore.getState().pushMessage(loading);
+
+    try {
+      // 미리보기를 받은 뒤 바로 저장해 방이 대기 상태로 남지 않게 함
+      await skipPerspective.mutateAsync(trainingRoomId);
+      const summation = await createSummation.mutateAsync(trainingRoomId);
+
+      const store = useBookReportChatStore.getState();
+      store.removeMessage(loading.id);
+
+      applySummary(toThoughtComparison(summation));
+    } catch (error) {
+      const store = useBookReportChatStore.getState();
+      store.removeMessage(loading.id);
+      store.setPhase({ type: "perspectivePrompt" });
+
+      showToast(getApiErrorMessage(error, SUMMATION_ERROR_TEXT), "error");
+    } finally {
+      isBusyRef.current = false;
+    }
+  }, [applySummary, createSummation, showToast, skipPerspective, trainingRoomId]);
+
+  // 요약 화면으로 넘어가는 시점에 요약을 저장
+  const saveAndStop = useCallback(async () => {
     const store = useBookReportChatStore.getState();
-    if (store.phase.type !== "chatting") return;
+    if (store.phase.type !== "summary" || trainingRoomId === null || isBusyRef.current) return;
 
-    store.pushMessage(ritiThoughtSummary(mockThoughtComparison));
-    store.setPhase({
-      type: "summary",
-      report: store.phase.report,
-      thought: mockThoughtComparison,
-    });
-  }, []);
+    isBusyRef.current = true;
 
-  const endChat = useCallback(async () => {
-    const store = useBookReportChatStore.getState();
-    if (store.phase.type !== "summary") return;
+    try {
+      await createSummation.mutateAsync(trainingRoomId);
+    } catch (error) {
+      showToast(getApiErrorMessage(error, SUMMATION_ERROR_TEXT), "error");
+      isBusyRef.current = false;
+      return;
+    }
 
-    store.pushMessage(ritiText(ENDING_TEXT));
-    store.pushMessage(systemText(ENDED_SYSTEM_TEXT));
-    store.setPhase({ type: "ended", report: store.phase.report });
+    const ending = useBookReportChatStore.getState();
+    ending.pushMessage(ritiText(ENDING_TEXT));
+    ending.pushMessage(systemText(ENDED_SYSTEM_TEXT));
+    ending.setPhase({ type: "ended" });
 
-    await delay(ENDED_REDIRECT_MS);
-    navigate("/training/complete");
-  }, [navigate]);
+    isBusyRef.current = false;
+
+    await wait(ENDED_REDIRECT_MS);
+    navigate(`${TRAINING_PATH.bookReportComplete}?${TRAINING_ROOM_PARAM}=${trainingRoomId}`);
+  }, [createSummation, navigate, showToast, trainingRoomId]);
+
+  // 독후감 수정 화면에서 직접 반영
+  const applyToReport = useCallback(() => {
+    if (reviewId === null) return;
+
+    navigate(REPORT_PATH.edit(reviewId));
+  }, [navigate, reviewId]);
 
   // 뒤로가기 이탈 처리
   const leaveChat = useCallback(
-    async (save: boolean) => {
-      if (save) await endBookReportSession();
-
-      navigate(-1);
-    },
-    [navigate],
+    () => (location.key === "default" ? navigate(TRAINING_PATH.main) : navigate(-1)),
+    [location.key, navigate],
   );
-
-  const applyToReport = useCallback(async () => {
-    await applyChatToReport();
-    await endChat();
-  }, [endChat]);
-
-  const saveAndStop = useCallback(async () => {
-    await endBookReportSession();
-    await endChat();
-  }, [endChat]);
-
-  const continueAnotherTopic = useCallback(async () => {
-    const store = useBookReportChatStore.getState();
-    if (store.phase.type !== "summary") return;
-
-    store.setPhase({ type: "chatting", report: store.phase.report });
-
-    await streamReply(store.phase.report, "다른 주제로 이어가기", undefined);
-  }, [streamReply]);
 
   const handleQuickReply = useCallback(
     async (reply: ChatQuickReply) => {
-      const store = useBookReportChatStore.getState();
-
-      if (reply.id === "select-recent-report") {
-        if (recentReport) await selectReport(recentReport);
-        return;
-      }
-
-      // 이해력 증진 화면 이동
-      if (reply.id === "go-comprehension") {
-        navigate("/training/comprehension");
-        return;
-      }
-
-      store.pushMessage(userText(reply.label));
-
-      await delay(USER_ECHO_DELAY_MS);
+      if (isBusyRef.current) return;
 
       switch (reply.id) {
-        case "open-report-list":
-          setIsSheetOpen(true);
+        case "retry-messages":
+          void messagesQuery.refetch();
           return;
 
-        case "another-view":
-          showSummary();
+        case "show-perspective":
+          await selectPerspective();
           return;
 
-        case "guide-other-training": {
-          const next = useBookReportChatStore.getState();
-          next.pushMessage(ritiText(`${nickname}님, ${COMPREHENSION_GUIDE_TEXT}`));
-          next.pushMessage(
-            ritiQuickReplies([
-              { id: "go-comprehension", label: "이해력 증진 훈련 받으러가기", link: true },
-            ]),
-          );
+        case "skip-perspective":
+          await skipPerspectiveStep();
           return;
-        }
       }
     },
-    [navigate, nickname, recentReport, selectReport, showSummary],
+    [messagesQuery, selectPerspective, skipPerspectiveStep],
   );
+
+  const pinnedReport = reviewQuery.data ?? null;
 
   return {
     phase,
     messages,
-    reports,
-    isStreaming,
-    isSheetOpen,
-    openSheet: () => setIsSheetOpen(true),
-    closeSheet: () => setIsSheetOpen(false),
-    selectReport: (report: ReadingReport) => {
-      setIsSheetOpen(false);
-      void selectReport(report);
+    pinnedReport,
+    reviewTitle: messagesQuery.data?.reviewTitle ?? "",
+    isReplying,
+    isChatReady:
+      (phase.type === "chatting" || phase.type === "perspectiveShown") &&
+      Boolean(messagesQuery.data),
+    olderMessages: {
+      hasNextPage: messagesQuery.hasNextPage,
+      isFetchingNextPage: messagesQuery.isFetchingNextPage,
+      fetchNextPage: messagesQuery.fetchNextPage,
     },
     sendMessage,
     retryMessage,
     leaveChat,
     handleQuickReply,
     applyToReport,
-    continueAnotherTopic,
     saveAndStop,
   };
 };

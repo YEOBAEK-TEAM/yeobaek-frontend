@@ -3,6 +3,7 @@ export type ChatAction = {
   label: string;
   variant: "primary" | "dark" | "outline";
   onClick: () => void;
+  disabled?: boolean;
 };
 
 const VARIANT_CLASS = {
@@ -19,7 +20,8 @@ export default function ChatActionButtons({ actions }: { actions: ChatAction[] }
           key={action.id}
           type="button"
           onClick={action.onClick}
-          className={`h-13 w-full rounded-xl text-[15px] font-bold ${VARIANT_CLASS[action.variant]}`}
+          disabled={action.disabled}
+          className={`h-13 w-full rounded-xl text-[15px] font-bold disabled:opacity-50 ${VARIANT_CLASS[action.variant]}`}
         >
           {action.label}
         </button>

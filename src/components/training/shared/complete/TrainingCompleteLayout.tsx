@@ -8,6 +8,8 @@ type TrainingCompleteLayoutProps = {
   subtitle: string;
   rows: LearningSummaryRow[];
   onComplete: () => void;
+  restartLabel?: string;
+  onRestart?: () => void;
 };
 
 // 캐릭터 아래 타원 그림자
@@ -20,6 +22,8 @@ export default function TrainingCompleteLayout({
   subtitle,
   rows,
   onComplete,
+  restartLabel,
+  onRestart,
 }: TrainingCompleteLayoutProps) {
   return (
     <main className="flex min-h-dvh flex-col">
@@ -55,7 +59,7 @@ export default function TrainingCompleteLayout({
         )}
       </div>
 
-      <div className="shrink-0 px-5 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
+      <div className="flex shrink-0 flex-col gap-3 px-5 pt-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">
         <button
           type="button"
           onClick={onComplete}
@@ -63,6 +67,16 @@ export default function TrainingCompleteLayout({
         >
           훈련 완료
         </button>
+
+        {onRestart && restartLabel && (
+          <button
+            type="button"
+            onClick={onRestart}
+            className="h-13 w-full rounded-xl bg-[#B7C3A3] text-[15px] font-bold text-white"
+          >
+            {restartLabel}
+          </button>
+        )}
       </div>
     </main>
   );

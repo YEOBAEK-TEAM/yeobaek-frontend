@@ -1,5 +1,6 @@
 import {
   EMPTY_ONGOING_TRAINING,
+  ONGOING_TRAINING_ACTION_LABEL,
   ONGOING_TRAINING_CHARACTER,
   ONGOING_TRAINING_LABEL,
 } from "@/constants/training/ongoingTraining";
@@ -20,6 +21,7 @@ export const resolveOngoingTraining = (training: OngoingTraining): OngoingTraini
       ...EMPTY_ONGOING_TRAINING,
       character: ONGOING_TRAINING_CHARACTER.empty.src,
       characterClassName: ONGOING_TRAINING_CHARACTER.empty.className,
+      actionLabel: null,
     };
   }
 
@@ -30,9 +32,10 @@ export const resolveOngoingTraining = (training: OngoingTraining): OngoingTraini
       return {
         label: ONGOING_TRAINING_LABEL,
         title: "독후감으로 리티와 훈련하기",
-        description: `${book}${josa(bookTitle, "을", "를")} 읽으며 남긴 생각을 바탕으로 공백의\nAI의 리티와 함께 더 깊이 생각하고 있어요`,
+        description: `${book}${josa(bookTitle, "을", "를")} 읽으며 남긴 생각을 바탕으로\n리티와 함께 더 깊이 생각하고 있어요`,
         character: ONGOING_TRAINING_CHARACTER.bookReport.src,
         characterClassName: ONGOING_TRAINING_CHARACTER.bookReport.className,
+        actionLabel: ONGOING_TRAINING_ACTION_LABEL,
       };
     }
 
@@ -42,6 +45,7 @@ export const resolveOngoingTraining = (training: OngoingTraining): OngoingTraini
       description: `현재 ${book}${josa(bookTitle, "을", "를")} 읽으며 이해가 잘되지 않는\n부분을 짚어보고, 그 내용을 바탕으로\n생각을 한 단계 더 깊게 확장하고 있습니다.`,
       character: ONGOING_TRAINING_CHARACTER.comprehension.src,
       characterClassName: ONGOING_TRAINING_CHARACTER.comprehension.className,
+      actionLabel: ONGOING_TRAINING_ACTION_LABEL,
     };
   }
 
@@ -54,5 +58,6 @@ export const resolveOngoingTraining = (training: OngoingTraining): OngoingTraini
         : "꾸준히 책을 읽으며 새로운 지식을 쌓고,\n더 넓고 깊은 생각으로 나아가 보세요",
     character: ONGOING_TRAINING_CHARACTER.completed.src,
     characterClassName: ONGOING_TRAINING_CHARACTER.completed.className,
+    actionLabel: null,
   };
 };
