@@ -4,14 +4,30 @@ import type { RoomEndReason } from "@/types/training/discussion/roomChat";
 
 export const ROOM_CHAT_PAGE_SIZE = 30;
 
+// 서버 본문 길이 제한
+export const ROOM_MESSAGE_MAX_LENGTH = 2000;
+
 export const UNREAD_DIVIDER_TEXT = "여기까지 읽으셨습니다";
 
 export const HOST_NAME_SUFFIX = "(방장)";
 
 export const ROOM_HEADER_LABEL = {
-  inviteCode: "초대코드 보기",
-  leave: "토론방 나가기",
+  menu: "토론방 메뉴",
   back: "뒤로가기",
+};
+
+export const ROOM_MENU_LABEL = {
+  inviteCode: "초대코드",
+  applicants: "참가 신청자",
+  leave: "나가기",
+};
+
+export const APPLICANT_SHEET = {
+  title: "참가 신청자",
+  emptyText: "대기 중인 신청자가 없어요",
+  approveLabel: "수락",
+  rejectLabel: "거절",
+  openLabel: (count: number) => `참가 신청자 ${count}명 보기`,
 };
 
 export const MEMBER_MENU_LABEL = {
@@ -39,19 +55,16 @@ export const ROOM_LEFT_TOAST = "토론방을 나갔어요";
 
 const withQuotes = (title: string) => `“${title}”`;
 
-export const getRoomCreatedNotice = (title: string) =>
-  `${withQuotes(title)}${josa(title, "이", "가")} 개설되었습니다. 사람들을 초대해서 자유로운 토론을 즐겨주세요`;
-
 // 방장이 아닌 본인 입장에만 규칙 안내 추가
 export const getMemberJoinedNotice = (nickname: string, withRule: boolean) =>
   `${nickname}님이 방에 입장하셨습니다. 자유롭게 토론을 나눠주세요${
     withRule ? ". 방 규칙을 지키지 않을 시 방장권한으로 강제퇴장이 가능합니다." : ""
   }`;
 
-export const getMemberLeftNotice = (nickname: string) => `${nickname}님이 방을 나갔습니다`;
-
 export const getMemberKickedNotice = (nickname: string) =>
   `${nickname}님이 방장에 의해 퇴장되었습니다`;
+
+export const ROOM_DELETED_NOTICE = "방장이 토론방을 삭제했습니다";
 
 export const getLeaveConfirmMessage = (title: string, isHost: boolean) =>
   `${withQuotes(title)}${josa(title, "을", "를")} 영원히 나가시겠습니까?${

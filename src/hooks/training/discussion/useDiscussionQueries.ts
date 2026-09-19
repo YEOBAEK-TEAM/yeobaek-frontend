@@ -1,51 +1,52 @@
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 
 import {
-  getActiveDiscussions,
   getHotGroups,
   getMyGroups,
   getNewGroups,
   getPendingGroups,
-  searchGroups,
 } from "@/api/training/discussion/discussion";
+import { getRooms } from "@/api/training/discussion/room";
 import {
   toActiveDiscussionView,
   toDiscussionGroupViews,
+  toSearchGroupViews,
 } from "@/utils/training/discussion/toDiscussionView";
 
 import type {
   DiscussionGroupListId,
-  DiscussionGroupResponse,
+  DiscussionRoomMainResponse,
 } from "@/types/training/discussion/discussion";
+import type { DiscussionRoomResponse, PageResponse } from "@/types/training/discussion/room";
 
 const STALE_TIME = 30_000;
-
-// 이미 참여 중인 방은 추천 목록에서 제외, 승인 반영을 위해 탭 진입마다 재조회
-const selectRecommendGroups = (responses: DiscussionGroupResponse[]) =>
-  toDiscussionGroupViews(responses).filter((group) => group.variant !== "joined");
 
 // 토론장 query key 팩토리
 export const discussionKeys = {
   all: ["trainings", "discussion"] as const,
-  active: () => [...discussionKeys.all, "active"] as const,
   groups: (listId: DiscussionGroupListId) => [...discussionKeys.all, "groups", listId] as const,
   search: (keyword: string) => [...discussionKeys.all, "search", keyword] as const,
 };
 
+// 참여 중인 토론 카드와 내 그룹 탭이 같은 캐시를 공유
+const myGroupsQuery = {
+  queryKey: discussionKeys.groups("joined"),
+  queryFn: ({ signal }: { signal: AbortSignal }) => getMyGroups(signal),
+  staleTime: STALE_TIME,
+  refetchOnMount: "always",
+} as const;
+
+const selectGroups = (responses: DiscussionRoomMainResponse[]) => toDiscussionGroupViews(responses);
+
 export const useActiveDiscussion = () =>
-  useQuery({
-    queryKey: discussionKeys.active(),
-    queryFn: getActiveDiscussions,
-    select: toActiveDiscussionView,
-    staleTime: STALE_TIME,
-  });
+  useQuery({ ...myGroupsQuery, select: toActiveDiscussionView });
 
 // 토론방 소켓 연동 시 참여 인원·HOT 순위 실시간 반영 지점
 export const useHotGroups = () =>
   useQuery({
     queryKey: discussionKeys.groups("hot"),
-    queryFn: getHotGroups,
-    select: selectRecommendGroups,
+    queryFn: ({ signal }) => getHotGroups(signal),
+    select: selectGroups,
     staleTime: STALE_TIME,
     refetchOnMount: "always",
   });
@@ -53,37 +54,33 @@ export const useHotGroups = () =>
 export const useNewGroups = () =>
   useQuery({
     queryKey: discussionKeys.groups("new"),
-    queryFn: getNewGroups,
-    select: selectRecommendGroups,
+    queryFn: ({ signal }) => getNewGroups(signal),
+    select: selectGroups,
     staleTime: STALE_TIME,
     refetchOnMount: "always",
   });
 
 // 승인되어 옮겨온 방을 바로 보이도록 탭 진입마다 재조회
-export const useMyGroups = () =>
-  useQuery({
-    queryKey: discussionKeys.groups("joined"),
-    queryFn: getMyGroups,
-    select: toDiscussionGroupViews,
-    staleTime: STALE_TIME,
-    refetchOnMount: "always",
-  });
+export const useMyGroups = () => useQuery({ ...myGroupsQuery, select: selectGroups });
 
 // 승인 결과 알림 연동 전까지 탭 진입마다 재조회
 export const usePendingGroups = () =>
   useQuery({
     queryKey: discussionKeys.groups("pending"),
-    queryFn: getPendingGroups,
-    select: toDiscussionGroupViews,
+    queryFn: ({ signal }) => getPendingGroups(signal),
+    select: selectGroups,
     staleTime: STALE_TIME,
     refetchOnMount: "always",
   });
 
+const selectSearchGroups = (page: PageResponse<DiscussionRoomResponse>) =>
+  toSearchGroupViews(page.items);
+
 export const useSearchGroups = (keyword: string) =>
   useQuery({
     queryKey: discussionKeys.search(keyword),
-    queryFn: () => searchGroups(keyword),
-    select: toDiscussionGroupViews,
+    queryFn: ({ signal }) => getRooms({ filter: "all", keyword, page: 0, signal }),
+    select: selectSearchGroups,
     enabled: keyword.length > 0,
     staleTime: STALE_TIME,
     placeholderData: keepPreviousData,

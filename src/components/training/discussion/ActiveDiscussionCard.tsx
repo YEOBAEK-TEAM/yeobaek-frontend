@@ -37,11 +37,13 @@ export default function ActiveDiscussionCard({
         </button>
       </div>
 
-      <p className="absolute top-3 right-4 flex items-center gap-1 text-[13px] font-medium text-[#54555A] tabular-nums">
-        <Clock3 aria-hidden="true" className="h-4 w-4" />
-        <span className="sr-only">{LAST_VISITED_LABEL}</span>
-        <time dateTime={discussion.lastVisitedAt}>{discussion.lastVisitedLabel}</time>
-      </p>
+      {discussion.lastVisitedAt && (
+        <p className="absolute top-3 right-4 flex items-center gap-1 text-[13px] font-medium text-[#54555A] tabular-nums">
+          <Clock3 aria-hidden="true" className="h-4 w-4" />
+          <span className="sr-only">{LAST_VISITED_LABEL}</span>
+          <time dateTime={discussion.lastVisitedAt}>{discussion.lastVisitedLabel}</time>
+        </p>
+      )}
     </article>
   );
 }

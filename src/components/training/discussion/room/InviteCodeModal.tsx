@@ -21,7 +21,6 @@ export default function InviteCodeModal({ code, onClose }: InviteCodeModalProps)
     <DiscussionModal
       labelledBy={labelId}
       onClose={onClose}
-      placement="upper"
       className="max-w-68 rounded-[18px] bg-[#FBFBFB]"
     >
       <div className="px-5.5 pt-5 pb-4">

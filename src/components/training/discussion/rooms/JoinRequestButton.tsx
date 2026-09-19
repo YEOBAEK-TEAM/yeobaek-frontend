@@ -1,7 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 
 import { PENDING_STATUS_LABEL } from "@/constants/training/discussion/discussion";
-import { JOIN_BUTTON_LABEL, JOIN_UNAVAILABLE_LABEL } from "@/constants/training/discussion/room";
+import { JOIN_BUTTON_LABEL } from "@/constants/training/discussion/room";
 
 import type { RoomJoinStatus, RoomVisibility } from "@/types/training/discussion/room";
 
@@ -28,14 +28,6 @@ export default function JoinRequestButton({
     return (
       <p aria-disabled="true" className={`${BASE_CLASS} bg-[#A59E93] text-white`}>
         {PENDING_STATUS_LABEL}
-      </p>
-    );
-  }
-
-  if (status === "full" || status === "closed") {
-    return (
-      <p aria-disabled="true" className={`${BASE_CLASS} bg-[#E0DDD8] text-[#8F8B85]`}>
-        {JOIN_UNAVAILABLE_LABEL[status]}
       </p>
     );
   }
