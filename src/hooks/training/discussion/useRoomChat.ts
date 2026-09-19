@@ -10,7 +10,6 @@ import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 import type { ChatConnectionStatus } from "@/types/training/chatSocket";
 import type {
   ChatCursor,
-  RoomChatSession,
   RoomEndReason,
   RoomMessagePageResponse,
   RoomMessageResponse,
@@ -60,7 +59,7 @@ const applyIncoming =
 const getLatestMessages = (queryClient: QueryClient, roomId: number) =>
   queryClient.getQueryData<MessagesData>(roomChatKeys.messages(roomId))?.pages[0]?.messages ?? [];
 
-export const useRoomChat = (roomId: number, session: RoomChatSession | undefined) => {
+export const useRoomChat = (roomId: number, myUserId: number | undefined) => {
   const queryClient = useQueryClient();
 
   const connectionRef = useRef<RoomConnection | null>(null);
@@ -68,8 +67,6 @@ export const useRoomChat = (roomId: number, session: RoomChatSession | undefined
 
   const [status, setStatus] = useState<ChatConnectionStatus>("idle");
   const [endReason, setEndReason] = useState<RoomEndReason | null>(null);
-
-  const myUserId = session?.myUserId;
 
   const setMessageStatus = useCallback(
     (clientMessageId: string, from: RoomTimelineMessage["status"], to: "sending" | "failed") =>

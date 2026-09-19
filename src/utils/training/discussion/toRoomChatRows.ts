@@ -1,6 +1,7 @@
 import {
   getMemberJoinedNotice,
   getMemberKickedNotice,
+  getMemberLeftNotice,
   HOST_NAME_SUFFIX,
   ROOM_DELETED_NOTICE,
 } from "@/constants/training/discussion/roomChat";
@@ -13,19 +14,22 @@ import type {
 
 type RowContext = {
   session: RoomChatSession;
+  myUserId: number;
   dividerAfterId: string | null;
 };
 
 const toNoticeText = (
   message: Exclude<RoomTimelineMessage, { type: "chat" }>,
-  { session }: RowContext,
+  { session, myUserId }: RowContext,
 ) => {
   switch (message.type) {
     case "memberJoined":
       return getMemberJoinedNotice(
         message.nickname,
-        message.memberId === session.myUserId && !session.isHost,
+        message.memberId === myUserId && !session.isHost,
       );
+    case "memberLeft":
+      return getMemberLeftNotice(message.nickname);
     case "memberKicked":
       return getMemberKickedNotice(message.nickname);
     case "roomDeleted":
@@ -35,7 +39,7 @@ const toNoticeText = (
 
 // 서버 메시지를 말풍선·안내·읽음 구분선 행으로 변환
 export const toRoomChatRows = (messages: RoomTimelineMessage[], context: RowContext) => {
-  const { session, dividerAfterId } = context;
+  const { session, myUserId, dividerAfterId } = context;
 
   const rows: RoomChatRow[] = [];
   let previousSenderId: number | null = null;
@@ -44,7 +48,7 @@ export const toRoomChatRows = (messages: RoomTimelineMessage[], context: RowCont
     if (message.type !== "chat") {
       rows.push({ kind: "notice", id: message.messageId, text: toNoticeText(message, context) });
       previousSenderId = null;
-    } else if (message.senderId === session.myUserId) {
+    } else if (message.senderId === myUserId) {
       rows.push({
         kind: "mine",
         id: message.messageId,

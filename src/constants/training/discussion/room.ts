@@ -82,6 +82,9 @@ export const ROOM_VISIBILITY_LABEL: Record<RoomVisibility, string> = {
   private: "비공개방",
 };
 
+// 목록에서 제목 옆에 덧붙이는 표시, 공개방은 생략
+export const ROOM_PRIVATE_SUFFIX = "(비공개)";
+
 // 방 만들기 입력창 공통 테두리 박스
 export const ROOM_FIELD_CLASS =
   "w-full scroll-mb-28 rounded-xl border-[1.5px] border-[#5B5552] bg-[#F9FAFB] px-4 text-[16px] text-[#2C2A2B] outline-none placeholder:text-[#A89F94] focus-visible:border-[#2C2A2B]";

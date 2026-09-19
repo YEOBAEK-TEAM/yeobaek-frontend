@@ -11,6 +11,9 @@ export const toRoomMessage = (item: ChatMessageResponse): RoomMessageResponse =>
     case "ENTER":
       return { ...base, type: "memberJoined", memberId: item.userId, nickname: item.nickname };
 
+    case "LEAVE":
+      return { ...base, type: "memberLeft", memberId: item.userId, nickname: item.nickname };
+
     // 강퇴 안내의 userId는 강퇴된 사람
     case "KICKED":
       return { ...base, type: "memberKicked", memberId: item.userId, nickname: item.nickname };

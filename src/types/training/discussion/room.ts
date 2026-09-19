@@ -95,6 +95,8 @@ export type RoomDetailView = RoomSummaryView & {
 
 export type DiscussionRoomCreateRequest = {
   bookId: number;
+  // 내가 읽지 않은 책이면 다른 사람의 공개 독후감으로 생성
+  reviewId?: number;
   title: string;
   tags: string[];
   description: string;
@@ -125,6 +127,8 @@ export type DiscussionRoomApplicantResponse = {
   profileImageUrl: string | null;
   appliedAt: string;
 };
+
+export type ApplicantPageResponse = PageResponse<DiscussionRoomApplicantResponse>;
 
 export type ApplicantView = {
   memberId: number;
