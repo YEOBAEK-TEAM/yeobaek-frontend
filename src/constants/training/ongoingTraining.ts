@@ -13,6 +13,8 @@ export const ONGOING_TRAINING_CHARACTER = {
 
 export const ONGOING_TRAINING_LABEL = "지금 훈련 중";
 
+export const ONGOING_TRAINING_ACTION_LABEL = "마저 진행하기";
+
 export const EMPTY_ONGOING_TRAINING = {
   title: "아직 훈련 기록이 없습니다",
   description: "리티와 함께 생각의 풀을 넓혀봐요",
