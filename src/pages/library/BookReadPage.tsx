@@ -12,7 +12,7 @@ import { contentChapterQueryOptions, useContentChapter } from "@/hooks/useConten
 import { useContentPage } from "@/hooks/useContentPage";
 import { useTogglePageLike } from "@/hooks/useTogglePageLike";
 import { useTogglePageBookmark } from "@/hooks/useTogglePageBookmark";
-import { useUpdateReadingProgress } from "@/hooks/useUpdateReadingProgress";
+import { useReaderProgressSync } from "./hooks/useReaderProgressSync";
 import ContentPageReader from "./components/ContentPageReader";
 import PageCommentsSheet from "./components/PageCommentsSheet";
 import ReaderCoverPage from "./components/ReaderCoverPage";
@@ -97,8 +97,6 @@ function ContentBookReader({
   const { settings, updateSettings, storageError } = useReaderSettings();
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [commentsPageId, setCommentsPageId] = useState<number | null>(null);
-  const { mutate: saveProgress, isError: saveError } = useUpdateReadingProgress(bookId);
-  const lastSaved = useRef<{ pageId: number; at: number } | null>(null);
   const pages = [
     ...new Map((chapter.data?.pages ?? []).map((page) => [page.pageId, page])).values(),
   ].sort((a, b) => a.pageNumber - b.pageNumber);
@@ -116,6 +114,11 @@ function ContentBookReader({
     chapter.data && chapter.data.allPage > 0 ? (sliderPageNumber / chapter.data.allPage) * 100 : 0;
   const deckPage = deckPages[deckIndex];
   const actualPageId = ready && deckPage?.type === "content" ? deckPage.page.pageId : undefined;
+  const { isError: saveError } = useReaderProgressSync({
+    bookId,
+    pageId: actualPageId,
+    settingsOpen,
+  });
   const deckReady = ready && (!onCover || (!!book.data && !book.isError));
   const likeMutation = useTogglePageLike();
   const bookmarkMutation = useTogglePageBookmark();
@@ -145,32 +148,6 @@ function ContentBookReader({
         element.style.overflow = previous[i];
       });
   }, []);
-
-  useEffect(() => {
-    if (!actualPageId || settingsOpen) return;
-    let timer: number | undefined;
-    const schedule = () => {
-      window.clearTimeout(timer);
-      if (document.visibilityState !== "visible") return;
-      timer = window.setTimeout(() => {
-        const previous = lastSaved.current;
-        if (previous?.pageId === actualPageId && Date.now() - previous.at < 30_000) return;
-        const attempt = { pageId: actualPageId, at: Date.now() };
-        lastSaved.current = attempt;
-        saveProgress(actualPageId, {
-          onError: () => {
-            if (lastSaved.current === attempt) lastSaved.current = null;
-          },
-        });
-      }, 3000);
-    };
-    schedule();
-    document.addEventListener("visibilitychange", schedule);
-    return () => {
-      window.clearTimeout(timer);
-      document.removeEventListener("visibilitychange", schedule);
-    };
-  }, [actualPageId, saveProgress, settingsOpen]);
 
   const showCover = () => {
     setNavigation({
