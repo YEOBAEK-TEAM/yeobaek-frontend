@@ -3,7 +3,7 @@ import { Hash, LayoutList, Plus } from "lucide-react";
 import type {
   RoomErrorCode,
   RoomFilter,
-  RoomJoinStatus,
+  RoomSort,
   RoomVisibility,
 } from "@/types/training/discussion/room";
 
@@ -123,6 +123,13 @@ export const ROOM_FILTERS: { id: RoomFilter; label: string }[] = [
   { id: "recent", label: "최근 개설" },
 ];
 
+// 필터 칩을 목록 API 정렬 값으로 변환
+export const ROOM_SORT: Record<RoomFilter, RoomSort> = {
+  all: "ALL",
+  hot: "HOT",
+  recent: "RECENT",
+};
+
 export const ROOM_DETAIL_FALLBACK_TITLE = "토론방 정보";
 
 export const HOST_LABEL = "방장";
@@ -135,11 +142,6 @@ export const JOIN_BUTTON_LABEL = {
   request: "참가 신청하기",
   requesting: "신청하는 중...",
   enter: "입장하기",
-};
-
-export const JOIN_UNAVAILABLE_LABEL: Record<Extract<RoomJoinStatus, "full" | "closed">, string> = {
-  full: "인원이 가득 찼어요",
-  closed: "종료된 토론방이에요",
 };
 
 export const JOIN_REQUESTED_MESSAGE = "방장이 검토중입니다!";

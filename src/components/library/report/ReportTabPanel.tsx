@@ -1,57 +1,48 @@
-import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
 import SectionState from "@/components/common/section/SectionState";
-import DraftReportCard from "@/components/library/report/DraftReportCard";
-import MyReportSection from "@/components/library/report/MyReportSection";
+import ReportBannerCard from "@/components/library/report/ReportBannerCard";
+import ReportListSection from "@/components/library/report/ReportListSection";
 import ReportWriteFlowModals from "@/components/library/report/ReportWriteFlowModals";
 import { REPORT_PATH } from "@/constants/library/report";
-import { useDraftReport, useMyReports } from "@/hooks/library/report/useReportQueries";
+import { useLatestReport, useMyReports } from "@/hooks/library/report/useReportQueries";
+import { toBannerDateLabel } from "@/utils/library/report/toReportView";
 import { useReportWriteFlow } from "@/hooks/library/report/useReportWriteFlow";
-import { toLatestReportView } from "@/utils/library/report/toReportView";
 
 export default function ReportTabPanel() {
   const navigate = useNavigate();
 
-  const draftQuery = useDraftReport();
-  const draft = draftQuery.data ?? null;
+  const latestQuery = useLatestReport();
+  const latest = latestQuery.data ?? null;
 
-  const myReportsQuery = useMyReports();
-  const latestReport = useMemo(
-    () => toLatestReportView(myReportsQuery.data ?? []),
-    [myReportsQuery.data],
-  );
-
-  // 작성 중인 독후감이 없으면 최근 독후감 조회까지 기다린 뒤 배너 표시
-  const isBannerPending = draftQuery.isPending || (!draft && myReportsQuery.isPending);
+  // 배너 독후감의 수정 시각은 같은 캐시를 쓰는 목록에서 찾음
+  const listQuery = useMyReports(latest?.isDraft ? "DRAFT" : "PUBLISHED");
+  const bannerUpdatedAt = listQuery.data?.reports.find(
+    (report) => report.reportId === latest?.reportId,
+  )?.updatedAt;
 
   const writeFlow = useReportWriteFlow();
 
-  const startWrite = () => void writeFlow.startWrite();
-
   return (
     <div className="pt-4 pb-6">
-      {isBannerPending || draftQuery.isError ? (
+      {latestQuery.isPending || latestQuery.isError ? (
         <div className="px-8 py-9">
           <SectionState
-            isError={draftQuery.isError}
-            onRetry={() => void draftQuery.refetch()}
+            isError={latestQuery.isError}
+            onRetry={() => void latestQuery.refetch()}
             className="h-60"
           />
         </div>
       ) : (
-        <DraftReportCard
-          draft={draft}
-          latestReport={latestReport}
-          onContinue={() => draft && navigate(REPORT_PATH.edit(draft.reportId))}
-          onWrite={startWrite}
+        <ReportBannerCard
+          report={latest}
+          dateLabel={latest ? toBannerDateLabel(latest, bannerUpdatedAt) : ""}
+          onContinue={(reportId) => navigate(REPORT_PATH.edit(reportId))}
+          onWrite={writeFlow.startWrite}
         />
       )}
 
-      <MyReportSection
-        onWrite={startWrite}
-        onOpenReport={(reportId) => navigate(REPORT_PATH.edit(reportId))}
-      />
+      <ReportListSection onOpenReport={(reportId) => navigate(REPORT_PATH.edit(reportId))} />
 
       <ReportWriteFlowModals writeFlow={writeFlow} />
     </div>

@@ -217,7 +217,7 @@
   width: calc(100% + 40px);
   max-width: 390px;
   padding: 9px 16px calc(5px + env(safe-area-inset-bottom));
-  background: rgb(79 77 78 / 0.8);
+  background: #4f4d4e;
   font:
     14px system-ui,
     sans-serif;
@@ -232,7 +232,7 @@
   flex-shrink: 0;
   font-variant-numeric: tabular-nums;
 }
-.book-reader__progress input {
+.book-reader__progress-bar {
   appearance: none;
   height: 3px;
   min-width: 0;
@@ -240,14 +240,14 @@
   cursor: pointer;
   border-radius: 0;
 }
-.book-reader__progress input::-webkit-slider-thumb {
+.book-reader__progress-bar::-webkit-slider-thumb {
   appearance: none;
   width: 16px;
   height: 16px;
   border-radius: 50%;
   background: #b7bd9e;
 }
-.book-reader__progress input::-moz-range-thumb {
+.book-reader__progress-bar::-moz-range-thumb {
   width: 16px;
   height: 16px;
   border: 0;
@@ -257,11 +257,12 @@
 .book-reader__actions {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 .book-reader__actions button {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 7px;
   min-height: 40px;
   min-width: 44px;
 }

@@ -1,26 +1,37 @@
-﻿import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import CommentEditForm from "./CommentEditForm";
+import CommentReactionButtons from "./CommentReactionButtons";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
-import type { ReaderComment } from "../utils/useReaderData";
+import type { ReaderComment } from "../types/readerComment";
 
-import { readerUser } from "../../../mocks/readerUser";
+import ProfileImage from "@/components/my/ProfileImage";
 import CommentConfirmModal from "./CommentConfirmModal";
-
-const editButtonClass =
-  "min-h-7 rounded border border-[#909090] bg-transparent text-[#F7F6F1] active:text-white";
-const saveButtonClass = `${editButtonClass} active:bg-[#777777]`;
-const cancelButtonClass = `${editButtonClass} active:bg-[#493d3c]`;
 
 type Props = {
   comments: ReaderComment[];
   replies: ReaderComment[];
   pageNumber: number;
   onClose: () => void;
-  onSubmit: (text: string, replyTo?: string) => void;
+  onSubmit: (text: string, replyTo?: string) => void | Promise<boolean>;
   onVote: (id: string, vote: "like" | "dislike") => void;
-  onDelete: (id: string) => void;
-  onEdit: (id: string, text: string) => void;
+  onDelete: (id: string) => void | Promise<boolean>;
+  onEdit: (id: string, text: string) => void | Promise<boolean>;
   onReport: (id: string) => void;
   reportedCommentIds: string[];
+  apiState?: {
+    currentUserId: number | null;
+    pending: boolean;
+    loading: boolean;
+    error: boolean;
+    onRetry: () => void;
+    hasNext: boolean;
+    loadingMore: boolean;
+    onLoadMore: () => void;
+    onSortChange: (sort: "LATEST" | "POPULAR") => void;
+    onThreadChange: (id?: string) => void;
+    reaction: (id: string, vote: "like" | "dislike") => boolean | undefined;
+    total?: number;
+  };
 };
 
 const dateLabel = (value?: string) => {
@@ -45,8 +56,9 @@ export default function ReaderCommentsSheet({
   onEdit,
   onReport,
   reportedCommentIds,
+  apiState,
 }: Props) {
-  const [tab, setTab] = useState("popular");
+  const [tab, setTab] = useState(apiState ? "latest" : "popular");
 
   const [draft, setDraft] = useState("");
 
@@ -135,6 +147,7 @@ export default function ReaderCommentsSheet({
     }
 
     setReplyTo(undefined);
+    apiState?.onThreadChange();
     setDraft("");
     setMenu(undefined);
     setEditingId(undefined);
@@ -161,15 +174,20 @@ export default function ReaderCommentsSheet({
   // 댓글 목록 정렬
   const shown = parent
     ? [parent]
-    : comments
-        .filter((comment) => tab !== "fan" || comment.user?.isFan)
-        .sort((a, b) => {
-          if (tab === "popular" && (a.likes ?? 0) !== (b.likes ?? 0)) {
-            return (b.likes ?? 0) - (a.likes ?? 0);
-          }
+    : apiState
+      ? tab === "popular"
+        ? comments.filter((comment) => (comment.likes ?? 0) > 0)
+        : comments
+      : comments
+          .filter((comment) => tab !== "popular" || (comment.likes ?? 0) > 0)
+          .filter((comment) => tab !== "fan" || comment.user?.isFan)
+          .sort((a, b) => {
+            if (tab === "popular" && (a.likes ?? 0) !== (b.likes ?? 0)) {
+              return (b.likes ?? 0) - (a.likes ?? 0);
+            }
 
-          return (Date.parse(b.createdAt ?? "") || 0) - (Date.parse(a.createdAt ?? "") || 0);
-        });
+            return (Date.parse(b.createdAt ?? "") || 0) - (Date.parse(a.createdAt ?? "") || 0);
+          });
 
   return (
     <div className="book-reader__sheet-backdrop !bg-transparent" onClick={onClose}>
@@ -220,7 +238,9 @@ export default function ReaderCommentsSheet({
         {/* Header */}
         <header className="flex shrink-0 items-center justify-between px-7 pt-5 pb-3">
           <h2 id="reader-comments-title" className="text-xl font-semibold">
-            {parent ? `답글 (${threadReplies.length})` : `댓글 (${comments.length})`}
+            {parent
+              ? `답글 (${parent.replyCount ?? threadReplies.length})`
+              : `댓글 (${apiState?.total ?? comments.length})`}
           </h2>
 
           <button
@@ -258,6 +278,7 @@ export default function ReaderCommentsSheet({
               key={key}
               type="button"
               aria-pressed={tab === key}
+              disabled={!!apiState && (key === "fan" || apiState.pending || !!parent)}
               className={`relative min-h-12 text-sm ${
                 tab === key
                   ? "font-bold after:absolute after:-bottom-1 after:left-[12%] after:h-1 after:w-3/4 after:bg-[#F7F6F1]"
@@ -265,6 +286,7 @@ export default function ReaderCommentsSheet({
               }`}
               onClick={() => {
                 setTab(key);
+                apiState?.onSortChange(key === "popular" ? "POPULAR" : "LATEST");
                 setMenu(undefined);
               }}
             >
@@ -279,9 +301,26 @@ export default function ReaderCommentsSheet({
           className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
           aria-live="polite"
         >
-          {!parent && shown.length === 0 && (
+          {apiState?.loading && (
+            <p role="status" className="px-7 py-4 text-sm">
+              댓글을 불러오는 중입니다.
+            </p>
+          )}
+          {apiState?.error && (
+            <p role="alert" className="px-7 py-4 text-sm">
+              댓글 요청을 완료하지 못했습니다. 입력을 유지한 채 다시 시도할 수 있습니다.
+              <button type="button" onClick={apiState.onRetry} className="ml-2 underline">
+                목록 다시 불러오기
+              </button>
+            </p>
+          )}
+          {!parent && shown.length === 0 && !apiState?.loading && !apiState?.error && (
             <p className="px-7 py-10 text-center text-sm text-[#A3A3A3]">
-              {tab === "fan" ? "아직 찐팬 댓글이 없습니다." : "이 페이지에 첫 의견을 남겨보세요."}
+              {tab === "popular"
+                ? "아직 인기 댓글이 없습니다."
+                : tab === "fan"
+                  ? "아직 찐팬 댓글이 없습니다."
+                  : "이 페이지에 첫 의견을 남겨보세요."}
             </p>
           )}
 
@@ -291,14 +330,14 @@ export default function ReaderCommentsSheet({
               <div className="flex gap-4">
                 {/* Profile */}
                 <div className="flex w-12 shrink-0 flex-col items-center gap-3">
-                  <img
-                    src={comment.user?.profileImage || readerUser.profileImage}
+                  <ProfileImage
+                    src={comment.user?.profileImage}
                     alt=""
                     className="h-12 w-12 rounded-full object-cover"
                   />
 
-                  {(comment.likes ?? 0) >= 10 && (
-                    <span className="rounded-full border border-[#F7F6F1] px-2 text-sm text-[#F7F6F1]">
+                  {tab === "popular" && (comment.likes ?? 0) > 0 && (
+                    <span className="rounded-full border border-[#F7F6F1] px-2 py-0.5 text-xs font-semibold text-[#F7F6F1]">
                       BEST
                     </span>
                   )}
@@ -315,61 +354,28 @@ export default function ReaderCommentsSheet({
 
                   {/* 문장 댓글 quote */}
                   {comment.quote && (
-                    <p title={comment.quote} className="mt-2 truncate text-sm text-[#A3A3A3]">
+                    <p
+                      title={comment.quote}
+                      className="mt-2 line-clamp-2 text-xs break-words text-[#C7C7C7]"
+                    >
                       {comment.quote}
                     </p>
                   )}
 
                   {/* 수정 모드 */}
                   {editingId === comment.id ? (
-                    <form
-                      className="mt-2"
-                      onSubmit={(event) => {
-                        event.preventDefault();
-
-                        if (!editText.trim() || editText.length > 200) {
-                          return;
-                        }
-
-                        onEdit(comment.id, editText);
-
+                    <CommentEditForm
+                      value={editText}
+                      label="댓글 수정"
+                      pending={apiState?.pending}
+                      onChange={setEditText}
+                      onCancel={() => setEditingId(undefined)}
+                      onSave={async () => {
+                        if ((await onEdit(comment.id, editText)) === false) return;
                         setEditingId(undefined);
                         setNotice("댓글이 수정되었습니다.");
                       }}
-                    >
-                      <div className="bg-[#606060] px-2 pt-2 pb-1">
-                        <textarea
-                          autoFocus
-                          aria-label="댓글 수정"
-                          className="min-h-16 w-full resize-y bg-transparent text-sm leading-5 outline-none"
-                          maxLength={200}
-                          value={editText}
-                          onChange={(event) => setEditText(event.target.value)}
-                        />
-
-                        <div className="text-right text-[10px] text-[#A3A3A3]" aria-live="polite">
-                          {editText.length}/200
-                        </div>
-                      </div>
-
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                        <button
-                          type="submit"
-                          disabled={!editText.trim() || editText.length > 200}
-                          className={saveButtonClass}
-                        >
-                          수정완료
-                        </button>
-
-                        <button
-                          type="button"
-                          className={cancelButtonClass}
-                          onClick={() => setEditingId(undefined)}
-                        >
-                          취소하기
-                        </button>
-                      </div>
-                    </form>
+                    />
                   ) : (
                     <p
                       className={`${
@@ -407,6 +413,10 @@ export default function ReaderCommentsSheet({
                         setEditText(comment.text);
                         setMenu(undefined);
                       }}
+                      disabled={
+                        !!apiState &&
+                        (apiState.pending || apiState.currentUserId !== comment.user?.id)
+                      }
                     >
                       수정하기
                     </button>
@@ -414,6 +424,10 @@ export default function ReaderCommentsSheet({
                     <button
                       type="button"
                       className="min-h-9 w-full bg-transparent px-3 text-[#141610] hover:bg-black/5 active:bg-transparent focus:bg-transparent"
+                      disabled={
+                        !!apiState &&
+                        (apiState.pending || apiState.currentUserId !== comment.user?.id)
+                      }
                       onClick={() => {
                         setConfirmation({
                           id: comment.id,
@@ -428,7 +442,7 @@ export default function ReaderCommentsSheet({
 
                     <button
                       type="button"
-                      disabled={reportedCommentIds.includes(comment.id)}
+                      disabled={!!apiState || reportedCommentIds.includes(comment.id)}
                       className="min-h-9 w-full bg-transparent px-3 text-[#141610] hover:bg-black/5 active:bg-transparent focus:bg-transparent"
                       onClick={() => {
                         setConfirmation({
@@ -451,6 +465,7 @@ export default function ReaderCommentsSheet({
                   <button
                     type="button"
                     className="rounded border border-[#808080] bg-transparent px-3 py-1 text-[#909090] hover:bg-transparent active:bg-transparent focus:bg-transparent"
+                    disabled={apiState?.pending}
                     onClick={() => {
                       if (parent) {
                         inputRef.current?.focus();
@@ -460,6 +475,7 @@ export default function ReaderCommentsSheet({
                       commentScroll.current = listRef.current?.scrollTop ?? 0;
 
                       setReplyTo(comment.id);
+                      apiState?.onThreadChange(comment.id);
                       setDraft("");
                       setMenu(undefined);
                       setEditingId(undefined);
@@ -471,35 +487,15 @@ export default function ReaderCommentsSheet({
                   </button>
 
                   <div className="flex gap-2">
-                    {(["like", "dislike"] as const).map((vote) => (
-                      <button
-                        type="button"
-                        key={vote}
-                        aria-label={vote === "like" ? "좋아요" : "싫어요"}
-                        aria-pressed={comment.myVote === vote}
-                        className={`flex items-center gap-1 rounded border border-[#808080] px-1.5 py-1 ${
-                          comment.myVote === vote
-                            ? "bg-[#777777] text-white hover:bg-[#777777] active:bg-[#777777] focus:bg-[#777777]"
-                            : "bg-transparent text-[#909090] hover:bg-transparent active:bg-transparent focus:bg-transparent"
-                        }`}
-                        onClick={() => onVote(comment.id, vote)}
-                      >
-                        <svg
-                          width="14"
-                          height="14"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                          className={vote === "dislike" ? "rotate-180" : undefined}
-                          aria-hidden="true"
-                        >
-                          <path d="M2 10h4v12H2zm6 0 5-8c3 0 3 3 2 6h5c2 0 2 2 2 3l-2 9c0 1-1 2-3 2H8z" />
-                        </svg>
-
-                        <span className="text-[#F7F6F1]">
-                          {(vote === "like" ? comment.likes : comment.dislikes) ?? 0}
-                        </span>
-                      </button>
-                    ))}
+                    <CommentReactionButtons
+                      likes={comment.likes}
+                      dislikes={comment.dislikes}
+                      pending={apiState?.pending}
+                      reaction={(vote) =>
+                        apiState ? apiState.reaction(comment.id, vote) : comment.myVote === vote
+                      }
+                      onVote={(vote) => onVote(comment.id, vote)}
+                    />
                   </div>
                 </div>
               )}
@@ -507,7 +503,7 @@ export default function ReaderCommentsSheet({
           ))}
 
           {/* 답글이 없을 때 */}
-          {parent && threadReplies.length === 0 && (
+          {parent && threadReplies.length === 0 && !apiState?.loading && !apiState?.error && (
             <p className="px-7 py-8 text-center text-sm text-[#A3A3A3]">첫 답글을 남겨보세요.</p>
           )}
 
@@ -525,8 +521,8 @@ export default function ReaderCommentsSheet({
                 </span>
 
                 {/* 프로필 */}
-                <img
-                  src={reply.user?.profileImage || readerUser.profileImage}
+                <ProfileImage
+                  src={reply.user?.profileImage}
                   alt=""
                   className="h-10 w-10 shrink-0 rounded-full object-cover"
                 />
@@ -542,54 +538,18 @@ export default function ReaderCommentsSheet({
 
                   {/* 답글 수정 */}
                   {editingId === reply.id ? (
-                    <form
-                      className="mt-2"
-                      onSubmit={(event) => {
-                        event.preventDefault();
-
-                        if (!editText.trim() || editText.length > 200) {
-                          return;
-                        }
-
-                        onEdit(reply.id, editText);
-
+                    <CommentEditForm
+                      value={editText}
+                      label="답글 수정"
+                      pending={apiState?.pending}
+                      onChange={setEditText}
+                      onCancel={() => setEditingId(undefined)}
+                      onSave={async () => {
+                        if ((await onEdit(reply.id, editText)) === false) return;
                         setEditingId(undefined);
                         setNotice("답글이 수정되었습니다.");
                       }}
-                    >
-                      <div className="bg-[#606060] px-2 pt-2 pb-1">
-                        <textarea
-                          autoFocus
-                          aria-label="답글 수정"
-                          className="min-h-16 w-full resize-y bg-transparent text-sm leading-5 outline-none"
-                          maxLength={200}
-                          value={editText}
-                          onChange={(event) => setEditText(event.target.value)}
-                        />
-
-                        <div className="text-right text-[10px] text-[#A3A3A3]" aria-live="polite">
-                          {editText.length}/200
-                        </div>
-                      </div>
-
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs">
-                        <button
-                          type="submit"
-                          disabled={!editText.trim() || editText.length > 200}
-                          className={saveButtonClass}
-                        >
-                          수정완료
-                        </button>
-
-                        <button
-                          type="button"
-                          className={cancelButtonClass}
-                          onClick={() => setEditingId(undefined)}
-                        >
-                          취소하기
-                        </button>
-                      </div>
-                    </form>
+                    />
                   ) : (
                     <p className="mt-2 whitespace-pre-wrap break-words leading-5">{reply.text}</p>
                   )}
@@ -597,35 +557,15 @@ export default function ReaderCommentsSheet({
                   {/* 답글 좋아요 / 싫어요 */}
                   {editingId !== reply.id && (
                     <div className="mt-4 flex justify-end gap-2 text-xs font-semibold text-[#909090]">
-                      {(["like", "dislike"] as const).map((vote) => (
-                        <button
-                          type="button"
-                          key={vote}
-                          aria-label={vote === "like" ? "좋아요" : "싫어요"}
-                          aria-pressed={reply.myVote === vote}
-                          className={`flex items-center gap-1 rounded border border-[#808080] px-1.5 py-1 ${
-                            reply.myVote === vote
-                              ? "bg-[#777777] text-white hover:bg-[#777777] active:bg-[#777777] focus:bg-[#777777]"
-                              : "bg-transparent text-[#909090] hover:bg-transparent active:bg-transparent focus:bg-transparent"
-                          }`}
-                          onClick={() => onVote(reply.id, vote)}
-                        >
-                          <svg
-                            width="14"
-                            height="14"
-                            viewBox="0 0 24 24"
-                            fill="currentColor"
-                            className={vote === "dislike" ? "rotate-180" : undefined}
-                            aria-hidden="true"
-                          >
-                            <path d="M2 10h4v12H2zm6 0 5-8c3 0 3 3 2 6h5c2 0 2 2 2 3l-2 9c0 1-1 2-3 2H8z" />
-                          </svg>
-
-                          <span className="text-[#F7F6F1]">
-                            {(vote === "like" ? reply.likes : reply.dislikes) ?? 0}
-                          </span>
-                        </button>
-                      ))}
+                      <CommentReactionButtons
+                        likes={reply.likes}
+                        dislikes={reply.dislikes}
+                        pending={apiState?.pending}
+                        reaction={(vote) =>
+                          apiState ? apiState.reaction(reply.id, vote) : reply.myVote === vote
+                        }
+                        onVote={(vote) => onVote(reply.id, vote)}
+                      />
                     </div>
                   )}
                 </div>
@@ -655,6 +595,10 @@ export default function ReaderCommentsSheet({
                           setEditText(reply.text);
                           setMenu(undefined);
                         }}
+                        disabled={
+                          !!apiState &&
+                          (apiState.pending || apiState.currentUserId !== reply.user?.id)
+                        }
                       >
                         수정하기
                       </button>
@@ -662,6 +606,10 @@ export default function ReaderCommentsSheet({
                       <button
                         type="button"
                         className="min-h-9 w-full bg-transparent px-3 text-[#141610] hover:bg-black/5 active:bg-transparent focus:bg-transparent"
+                        disabled={
+                          !!apiState &&
+                          (apiState.pending || apiState.currentUserId !== reply.user?.id)
+                        }
                         onClick={() => {
                           setConfirmation({
                             id: reply.id,
@@ -676,7 +624,7 @@ export default function ReaderCommentsSheet({
 
                       <button
                         type="button"
-                        disabled={reportedCommentIds.includes(reply.id)}
+                        disabled={!!apiState || reportedCommentIds.includes(reply.id)}
                         className="min-h-9 w-full bg-transparent px-3 text-[#141610] hover:bg-black/5 active:bg-transparent focus:bg-transparent"
                         onClick={() => {
                           setConfirmation({
@@ -694,12 +642,22 @@ export default function ReaderCommentsSheet({
                 </div>
               </article>
             ))}
+          {apiState?.hasNext && (
+            <button
+              type="button"
+              disabled={apiState.loadingMore}
+              onClick={apiState.onLoadMore}
+              className="min-h-11 w-full text-sm"
+            >
+              {apiState.loadingMore ? "불러오는 중…" : "더 보기"}
+            </button>
+          )}
         </div>
 
         {/* 댓글 / 답글 입력 */}
         <form
           className="shrink-0 border-t border-[#f7f6f1] px-4 pt-4 pb-[max(16px,env(safe-area-inset-bottom))]"
-          onSubmit={(event) => {
+          onSubmit={async (event) => {
             event.preventDefault();
 
             if (!draft.trim() || composing.current || (parent && draft.length > 200)) {
@@ -708,7 +666,7 @@ export default function ReaderCommentsSheet({
 
             scrollToNewReply.current = !!parent;
 
-            onSubmit(draft.trim(), parent?.id);
+            if (apiState?.pending || (await onSubmit(draft.trim(), parent?.id)) === false) return;
 
             setDraft("");
 
@@ -725,6 +683,7 @@ export default function ReaderCommentsSheet({
               placeholder={parent ? "답글을 남겨주세요" : "댓글을 남겨주세요"}
               maxLength={parent ? 200 : 2000}
               value={draft}
+              readOnly={apiState?.pending}
               onChange={(event) => setDraft(event.target.value)}
               onCompositionStart={() => {
                 composing.current = true;
@@ -746,7 +705,7 @@ export default function ReaderCommentsSheet({
 
             <button
               type="submit"
-              disabled={!draft.trim()}
+              disabled={!draft.trim() || apiState?.pending}
               aria-label={parent ? "답글 전송" : "댓글 전송"}
               className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#B4B4B4] bg-[#F7F6F1] text-[#4F4D4E] disabled:!opacity-100 disabled:text-[#b4b4b4]"
             >
@@ -788,13 +747,15 @@ export default function ReaderCommentsSheet({
             setConfirmation(undefined);
             closeRef.current?.focus();
           }}
-          onConfirm={() => {
+          onConfirm={async () => {
+            if (apiState?.pending) return;
             if (confirmation.action === "delete") {
-              onDelete(confirmation.id);
+              if ((await onDelete(confirmation.id)) === false) return;
 
               // 원댓글 자체를 삭제한 경우
               if (replyTo === confirmation.id) {
                 setReplyTo(undefined);
+                apiState?.onThreadChange();
                 setDraft("");
               }
 

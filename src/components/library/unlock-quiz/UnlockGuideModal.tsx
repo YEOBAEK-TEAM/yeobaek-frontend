@@ -5,29 +5,27 @@ import { useNavigate } from "react-router-dom";
 import ModalShell from "@/components/common/modal/ModalShell";
 import GuideRuleItem from "@/components/library/unlock-quiz/GuideRuleItem";
 import { UNLOCK_GUIDE, UNLOCK_GUIDE_RULES, UNLOCK_QUIZ_PATH } from "@/constants/library/unlockQuiz";
-import {
-  useReportUnlockStatus,
-  useStartUnlockQuiz,
-} from "@/hooks/library/unlock-quiz/useUnlockQuizQueries";
+import { useStartUnlockQuiz } from "@/hooks/library/unlock-quiz/useUnlockQuizQueries";
+import { getApiErrorMessage } from "@/utils/common/getApiErrorMessage";
 
 type UnlockGuideModalProps = {
   bookId: number;
+  bookTitle: string;
   onClose: () => void;
   onBeforeStart?: () => void;
 };
 
-const DEFAULT_QUESTION_COUNT = 3;
+// 서버 퀴즈는 항상 3문제
+const QUESTION_COUNT = 3;
 
 export default function UnlockGuideModal({
   bookId,
+  bookTitle,
   onClose,
   onBeforeStart,
 }: UnlockGuideModalProps) {
   const titleId = useId();
   const navigate = useNavigate();
-
-  const { data: status } = useReportUnlockStatus(bookId);
-  const questionCount = status?.quizQuestionCount ?? DEFAULT_QUESTION_COUNT;
 
   const startQuiz = useStartUnlockQuiz(bookId);
 
@@ -35,7 +33,7 @@ export default function UnlockGuideModal({
     startQuiz.mutate(undefined, {
       onSuccess: () => {
         onBeforeStart?.();
-        navigate(UNLOCK_QUIZ_PATH(bookId));
+        navigate(UNLOCK_QUIZ_PATH(bookId), { state: { bookTitle } });
       },
     });
 
@@ -51,7 +49,7 @@ export default function UnlockGuideModal({
       </h2>
 
       <p className="mt-3 text-center text-[15px] leading-[22px] font-semibold break-keep whitespace-pre-line text-[#6B6B6B]">
-        {UNLOCK_GUIDE.getDescription(questionCount)}
+        {UNLOCK_GUIDE.getDescription(QUESTION_COUNT)}
       </p>
 
       <ul className="mt-6 flex flex-col gap-1.5">
@@ -62,7 +60,7 @@ export default function UnlockGuideModal({
 
       {startQuiz.isError && (
         <p role="alert" className="mt-2 text-center text-[12px] text-[#D91414]">
-          {UNLOCK_GUIDE.loadErrorText}
+          {getApiErrorMessage(startQuiz.error, UNLOCK_GUIDE.loadErrorText)}
         </p>
       )}
 

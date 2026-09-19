@@ -1,19 +1,18 @@
 import {
   getMemberJoinedNotice,
   getMemberKickedNotice,
-  getMemberLeftNotice,
-  getRoomCreatedNotice,
   HOST_NAME_SUFFIX,
+  ROOM_DELETED_NOTICE,
 } from "@/constants/training/discussion/roomChat";
 
 import type {
   RoomChatRow,
-  RoomChatSessionResponse,
+  RoomChatSession,
   RoomTimelineMessage,
 } from "@/types/training/discussion/roomChat";
 
 type RowContext = {
-  session: RoomChatSessionResponse;
+  session: RoomChatSession;
   dividerAfterId: string | null;
 };
 
@@ -21,27 +20,22 @@ const toNoticeText = (
   message: Exclude<RoomTimelineMessage, { type: "chat" }>,
   { session }: RowContext,
 ) => {
-  const isHost = session.myUserId === session.hostId;
-
   switch (message.type) {
-    case "roomCreated":
-      return getRoomCreatedNotice(session.roomTitle);
     case "memberJoined":
       return getMemberJoinedNotice(
         message.nickname,
-        message.memberId === session.myUserId && !isHost,
+        message.memberId === session.myUserId && !session.isHost,
       );
-    case "memberLeft":
-      return getMemberLeftNotice(message.nickname);
     case "memberKicked":
       return getMemberKickedNotice(message.nickname);
+    case "roomDeleted":
+      return ROOM_DELETED_NOTICE;
   }
 };
 
 // 서버 메시지를 말풍선·안내·읽음 구분선 행으로 변환
 export const toRoomChatRows = (messages: RoomTimelineMessage[], context: RowContext) => {
   const { session, dividerAfterId } = context;
-  const isHost = session.myUserId === session.hostId;
 
   const rows: RoomChatRow[] = [];
   let previousSenderId: number | null = null;
@@ -60,18 +54,16 @@ export const toRoomChatRows = (messages: RoomTimelineMessage[], context: RowCont
       });
       previousSenderId = message.senderId;
     } else {
-      const isSenderHost = message.senderId === session.hostId;
-
       rows.push({
         kind: "member",
         id: message.messageId,
         memberId: message.senderId,
         nickname: message.senderNickname,
-        label: `${message.senderNickname}${isSenderHost ? HOST_NAME_SUFFIX : ""}`,
+        label: `${message.senderNickname}${message.senderIsHost ? HOST_NAME_SUFFIX : ""}`,
         imageUrl: message.senderProfileImageUrl,
         text: message.text,
         showProfile: previousSenderId !== message.senderId,
-        canKick: isHost && !isSenderHost,
+        canKick: session.isHost && !message.senderIsHost,
       });
       previousSenderId = message.senderId;
     }

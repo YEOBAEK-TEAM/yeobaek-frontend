@@ -2,13 +2,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { createRoomConnection } from "@/api/training/discussion/socket/roomConnection";
+import { ROOM_MESSAGE_MAX_LENGTH } from "@/constants/training/discussion/roomChat";
 import { discussionKeys } from "@/hooks/training/discussion/useDiscussionQueries";
 import { roomChatKeys } from "@/hooks/training/discussion/useRoomChatQueries";
 
 import type { InfiniteData, QueryClient } from "@tanstack/react-query";
 import type { ChatConnectionStatus } from "@/types/training/chatSocket";
 import type {
-  RoomChatSessionResponse,
+  ChatCursor,
+  RoomChatSession,
   RoomEndReason,
   RoomMessagePageResponse,
   RoomMessageResponse,
@@ -16,7 +18,7 @@ import type {
 } from "@/types/training/discussion/roomChat";
 import type { RoomConnection } from "@/api/training/discussion/socket/roomConnection";
 
-type MessagesData = InfiniteData<RoomMessagePageResponse, string | null>;
+type MessagesData = InfiniteData<RoomMessagePageResponse, ChatCursor | null>;
 
 const SEND_TIMEOUT_MS = 10_000;
 
@@ -34,21 +36,40 @@ const updateLatestMessages = (
     return { ...data, pages: [{ ...latest, messages: update(latest.messages) }, ...older] };
   });
 
-const appendUnique = (message: RoomMessageResponse) => (messages: RoomTimelineMessage[]) =>
-  messages.some((item) => item.messageId === message.messageId) ? messages : [...messages, message];
+// 전송 확인이 없어 브로드캐스트로 돌아온 내 메시지가 임시 메시지를 대체
+const applyIncoming =
+  (message: RoomMessageResponse, myUserId: number) => (messages: RoomTimelineMessage[]) => {
+    if (messages.some((item) => item.messageId === message.messageId)) return messages;
+
+    if (message.type === "chat" && message.senderId === myUserId) {
+      const pendingIndex = messages.findIndex(
+        (item) => item.type === "chat" && item.status === "sending" && item.text === message.text,
+      );
+
+      if (pendingIndex >= 0) {
+        const next = [...messages];
+        next[pendingIndex] = { ...message, status: "sent" };
+
+        return next;
+      }
+    }
+
+    return [...messages, message];
+  };
 
 const getLatestMessages = (queryClient: QueryClient, roomId: number) =>
   queryClient.getQueryData<MessagesData>(roomChatKeys.messages(roomId))?.pages[0]?.messages ?? [];
 
-export const useRoomChat = (roomId: number, session: RoomChatSessionResponse | undefined) => {
+export const useRoomChat = (roomId: number, session: RoomChatSession | undefined) => {
   const queryClient = useQueryClient();
 
   const connectionRef = useRef<RoomConnection | null>(null);
+  const hasConnectedRef = useRef(false);
 
   const [status, setStatus] = useState<ChatConnectionStatus>("idle");
   const [endReason, setEndReason] = useState<RoomEndReason | null>(null);
 
-  const isReady = session !== undefined;
+  const myUserId = session?.myUserId;
 
   const setMessageStatus = useCallback(
     (clientMessageId: string, from: RoomTimelineMessage["status"], to: "sending" | "failed") =>
@@ -66,7 +87,7 @@ export const useRoomChat = (roomId: number, session: RoomChatSessionResponse | u
     (clientMessageId: string, text: string) => {
       connectionRef.current?.send({ type: "message:send", clientMessageId, text });
 
-      // 응답이 없으면 실패로 표시
+      // 전송 확인이 없어 브로드캐스트가 돌아오지 않으면 실패로 표시
       window.setTimeout(
         () => setMessageStatus(clientMessageId, "sending", "failed"),
         SEND_TIMEOUT_MS,
@@ -76,15 +97,9 @@ export const useRoomChat = (roomId: number, session: RoomChatSessionResponse | u
   );
 
   useEffect(() => {
-    if (!isReady) return;
+    if (myUserId === undefined) return;
 
-    // 재연결 시 이 id 이후 메시지만 다시 받기 위한 동기화 지점
-    const getLastServerMessageId = () =>
-      getLatestMessages(queryClient, roomId)
-        .filter((message) => !message.clientMessageId || message.status === "sent")
-        .at(-1)?.messageId ?? null;
-
-    const connection = createRoomConnection(roomId, getLastServerMessageId);
+    const connection = createRoomConnection(roomId);
     connectionRef.current = connection;
 
     const unsubscribe = connection.subscribe((signal) => {
@@ -93,59 +108,71 @@ export const useRoomChat = (roomId: number, session: RoomChatSessionResponse | u
 
         if (signal.status !== "open") return;
 
-        // 연결 전이나 끊긴 동안 보내지 못한 메시지 재전송
-        getLatestMessages(queryClient, roomId)
-          .filter((message) => message.type === "chat" && message.status === "sending")
-          .forEach((message) => {
-            if (message.type !== "chat" || !message.clientMessageId) return;
-            connection.send({
-              type: "message:send",
-              clientMessageId: message.clientMessageId,
-              text: message.text,
-            });
+        // 끊겨 있던 동안 놓친 메시지는 히스토리로 다시 채움
+        if (hasConnectedRef.current) {
+          void queryClient.invalidateQueries({ queryKey: roomChatKeys.messages(roomId) });
+        }
+        hasConnectedRef.current = true;
+
+        // 연결 전에 보내지 못한 메시지 재전송
+        getLatestMessages(queryClient, roomId).forEach((message) => {
+          if (message.type !== "chat" || message.status !== "sending") return;
+          if (!message.clientMessageId) return;
+
+          connection.send({
+            type: "message:send",
+            clientMessageId: message.clientMessageId,
+            text: message.text,
           });
+        });
         return;
       }
 
       const { event } = signal;
 
       if (event.type === "message:new") {
-        updateLatestMessages(queryClient, roomId, appendUnique(event.message));
+        const { message } = event;
+
+        updateLatestMessages(queryClient, roomId, applyIncoming(message, myUserId));
+
+        // 내가 대상인 강퇴이거나 방이 삭제되면 더 머무를 수 없음
+        if (message.type === "roomDeleted") setEndReason("closed");
+        if (message.type === "memberKicked" && message.memberId === myUserId) {
+          setEndReason("kicked");
+        }
         return;
       }
 
-      if (event.type === "message:ack") {
-        updateLatestMessages(queryClient, roomId, (messages) =>
-          messages.map((message) =>
-            message.clientMessageId === event.clientMessageId
-              ? { ...event.message, clientMessageId: event.clientMessageId, status: "sent" }
-              : message,
-          ),
-        );
+      // 참여 상태가 바뀌면 그룹 목록도 함께 갱신
+      if (event.type === "room:joined") {
+        void queryClient.invalidateQueries({ queryKey: [...discussionKeys.all, "groups"] });
         return;
       }
 
-      if (event.type === "member:kickedMe" || event.type === "room:closed") {
-        setEndReason(event.type === "member:kickedMe" ? "kicked" : "closed");
-        connection.disconnect();
-      }
+      // 구독이 거부되면 멤버가 아니게 된 것
+      setEndReason("kicked");
+      connection.disconnect();
     });
 
     connection.connect();
 
     return () => {
       unsubscribe();
-      connection.leave();
+      connection.disconnect();
       connectionRef.current = null;
+      hasConnectedRef.current = false;
 
       // 마지막 방문 시각이 바뀌므로 참여 중인 토론 카드 재조회
-      void queryClient.invalidateQueries({ queryKey: discussionKeys.active() });
+      void queryClient.invalidateQueries({ queryKey: discussionKeys.groups("joined") });
     };
-  }, [roomId, isReady, queryClient]);
+  }, [roomId, myUserId, queryClient]);
 
   const sendMessage = useCallback(
-    (text: string) => {
-      if (!session) return;
+    (input: string) => {
+      if (myUserId === undefined) return;
+
+      const text = input.trim().slice(0, ROOM_MESSAGE_MAX_LENGTH);
+      if (!text) return;
 
       const clientMessageId = `local-${crypto.randomUUID()}`;
 
@@ -157,16 +184,17 @@ export const useRoomChat = (roomId: number, session: RoomChatSessionResponse | u
           clientMessageId,
           status: "sending",
           sentAt: new Date().toISOString(),
-          senderId: session.myUserId,
+          senderId: myUserId,
           senderNickname: "",
           senderProfileImageUrl: null,
+          senderIsHost: false,
           text,
         },
       ]);
 
       dispatch(clientMessageId, text);
     },
-    [session, queryClient, roomId, dispatch],
+    [myUserId, queryClient, roomId, dispatch],
   );
 
   const retryMessage = useCallback(

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { READER_BACKGROUNDS, READER_LINE_HEIGHTS } from "../utils/useReaderSettings";
+import { READER_BACKGROUNDS, READER_FONTS, READER_LINE_HEIGHTS } from "../utils/useReaderSettings";
 import type { ReaderSettings } from "../utils/useReaderSettings";
 
 export default function ReaderSettingsPanel({
@@ -163,10 +163,8 @@ export default function ReaderSettingsPanel({
                   type="button"
                   aria-pressed={settings.fontFamily === font}
                   onClick={() => onChange({ ...settings, fontFamily: font })}
-                  title={
-                    font === "nanum" ? "설치된 나눔명조 사용, 없으면 시스템 명조체 사용" : undefined
-                  }
-                  className={`h-11 rounded-md border text-sm [font-family:serif] ${settings.fontFamily === font ? "border-[#797c6e] bg-[#cdd0bf]" : "border-[#cccac7] bg-[#e7e7e7]"}`}
+                  style={{ fontFamily: READER_FONTS[font] }}
+                  className={`h-11 rounded-md border text-sm ${settings.fontFamily === font ? "border-[#797c6e] bg-[#cdd0bf]" : "border-[#cccac7] bg-[#e7e7e7]"}`}
                 >
                   {label}
                 </button>

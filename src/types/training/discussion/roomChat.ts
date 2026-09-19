@@ -1,14 +1,42 @@
 import type { ChatMessageStatus } from "@/types/training/chat";
 import type { ChatConnectionStatus } from "@/types/training/chatSocket";
 
-export type RoomChatSessionResponse = {
+// KICKED는 userId가 강퇴된 사람, ROOM_DELETED는 방 삭제 안내
+export type ChatMessageType = "TALK" | "ENTER" | "KICKED" | "ROOM_DELETED";
+
+export type ChatMessageResponse = {
+  messageId: number;
   roomId: number;
   roomTitle: string;
-  hostId: number;
+  userId: number;
+  nickname: string;
+  profileImageUrl: string | null;
+  content: string;
+  messageType: ChatMessageType;
+  createdAt: string;
+  isHost: boolean;
+};
+
+export type ChatCursor = {
+  createdAt: string;
+  messageId: number;
+};
+
+export type ChatHistoryResponse = {
+  items: ChatMessageResponse[];
+  hasNext: boolean;
+  nextCursor: ChatCursor | null;
+  totalCount: number;
+  // 이 시각 이후 메시지가 안읽음, 한 번도 읽지 않았으면 null
+  lastReadAt: string | null;
+};
+
+// 방 상세와 로그인 정보로 조립한 채팅 화면 정보
+export type RoomChatSession = {
+  roomId: number;
+  roomTitle: string;
+  isHost: boolean;
   myUserId: number;
-  inviteCode: string | null;
-  // 이 메시지까지 읽음, 처음 입장이면 null
-  lastReadMessageId: string | null;
 };
 
 type RoomMessageBase = {
@@ -23,10 +51,11 @@ export type RoomMessageResponse = RoomMessageBase &
         senderId: number;
         senderNickname: string;
         senderProfileImageUrl: string | null;
+        senderIsHost: boolean;
         text: string;
       }
-    | { type: "roomCreated" }
-    | { type: "memberJoined" | "memberLeft" | "memberKicked"; memberId: number; nickname: string }
+    | { type: "memberJoined" | "memberKicked"; memberId: number; nickname: string }
+    | { type: "roomDeleted" }
   );
 
 // 내가 보낸 메시지의 전송 상태를 함께 담는 캐시 메시지
@@ -37,21 +66,18 @@ export type RoomTimelineMessage = RoomMessageResponse & {
 
 export type RoomMessagePageResponse = {
   messages: RoomTimelineMessage[];
-  nextCursor: string | null;
+  nextCursor: ChatCursor | null;
+  lastReadAt: string | null;
 };
 
 export type RoomServerEvent =
+  // 개인 알림 큐 수신, 참여 상태가 바뀐 시점
   | { type: "room:joined" }
   | { type: "message:new"; message: RoomMessageResponse }
-  | { type: "message:ack"; clientMessageId: string; message: RoomMessageResponse }
-  | { type: "member:kickedMe" }
-  | { type: "room:closed" }
   | { type: "error"; message: string };
 
-export type RoomClientEvent =
-  | { type: "room:join"; roomId: number; afterMessageId: string | null }
-  | { type: "message:send"; clientMessageId: string; text: string }
-  | { type: "room:leave" };
+// 서버가 보낸 사람 정보를 붙여 돌려주므로 본문만 전송
+export type RoomClientEvent = { type: "message:send"; clientMessageId: string; text: string };
 
 export type RoomSocketSignal =
   { type: "status"; status: ChatConnectionStatus } | { type: "event"; event: RoomServerEvent };
@@ -60,7 +86,7 @@ export type RoomSocketListener = (signal: RoomSocketSignal) => void;
 
 // 토론방 소켓 전송 계층 추상화
 export interface RoomSocketTransport {
-  connect(roomId: number, afterMessageId: string | null): void;
+  connect(roomId: number): void;
   disconnect(): void;
   send(event: RoomClientEvent): void;
   subscribe(listener: RoomSocketListener): () => void;

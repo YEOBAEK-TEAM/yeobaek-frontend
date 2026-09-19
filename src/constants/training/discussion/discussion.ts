@@ -42,10 +42,6 @@ export const HOT_BADGE_LABEL = "HOT";
 
 export const MY_GROUP_EMPTY_TEXT = "아직 속해있는 그룹이 없습니다";
 
-export const CREATED_GROUP_SECTION_TITLE = "생성한 방";
-
-export const JOINED_GROUP_SECTION_TITLE = "참여한 방";
-
 export const PENDING_GROUP_EMPTY_TEXT = "아직 신청한 그룹이 없습니다";
 
 export const PENDING_STATUS_LABEL = "방장 승인 기다리는중...";

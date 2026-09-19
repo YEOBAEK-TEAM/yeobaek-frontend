@@ -22,6 +22,7 @@ export const UNLOCK_GUIDE_RULES = [
 
 export const UNLOCK_QUIZ = {
   getTitle: (bookTitle: string) => `${bookTitle}에 대해서`,
+  defaultTitle: "독후감 퀴즈",
   nextLabel: "다음문제",
   submitLabel: "제출하기",
   exitMessage:

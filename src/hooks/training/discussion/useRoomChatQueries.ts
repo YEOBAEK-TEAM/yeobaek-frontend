@@ -1,57 +1,44 @@
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 
-import { RoomApiError } from "@/api/training/discussion/room";
-import {
-  getRoomChatSession,
-  getRoomMessages,
-  kickRoomMember,
-  leaveRoom,
-} from "@/api/training/discussion/roomChat";
-import { discussionKeys } from "@/hooks/training/discussion/useDiscussionQueries";
+import { getRoomDetail } from "@/api/training/discussion/room";
+import { getRoomMessages, markRoomRead } from "@/api/training/discussion/roomChat";
 import { roomKeys } from "@/hooks/training/discussion/useRoomQueries";
+import { useAuthStore } from "@/stores/auth";
+
+import type { DiscussionRoomResponse } from "@/types/training/discussion/room";
+import type { ChatCursor, RoomChatSession } from "@/types/training/discussion/roomChat";
 
 export const roomChatKeys = {
-  session: (roomId: number) => [...roomKeys.all, "chat", roomId, "session"] as const,
   messages: (roomId: number) => [...roomKeys.all, "chat", roomId, "messages"] as const,
 };
 
-// 입장 가능 여부처럼 확정된 서버 거절은 재시도하지 않음
-const retryUnlessRejected = (failureCount: number, error: Error) =>
-  !(error instanceof RoomApiError) && failureCount < 2;
+// 채팅 세션 전용 API가 없어 방 상세와 로그인 정보로 조립
+export const useRoomChatSession = (roomId: number) => {
+  const myUserId = useAuthStore((state) => state.userId);
 
-export const useRoomChatSession = (roomId: number) =>
-  useQuery({
-    queryKey: roomChatKeys.session(roomId),
-    queryFn: () => getRoomChatSession(roomId),
+  return useQuery({
+    queryKey: roomKeys.detail(roomId),
+    queryFn: ({ signal }) => getRoomDetail(roomId, signal),
     enabled: Number.isInteger(roomId),
-    staleTime: Infinity,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: false,
-    retry: retryUnlessRejected,
+    select: (room: DiscussionRoomResponse): RoomChatSession => ({
+      roomId: room.roomId,
+      roomTitle: room.title,
+      isHost: room.isHost,
+      myUserId: myUserId ?? 0,
+    }),
   });
+};
 
 // 실시간 메시지는 소켓으로 캐시에 붙이므로 자동 재조회 끔
 export const useRoomMessages = (roomId: number, enabled: boolean) =>
   useInfiniteQuery({
     queryKey: roomChatKeys.messages(roomId),
-    queryFn: ({ pageParam }) => getRoomMessages(roomId, pageParam),
-    initialPageParam: null as string | null,
+    queryFn: ({ pageParam, signal }) => getRoomMessages(roomId, pageParam, signal),
+    initialPageParam: null as ChatCursor | null,
     getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
     enabled,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
 
-export const useLeaveRoom = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: leaveRoom,
-    onSuccess: () =>
-      [discussionKeys.all, roomKeys.all].forEach(
-        (queryKey) => void queryClient.invalidateQueries({ queryKey }),
-      ),
-  });
-};
-
-export const useKickMember = () => useMutation({ mutationFn: kickRoomMember });
+export const useMarkRoomRead = () => useMutation({ mutationFn: markRoomRead, retry: 0 });

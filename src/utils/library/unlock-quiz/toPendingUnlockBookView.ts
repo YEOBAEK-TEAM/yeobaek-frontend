@@ -6,13 +6,12 @@ import type { PendingUnlockBookResponse, PendingUnlockBookView } from "@/types/l
 export const toPendingUnlockBookViews = (
   responses: PendingUnlockBookResponse[],
 ): PendingUnlockBookView[] =>
-  responses
+  [...responses]
+    .sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt))
     .map((response) => ({
       bookId: response.bookId,
       title: response.bookTitle,
       author: response.author,
-      coverUrl: response.coverUrl,
-      completedAt: response.completedAt,
+      coverUrl: response.coverImageUrl ?? "",
       completedLabel: formatReportDate(response.completedAt),
-    }))
-    .sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt));
+    }));

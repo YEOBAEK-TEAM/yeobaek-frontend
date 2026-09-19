@@ -1,70 +1,63 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { REPORT_PATH } from "@/constants/library/report";
-import { draftReportQuery } from "@/hooks/library/report/useReportQueries";
+import { REPORT_PATH, REPORT_WRITE_PARAM } from "@/constants/library/report";
 
 export type ReportWriteTarget = {
   bookId: number;
   title: string;
 };
 
-export type ReportWriteFlowStep =
-  | { step: "idle" }
-  | { step: "draftExists" }
-  | { step: "selectBook" }
-  | { step: "confirm"; book: ReportWriteTarget }
-  | { step: "unlockGuide"; bookId: number };
-
 type WriteBookOptions = {
-  confirm?: boolean;
   replace?: boolean;
 };
 
+// 책을 고르면 바로 작성 화면, 해금예정 책은 완독 안내부터
 export const useReportWriteFlow = () => {
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
-  const [flow, setFlow] = useState<ReportWriteFlowStep>({ step: "idle" });
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const close = useCallback(() => setFlow({ step: "idle" }), []);
+  const [guideBook, setGuideBook] = useState<ReportWriteTarget | null>(null);
 
-  // 해금예정 책의 퀴즈도 풀 수 있도록 목록은 작성 중 독후감과 무관하게 오픈
-  const startWrite = () => setFlow({ step: "selectBook" });
+  // 시트 열림은 주소에만 두어 뒤로가기로도 닫힘
+  const isSheetOpen = searchParams.get(REPORT_WRITE_PARAM) === "1";
 
-  // 작성 중인 독후감은 하나만 허용, 있으면 작성 대신 안내
-  const writeBook = async (
-    book: ReportWriteTarget,
-    { confirm = true, replace = false }: WriteBookOptions = {},
-  ) => {
-    try {
-      if ((await queryClient.fetchQuery(draftReportQuery)) !== null) {
-        setFlow({ step: "draftExists" });
-        return;
-      }
-    } catch {
-      close();
-      return;
-    }
+  const openSheet = useCallback(
+    () =>
+      setSearchParams((params) => {
+        params.set(REPORT_WRITE_PARAM, "1");
+        return params;
+      }),
+    [setSearchParams],
+  );
 
-    if (confirm) {
-      setFlow({ step: "confirm", book });
-      return;
-    }
+  const closeSheet = useCallback(
+    () =>
+      setSearchParams(
+        (params) => {
+          params.delete(REPORT_WRITE_PARAM);
+          return params;
+        },
+        { replace: true },
+      ),
+    [setSearchParams],
+  );
 
-    navigate(REPORT_PATH.write(book.bookId), { replace });
+  const close = useCallback(() => {
+    closeSheet();
+    setGuideBook(null);
+  }, [closeSheet]);
+
+  const writeBook = (book: ReportWriteTarget, { replace = false }: WriteBookOptions = {}) =>
+    navigate(REPORT_PATH.write(book.bookId), { replace, state: { bookTitle: book.title } });
+
+  const openUnlockGuide = (book: ReportWriteTarget) => {
+    closeSheet();
+    setGuideBook(book);
   };
 
-  const openUnlockGuide = (bookId: number) => setFlow({ step: "unlockGuide", bookId });
-
-  const confirmWrite = () => {
-    if (flow.step !== "confirm") return;
-
-    navigate(REPORT_PATH.write(flow.book.bookId));
-  };
-
-  return { flow, close, startWrite, writeBook, openUnlockGuide, confirmWrite };
+  return { isSheetOpen, guideBook, startWrite: openSheet, close, writeBook, openUnlockGuide };
 };
 
 export type ReportWriteFlow = ReturnType<typeof useReportWriteFlow>;

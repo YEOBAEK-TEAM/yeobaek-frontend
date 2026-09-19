@@ -38,11 +38,12 @@ export const getContentPage = async (
 };
 
 export const getContentChapter = async (
-  pageId: number,
+  bookId: number,
+  pageNumber: number,
   signal?: AbortSignal,
 ): Promise<ContentChapter> => {
   const response = await api.get<ApiResponse<ContentChapter>>(
-    `/api/v1/cutton-pages/${pageId}/chapter`,
+    `/api/v1/cutton-pages/books/${bookId}/chapter/${pageNumber}`,
     { signal },
   );
   if (!response.data.success) throw new Error(response.data.message);

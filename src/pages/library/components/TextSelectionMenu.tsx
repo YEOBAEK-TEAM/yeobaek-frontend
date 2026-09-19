@@ -11,7 +11,9 @@ type Props = {
   onWord: () => void;
   onComment: () => void;
   onColor: (color: string) => void;
-  onSubmitComment: (text: string) => void;
+  onSubmitComment: (text: string) => void | boolean | Promise<boolean>;
+  commentPending?: boolean;
+  commentError?: boolean;
   onClose: () => void;
   wordCard?: ReactNode;
   wordSaved?: boolean;
@@ -35,6 +37,8 @@ export default function TextSelectionMenu({
   wordSaved = false,
   collectionDisabled = false,
   commentDisabled = false,
+  commentPending = false,
+  commentError = false,
   showCloseButton = true,
   colorDisabled = false,
 }: Props) {
@@ -59,7 +63,7 @@ export default function TextSelectionMenu({
         </button>
       )}
       {mode === "comment" ? (
-        <CommentInput onSubmit={onSubmitComment} />
+        <CommentInput onSubmit={onSubmitComment} pending={commentPending} error={commentError} />
       ) : (
         <>
           {!(mode === "word" && wordSaved) && (

@@ -1,4 +1,3 @@
-import { createMockRoomSocketTransport } from "@/api/training/discussion/socket/mockRoomSocketTransport";
 import { createRoomWebSocketTransport } from "@/api/training/discussion/socket/roomWebSocketTransport";
 
 import type { ChatConnectionStatus } from "@/types/training/chatSocket";
@@ -15,16 +14,12 @@ const BASE_DELAY_MS = 800;
 
 const MAX_DELAY_MS = 10_000;
 
-// 목 전송과 실제 소켓 전환
-const createTransport = (): RoomSocketTransport =>
-  import.meta.env.VITE_CHAT_TRANSPORT === "ws"
-    ? createRoomWebSocketTransport()
-    : createMockRoomSocketTransport();
+const createTransport = (): RoomSocketTransport => createRoomWebSocketTransport();
 
 export type RoomConnection = ReturnType<typeof createRoomConnection>;
 
 // 토론방 한 곳의 연결 수명과 재연결 관리
-export const createRoomConnection = (roomId: number, getLastMessageId: () => string | null) => {
+export const createRoomConnection = (roomId: number) => {
   const listeners = new Set<RoomSocketListener>();
 
   let transport: RoomSocketTransport | null = null;
@@ -95,7 +90,7 @@ export const createRoomConnection = (roomId: number, getLastMessageId: () => str
 
     transport = createTransport();
     unsubscribeTransport = transport.subscribe(handleSignal);
-    transport.connect(roomId, getLastMessageId());
+    transport.connect(roomId);
   }
 
   // 탭 복귀와 네트워크 복구 시 재연결
@@ -125,12 +120,6 @@ export const createRoomConnection = (roomId: number, getLastMessageId: () => str
       window.addEventListener("online", handleWake);
       document.addEventListener("visibilitychange", handleVisibilityChange);
       openTransport();
-    },
-
-    // 채팅 화면만 닫는 일시 퇴장, 참여 상태는 유지
-    leave() {
-      transport?.send({ type: "room:leave" });
-      stop();
     },
 
     disconnect: stop,

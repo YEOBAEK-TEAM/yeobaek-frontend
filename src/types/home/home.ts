@@ -1,16 +1,38 @@
-export type ReadingProgress = {
+export type CurrentReadingStatus = "READING" | "REVIEW_NEEDED";
+
+// 읽을 책이 없으면 data가 null
+export type CurrentReadingResponse = {
+  status: CurrentReadingStatus;
+  recordId: number;
+  bookId: number;
+  bookTitle: string;
+  coverImageUrl: string | null;
+  progressRate: number;
+  remainingPages: number;
+  completedAt: string | null;
+};
+
+export type RecommendedBookResponse = {
+  bookId: number;
+  title: string;
+  author: string | null;
+  publisher: string | null;
+  coverImageUrl: string | null;
+  createdAt: string | null;
+};
+
+export type ReadingProgressView = {
   bookId: number;
   bookTitle: string;
   coverUrl: string;
-  currentPage: number;
-  totalPages: number;
+  percent: number;
+  remainingPages: number;
 };
 
 export type ReportStatus = "writing" | "completed";
 
-export type RecentReport = {
+export type RecentReportView = {
   reportId: number;
-  bookId: number;
   bookTitle: string;
   coverUrl: string;
   reportTitle: string;

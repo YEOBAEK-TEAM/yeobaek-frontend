@@ -1,8 +1,26 @@
-﻿import { useState } from "react";
+import { useRef, useState } from "react";
 
-type Props = { initialMemo: string; onSave: (memo: string) => void };
-export default function MemoSection({ initialMemo, onSave }: Props) {
+type Props = {
+  initialMemo: string;
+  onSave: (memo: string) => Promise<string | null>;
+  isSaving: boolean;
+};
+export default function MemoSection({ initialMemo, onSave, isSaving }: Props) {
   const [memo, setMemo] = useState(initialMemo);
+  const saving = useRef(false);
+  const handleSave = async () => {
+    if (saving.current || isSaving) return;
+    saving.current = true;
+    try {
+      const savedMemo = await onSave(memo);
+      if (savedMemo !== null) {
+        // Preserve edits made while the request was in flight.
+        setMemo((current) => (current === memo ? savedMemo : current));
+      }
+    } finally {
+      saving.current = false;
+    }
+  };
   return (
     <section className="bg-[#FBFAF5] px-4 pt-4 pb-10">
       <h2 className="mb-2 ml-2 text-xl font-bold text-[#30201D]">
@@ -28,8 +46,8 @@ export default function MemoSection({ initialMemo, onSave }: Props) {
       <div className="mt-6 ml-1">
         <button
           type="button"
-          disabled={memo.length === 0}
-          onClick={() => onSave(memo)}
+          disabled={isSaving}
+          onClick={() => void handleSave()}
           className="h-16 w-full rounded-lg bg-[#B7BD9E] text-base font-bold text-white disabled:bg-[#858584]"
         >
           저장하기

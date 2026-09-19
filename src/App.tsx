@@ -4,8 +4,6 @@ import AppLayout from "@/layouts/AppLayout";
 import FooterLayout from "@/layouts/FooterLayout";
 import ProtectedRoute from "@/layouts/ProtectedRoute";
 
-import MyActivityProvider from "@/components/my/MyActivityProvider";
-
 import SplashPage from "@/pages/splash/SplashPage";
 import LoginPage from "@/pages/login/LoginPage";
 
@@ -44,66 +42,64 @@ import SentenceDetailPage from "@/pages/vocabulary/SentenceDetailPage";
 export default function App() {
   return (
     <BrowserRouter>
-      <MyActivityProvider>
-        <Routes>
-          <Route element={<AppLayout />}>
-            {/* 로그인 없이 접근 가능한 페이지 */}
-            <Route path="/" element={<SplashPage />} />
-            <Route path="/login" element={<LoginPage />} />
+      <Routes>
+        <Route element={<AppLayout />}>
+          {/* 로그인 없이 접근 가능한 페이지 */}
+          <Route path="/" element={<SplashPage />} />
+          <Route path="/login" element={<LoginPage />} />
 
-            {/* 로그인한 사용자만 접근 가능한 페이지 */}
-            <Route element={<ProtectedRoute />}>
-              {/* Footer 없는 페이지 */}
+          {/* 로그인한 사용자만 접근 가능한 페이지 */}
+          <Route element={<ProtectedRoute />}>
+            {/* Footer 없는 페이지 */}
 
-              {/* 서재 */}
-              <Route path="/library/read" element={<BookReadPage />} />
-              <Route path="/library/search" element={<BookSearchPage />} />
-              <Route path="/library/books/:bookId" element={<BookDetailPage />} />
-              <Route path="/library/books/:bookId/unlock-quiz" element={<UnlockQuizPage />} />
-              <Route path="/library/reports/new" element={<ReportEditorPage />} />
-              <Route path="/library/reports/:reportId" element={<ReportEditorPage />} />
+            {/* 서재 */}
+            <Route path="/library/read" element={<BookReadPage />} />
+            <Route path="/library/search" element={<BookSearchPage />} />
+            <Route path="/library/books/:bookId" element={<BookDetailPage />} />
+            <Route path="/library/books/:bookId/unlock-quiz" element={<UnlockQuizPage />} />
+            <Route path="/library/reports/new" element={<ReportEditorPage />} />
+            <Route path="/library/reports/:reportId" element={<ReportEditorPage />} />
 
-              {/* 단어장 상세 */}
-              <Route path="/vocabulary/word/:id" element={<WordDetailPage />} />
+            {/* 단어장 상세 */}
+            <Route path="/vocabulary/word/:id" element={<WordDetailPage />} />
 
-              {/* 마이페이지 상세 */}
-              <Route path="/my/calendar" element={<ReadingCalendarPage />} />
-              <Route path="/my/liked-comments" element={<LikedCommentsPage />} />
-              <Route path="/my/liked-pages" element={<LikedPagesPage />} />
-              <Route path="/my/liked-pages/:bookId" element={<LikedBookPagesPage />} />
-              <Route path="/my/bookmarked-pages" element={<BookmarkedPagesPage />} />
-              <Route path="/my/bookmarked-pages/:bookId" element={<BookmarkedBookPagesPage />} />
+            {/* 마이페이지 상세 */}
+            <Route path="/my/calendar" element={<ReadingCalendarPage />} />
+            <Route path="/my/liked-comments" element={<LikedCommentsPage />} />
+            <Route path="/my/liked-pages" element={<LikedPagesPage />} />
+            <Route path="/my/liked-pages/:bookId" element={<LikedBookPagesPage />} />
+            <Route path="/my/bookmarked-pages" element={<BookmarkedPagesPage />} />
+            <Route path="/my/bookmarked-pages/:bookId" element={<BookmarkedBookPagesPage />} />
 
-              {/* 훈련 */}
-              <Route path="/training/book-report" element={<BookReportChatPage />} />
-              <Route path="/training/complete" element={<TrainingCompletePage />} />
-              <Route path="/training/comprehension" element={<ComprehensionSelectPage />} />
-              <Route path="/training/comprehension/chat" element={<ComprehensionChatPage />} />
-              <Route
-                path="/training/comprehension/complete"
-                element={<ComprehensionCompletePage />}
-              />
-              <Route path="/training/discussion/create" element={<RoomCreatePage />} />
-              <Route
-                path="/training/discussion/create/complete"
-                element={<RoomCreateCompletePage />}
-              />
-              <Route path="/training/discussion/rooms" element={<RoomListPage />} />
-              <Route path="/training/discussion/rooms/:roomId" element={<DiscussionRoomPage />} />
+            {/* 훈련 */}
+            <Route path="/training/book-report" element={<BookReportChatPage />} />
+            <Route path="/training/complete" element={<TrainingCompletePage />} />
+            <Route path="/training/comprehension" element={<ComprehensionSelectPage />} />
+            <Route path="/training/comprehension/chat" element={<ComprehensionChatPage />} />
+            <Route
+              path="/training/comprehension/complete"
+              element={<ComprehensionCompletePage />}
+            />
+            <Route path="/training/discussion/create" element={<RoomCreatePage />} />
+            <Route
+              path="/training/discussion/create/complete"
+              element={<RoomCreateCompletePage />}
+            />
+            <Route path="/training/discussion/rooms" element={<RoomListPage />} />
+            <Route path="/training/discussion/rooms/:roomId" element={<DiscussionRoomPage />} />
 
-              {/* Footer 있는 페이지 */}
-              <Route element={<FooterLayout />}>
-                <Route path="/home" element={<HomePage />} />
-                <Route path="/vocabulary" element={<VocabularyPage />} />
-                <Route path="/vocabulary/sentence/:id" element={<SentenceDetailPage />} />
-                <Route path="/training" element={<TrainingPage />} />
-                <Route path="/library" element={<LibraryPage />} />
-                <Route path="/my" element={<MyPage />} />
-              </Route>
+            {/* Footer 있는 페이지 */}
+            <Route element={<FooterLayout />}>
+              <Route path="/home" element={<HomePage />} />
+              <Route path="/vocabulary" element={<VocabularyPage />} />
+              <Route path="/vocabulary/sentence/:id" element={<SentenceDetailPage />} />
+              <Route path="/training" element={<TrainingPage />} />
+              <Route path="/library" element={<LibraryPage />} />
+              <Route path="/my" element={<MyPage />} />
             </Route>
           </Route>
-        </Routes>
-      </MyActivityProvider>
+        </Route>
+      </Routes>
     </BrowserRouter>
   );
 }
