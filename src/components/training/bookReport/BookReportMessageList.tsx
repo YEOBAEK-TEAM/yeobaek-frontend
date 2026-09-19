@@ -32,8 +32,12 @@ export default function BookReportMessageList({
 }: BookReportMessageListProps) {
   const { hasNextPage, isFetchingNextPage, fetchNextPage } = olderMessages;
 
-  // 처음 불러온 이력은 다시 타자 효과를 주지 않음
-  const [seenIds] = useState(() => new Set(messages.map((message) => message.id)));
+  // 이력이 도착한 시점을 기준으로 삼아 지난 대화는 한 번에 보여줌
+  const [seenIds, setSeenIds] = useState<Set<string> | null>(null);
+
+  if (seenIds === null && messages.length > 0) {
+    setSeenIds(new Set(messages.map((message) => message.id)));
+  }
 
   // 글자가 늘어날 때마다 스크롤을 따라가게 하는 신호
   const [typingTick, setTypingTick] = useState(0);
@@ -96,7 +100,7 @@ export default function BookReportMessageList({
             message={message}
             onQuickReply={onQuickReply}
             onRetry={onRetry}
-            isTyped={message.role === "riti" && !seenIds.has(message.id)}
+            isTyped={message.role === "riti" && seenIds !== null && !seenIds.has(message.id)}
             onTypingTick={() => setTypingTick((tick) => tick + 1)}
           />
         );
