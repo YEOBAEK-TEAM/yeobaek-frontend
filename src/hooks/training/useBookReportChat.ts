@@ -132,6 +132,12 @@ export const useBookReportChat = () => {
       return;
     }
 
+    // 관점을 본 뒤 상태, 대화를 이어가면 단계가 바뀌므로 들어올 때만 복구
+    if (roomStatus === "GROWTH_CHECK") {
+      if (store.phase.type === "select") store.setPhase({ type: "perspectiveShown" });
+      return;
+    }
+
     if (roomStatus === "COMPLETED") {
       // 요약 카드는 이력에 남아 있어 그 값으로 복구
       const summary = historyMessages?.findLast((message) => message.kind === "thoughtSummary");
