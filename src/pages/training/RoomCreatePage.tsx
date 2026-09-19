@@ -75,8 +75,13 @@ export default function RoomCreatePage() {
     if (!topic || createRoom.isPending) return;
 
     createRoom.mutate(toCreateRoomRequest({ ...form, topic }), {
-      onSuccess: ({ roomId, inviteCode }) => {
-        form.complete({ roomId, inviteCode, title: form.title.trim(), coverUrl: topic.coverUrl });
+      onSuccess: ({ room, inviteCode }) => {
+        form.complete({
+          roomId: room.roomId,
+          inviteCode,
+          title: form.title.trim(),
+          coverUrl: topic.coverUrl,
+        });
         navigate(DISCUSSION_PATH.createComplete, { replace: true });
       },
     });

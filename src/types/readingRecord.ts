@@ -4,6 +4,7 @@ export type ReadingRecordItem = {
   recordId: number;
   bookId: number;
   bookTitle: string;
+  author: string;
   coverImageUrl: string;
   progressRate: number;
   lastPageId: number;
