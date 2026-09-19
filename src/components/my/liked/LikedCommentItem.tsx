@@ -1,3 +1,4 @@
+import { contentPageKeys } from "@/hooks/queryKeys/contentPageKeys";
 import { Heart } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -13,7 +14,7 @@ export default function LikedCommentItem({ item }: { item: ActivityLikedComment 
   const open = useMutation({
     mutationFn: () =>
       client.fetchQuery({
-        queryKey: ["content-pages", item.pageId],
+        queryKey: contentPageKeys.detail(item.pageId),
         queryFn: ({ signal }) => getContentPage(item.pageId, signal),
       }),
     onSuccess: (page) => navigate(`/library/read?bookId=${page.bookId}&pageId=${item.pageId}`),

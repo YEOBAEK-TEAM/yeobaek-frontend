@@ -1,9 +1,10 @@
+import { contentPageKeys } from "@/hooks/queryKeys/contentPageKeys";
 import { keepPreviousData, queryOptions, useQuery } from "@tanstack/react-query";
 import { getContentChapter } from "@/api/contentPage";
 
 export const contentChapterQueryOptions = (bookId: number, pageNumber: number) =>
   queryOptions({
-    queryKey: ["content-pages", "chapter", bookId, pageNumber],
+    queryKey: contentPageKeys.chapter(bookId, pageNumber),
     queryFn: ({ signal }) => getContentChapter(bookId, pageNumber, signal),
     enabled:
       Number.isSafeInteger(bookId) &&
