@@ -15,7 +15,9 @@ type Props<T> = {
   ) => ReactNode;
 };
 type Gesture = { id: number; x: number; y: number; time: number; width: number; dragging: boolean };
-const hasSelection = () => Boolean(window.getSelection()?.toString());
+const SWIPE_DISTANCE_THRESHOLD = 60;
+const FLICK_DISTANCE_THRESHOLD = 30;
+const FLICK_TIME_THRESHOLD = 350;
 
 export default function ReaderPageDeck<T>({
   pages,
@@ -42,10 +44,17 @@ export default function ReaderPageDeck<T>({
     }
   }, []);
   useEffect(() => () => window.clearTimeout(timer.current), []);
-  const blocked = () =>
-    swipeDisabled.current ||
-    hasSelection() ||
-    Boolean(viewport.current?.querySelector(".book-reader__selection"));
+  const blocked = () => {
+    const root = viewport.current;
+    const native = window.getSelection();
+    // Keep the DOM guard: saved menus also share the swipe-disabled callback.
+    if (swipeDisabled.current || root?.querySelector(".book-reader__selection")) return true;
+    if (!root || !native?.toString()) return false;
+    // Native ranges outside this reader should not block page navigation.
+    return Array.from({ length: native.rangeCount }, (_, index) => native.getRangeAt(index)).some(
+      (range) => range.intersectsNode(root),
+    );
+  };
   const settle = (direction: number, width: number) => {
     gesture.current = null;
     setMotion({ delta: -direction * width, settling: true, dragging: false });
@@ -99,7 +108,7 @@ export default function ReaderPageDeck<T>({
         gesture.current = null;
         return;
       }
-      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
+      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy) * 0.9) return;
       current.dragging = true;
       event.currentTarget.setPointerCapture(event.pointerId);
     }
@@ -118,7 +127,10 @@ export default function ReaderPageDeck<T>({
     const dx = event.clientX - current.x;
     const distance = Math.abs(dx);
     // A quick flick turns the page even when it does not travel far.
-    const passed = distance >= 90 || (performance.now() - current.time < 300 && distance >= 36);
+    const elapsed = performance.now() - current.time;
+    const passed =
+      distance >= SWIPE_DISTANCE_THRESHOLD ||
+      (elapsed < FLICK_TIME_THRESHOLD && distance >= FLICK_DISTANCE_THRESHOLD);
     let direction = !blocked() && passed ? (dx < 0 ? 1 : -1) : 0;
     if ((direction < 0 && !hasPrevious) || (direction > 0 && !hasNext)) direction = 0;
     settle(direction, current.width);

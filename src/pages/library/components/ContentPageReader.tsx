@@ -44,6 +44,7 @@ export default function ContentPageReader({
     wordSelection,
     commentSelection,
     close,
+    freezeSelection,
     openWord,
     openComment,
     onPointerDown,
@@ -257,6 +258,7 @@ export default function ContentPageReader({
                   commentPending={commentMutation.isPending}
                   commentError={commentMutation.isError}
                   onHighlight={() => {
+                    freezeSelection();
                     mutation.reset();
                     setCollecting(selection);
                   }}
