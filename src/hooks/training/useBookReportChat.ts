@@ -5,7 +5,6 @@ import {
   ENDED_SYSTEM_TEXT,
   ENDING_TEXT,
   MESSAGES_ERROR_TEXT,
-  MORE_PERSPECTIVE_LABEL,
   OTHER_PERSPECTIVE_EMPTY_TEXT,
   OTHER_PERSPECTIVE_LABEL,
   RETRY_LABEL,
@@ -51,13 +50,6 @@ const PERSPECTIVE_CHIP: BookReportMessage = {
     { id: "show-perspective", label: OTHER_PERSPECTIVE_LABEL },
     { id: "skip-perspective", label: SKIP_PERSPECTIVE_LABEL },
   ],
-};
-
-const MORE_PERSPECTIVE_CHIP: BookReportMessage = {
-  id: "more-perspective-chip",
-  role: "riti",
-  kind: "quickReplies",
-  replies: [{ id: "show-perspective", label: MORE_PERSPECTIVE_LABEL }],
 };
 
 const MESSAGES_ERROR: BookReportMessage[] = [
@@ -132,12 +124,6 @@ export const useBookReportChat = () => {
       return;
     }
 
-    // 관점을 본 뒤 상태, 대화를 이어가면 단계가 바뀌므로 들어올 때만 복구
-    if (roomStatus === "GROWTH_CHECK") {
-      if (store.phase.type === "select") store.setPhase({ type: "perspectiveShown" });
-      return;
-    }
-
     if (roomStatus === "COMPLETED") {
       // 요약 카드는 이력에 남아 있어 그 값으로 복구
       const summary = historyMessages?.findLast((message) => message.kind === "thoughtSummary");
@@ -174,9 +160,6 @@ export const useBookReportChat = () => {
 
     // 선택 전까지는 전송이 막혀 버튼만 노출
     if (phase.type === "perspectivePrompt" && !isReplying) list.push(PERSPECTIVE_CHIP);
-
-    // 관점을 본 뒤에는 더 보기 버튼과 함께 대화를 이어감
-    if (phase.type === "perspectiveShown" && !isReplying) list.push(MORE_PERSPECTIVE_CHIP);
 
     return list;
   }, [messagesQuery.isError, messagesQuery.data, localMessages, isReplying, phase.type]);
@@ -230,7 +213,7 @@ export const useBookReportChat = () => {
   const sendMessage = useCallback(
     async (text: string) => {
       const store = useBookReportChatStore.getState();
-      const canSend = store.phase.type === "chatting" || store.phase.type === "perspectiveShown";
+      const canSend = store.phase.type === "chatting";
       if (!canSend || !messagesQuery.data || isBusyRef.current) return;
 
       store.setPhase({ type: "chatting" });
@@ -265,7 +248,8 @@ export const useBookReportChat = () => {
       await showPerspective.mutateAsync(trainingRoomId);
       await messagesQuery.refetch();
 
-      useBookReportChatStore.getState().setPhase({ type: "perspectiveShown" });
+      // 서버가 내려준 관점을 한 번에 다 보여주고 대화를 이어감
+      useBookReportChatStore.getState().setPhase({ type: "chatting" });
     } catch (error) {
       const store = useBookReportChatStore.getState();
 
@@ -384,9 +368,7 @@ export const useBookReportChat = () => {
     pinnedReport,
     reviewTitle: messagesQuery.data?.reviewTitle ?? "",
     isReplying,
-    isChatReady:
-      (phase.type === "chatting" || phase.type === "perspectiveShown") &&
-      Boolean(messagesQuery.data),
+    isChatReady: phase.type === "chatting" && Boolean(messagesQuery.data),
     olderMessages: {
       hasNextPage: messagesQuery.hasNextPage,
       isFetchingNextPage: messagesQuery.isFetchingNextPage,

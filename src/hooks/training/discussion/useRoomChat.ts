@@ -134,7 +134,7 @@ export const useRoomChat = (roomId: number, myUserId: number | undefined) => {
 
         // 내가 대상인 강퇴이거나 방이 삭제되면 더 머무를 수 없음
         if (message.type === "roomDeleted") setEndReason("closed");
-        if (message.type === "memberKicked" && message.memberId === myUserId) {
+        if (message.type === "memberKicked" && message.userId === myUserId) {
           setEndReason("kicked");
         }
         return;

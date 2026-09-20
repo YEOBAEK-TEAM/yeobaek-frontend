@@ -54,7 +54,7 @@ export const useComprehensionHistory = (enabled: boolean) =>
               ? "책 전체"
               : formatPageRange(item.startPageNumber, item.endPageNumber),
           coverUrl: item.bookImageUrl ?? "",
-          dateLabel: "",
+          dateLabel: formatReportDate(item.createdAt),
         })),
       ),
     enabled,

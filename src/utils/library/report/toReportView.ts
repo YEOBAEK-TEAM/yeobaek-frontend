@@ -44,6 +44,7 @@ export const toMyReportView = (response: BookReviewListItemResponse): MyReportVi
   dateLabel: formatReportDate(response.reportDate ?? response.updatedAt),
   updatedAt: response.updatedAt,
   isLiked: response.isLiked,
+  isPrivate: response.visibility === "PRIVATE",
 });
 
 // 해금일 최신순

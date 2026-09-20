@@ -26,8 +26,6 @@ export const OTHER_PERSPECTIVE_LABEL = "다른관점 보기";
 
 export const SKIP_PERSPECTIVE_LABEL = "괜찮아요";
 
-export const MORE_PERSPECTIVE_LABEL = "다른관점 더 보여주기";
-
 export const OTHER_PERSPECTIVE_EMPTY_TEXT = "아직 다른분들의 독후감 데이터가 충분치 않습니다";
 
 export const REPORT_SHEET_EMPTY_TEXT = "작성한 독후감이 없어요";
