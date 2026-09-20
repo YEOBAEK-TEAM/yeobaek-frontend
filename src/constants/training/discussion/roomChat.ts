@@ -2,8 +2,6 @@ import { josa } from "@/utils/training/josa";
 
 import type { RoomEndReason } from "@/types/training/discussion/roomChat";
 
-export const ROOM_CHAT_PAGE_SIZE = 30;
-
 // 서버 본문 길이 제한
 export const ROOM_MESSAGE_MAX_LENGTH = 2000;
 

@@ -128,8 +128,6 @@ export type DiscussionRoomApplicantResponse = {
   appliedAt: string;
 };
 
-export type ApplicantPageResponse = PageResponse<DiscussionRoomApplicantResponse>;
-
 export type ApplicantView = {
   memberId: number;
   nickname: string;

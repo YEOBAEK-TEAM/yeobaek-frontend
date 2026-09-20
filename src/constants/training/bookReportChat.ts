@@ -11,8 +11,6 @@ export const ENDING_TEXT = "오늘 하루도 수고했어! 다음에 또 만나"
 
 export const ENDED_SYSTEM_TEXT = "채팅이 종료되었습니다";
 
-export const REPORT_SHEET_TITLE = "내 독후감 목록";
-
 export const REPORT_SELECT_TITLE = "독후감 훈련";
 
 export const ONGOING_TRAINING_BLOCKED_TEXT =

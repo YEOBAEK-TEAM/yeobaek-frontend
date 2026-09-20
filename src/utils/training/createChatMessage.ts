@@ -15,14 +15,6 @@ export const ritiText = (text: string, streaming = false): ChatBaseMessage => ({
   streaming,
 });
 
-export const ritiPlainText = (text: string): ChatBaseMessage => ({
-  id: createMessageId(),
-  role: "riti",
-  kind: "text",
-  text,
-  hideAvatar: true,
-});
-
 export const userText = (text: string): ChatBaseMessage => ({
   id: createMessageId(),
   role: "user",
