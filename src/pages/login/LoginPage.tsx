@@ -149,7 +149,9 @@ export default function LoginPage() {
           {isLoading ? "로그인 중..." : "로그인 하기"}
         </button>
         <p className="mt-3 text-xs leading-relaxed text-[#555555]">
-          처음 방문하셨다면 원하는 닉네임과 비밀번호를 입력해주세요. 계정이 자동으로 생성됩니다.
+          처음 방문하셨다면 원하는 닉네임과 비밀번호를 입력해주세요.
+          <br />
+          계정이 자동으로 생성됩니다.
         </p>
       </form>
     </main>
