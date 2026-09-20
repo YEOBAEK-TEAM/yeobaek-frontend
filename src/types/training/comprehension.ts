@@ -32,11 +32,6 @@ export type BookmarkListResponse = {
   hasNext: boolean;
 };
 
-export type UnderstandStartRequest = {
-  // 선택한 묶음의 모든 페이지 ID
-  targetIds: number[];
-};
-
 export type UnderstandStartResponse = {
   understandRoomId: number;
   bookId: number;
@@ -115,14 +110,6 @@ export type BookmarkView = {
   coverUrl: string;
   pageLabel: string;
   targetIds: number[];
-};
-
-// 채팅 상단 고정 영역
-export type ComprehensionBookView = {
-  title: string;
-  author: string;
-  coverUrl: string;
-  pageLabel: string;
 };
 
 export type ComprehensionMessage = ChatBaseMessage;

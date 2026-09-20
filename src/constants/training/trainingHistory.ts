@@ -9,8 +9,6 @@ export const TRAINING_HISTORY_TABS: { id: TrainingHistoryTab; label: string }[] 
 
 export const TRAINING_HISTORY_EMPTY_TEXT = "아직 훈련 기록이 없습니다";
 
-export const TRAINING_HISTORY_ERROR_TEXT = "훈련 기록을 불러오지 못했어요";
-
 // 기록에서 들어오면 대화를 볼 수만 있음
 export const HISTORY_ENTRY_PARAM = "from";
 

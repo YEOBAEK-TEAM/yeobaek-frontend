@@ -86,17 +86,6 @@ export const getRoomDetail = (roomId: number, signal?: AbortSignal) =>
     "ROOM_NOT_FOUND",
   );
 
-// 참여 코드로 방 정보만 조회, 신청은 별도
-export const getRoomByInviteCode = (code: string, signal?: AbortSignal) =>
-  requestRoomApi(
-    () =>
-      api.get<ApiResponse<DiscussionRoomResponse>>("/api/v1/discussion-rooms/invite-code", {
-        params: { code },
-        signal,
-      }),
-    "INVALID_CODE",
-  );
-
 export const createRoom = (body: DiscussionRoomCreateRequest) =>
   requestRoomApi(() =>
     api.post<ApiResponse<DiscussionRoomCreateResponse>>("/api/v1/discussion-rooms", body),
