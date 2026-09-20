@@ -127,9 +127,9 @@ export default function LoginPage() {
             mt-7 h-14 w-full
             rounded-[10px]
             border border-[#555555]
-            bg-[#C0C99E]
+            bg-[#BEC5A5] disabled:bg-[#D7D4C7]
             text-[17px] font-semibold text-[#4F4F4F]
-            disabled:cursor-default disabled:opacity-60
+            disabled:cursor-default
           "
         >
           {isLoading ? "로그인 중..." : "로그인 하기"}
