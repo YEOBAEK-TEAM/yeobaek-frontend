@@ -14,7 +14,18 @@ type Props<T> = {
     onSwipeDisabledChange: (disabled: boolean) => void,
   ) => ReactNode;
 };
-type Gesture = { id: number; x: number; y: number; time: number; width: number; dragging: boolean };
+type GestureAxis = "pending" | "horizontal" | "vertical";
+type Gesture = {
+  id: number;
+  x: number;
+  y: number;
+  time: number;
+  width: number;
+  dragging: boolean;
+  axis: GestureAxis;
+};
+const AXIS_LOCK_DISTANCE = 10;
+const AXIS_LOCK_RATIO = 1.15;
 const SWIPE_DISTANCE_THRESHOLD = 60;
 const FLICK_DISTANCE_THRESHOLD = 30;
 const FLICK_TIME_THRESHOLD = 350;
@@ -82,6 +93,7 @@ export default function ReaderPageDeck<T>({
       time: performance.now(),
       width: event.currentTarget.clientWidth,
       dragging: false,
+      axis: "pending",
     };
   };
   const move = (event: PointerEvent<HTMLDivElement>) => {
@@ -93,22 +105,33 @@ export default function ReaderPageDeck<T>({
     }
     const dx = event.clientX - current.x;
     const dy = event.clientY - current.y;
-    if (!current.dragging) {
+    if (current.axis === "pending") {
+      const distance = Math.hypot(dx, dy);
       // Leave stationary long presses to native selection, but keep moving fingers.
       if (
         event.pointerType !== "mouse" &&
-        Math.hypot(dx, dy) < 10 &&
+        distance < AXIS_LOCK_DISTANCE &&
         performance.now() - current.time >= 400
       ) {
         gesture.current = null;
         return;
       }
-      // Give up only on clearly vertical gestures.
-      if (Math.abs(dy) > Math.abs(dx) * 1.5 + 12) {
+      if (distance < AXIS_LOCK_DISTANCE) return;
+      const absX = Math.abs(dx);
+      const absY = Math.abs(dy);
+      if (absX > absY * AXIS_LOCK_RATIO) {
+        current.axis = "horizontal";
+      } else if (absY > absX * AXIS_LOCK_RATIO) {
+        current.axis = "vertical";
+      } else {
+        // Wait for a clear intent before taking over an ambiguous diagonal.
+        return;
+      }
+      if (current.axis === "vertical") {
+        // Leave scrolling to the browser for the rest of this pointer gesture.
         gesture.current = null;
         return;
       }
-      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy) * 0.9) return;
       current.dragging = true;
       event.currentTarget.setPointerCapture(event.pointerId);
     }
