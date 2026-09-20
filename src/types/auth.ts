@@ -1,9 +1,9 @@
-export type LoginRequest = {
+export type SimpleLoginRequest = {
   nickname: string;
   password: string;
 };
 
-export type LoginResponse = {
+export type SimpleLoginResponse = {
   userId: number;
   nickname: string;
   accessToken: string;

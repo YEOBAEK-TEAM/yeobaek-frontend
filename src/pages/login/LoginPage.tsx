@@ -1,11 +1,13 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { isAxiosError } from "axios";
 
-import { login } from "@/api/auth";
+import { simpleLogin } from "@/api/auth";
 
 import loginIcon from "@/assets/icons/LogIn.png";
 
 import { useAuthStore } from "@/stores/auth";
+import type { ApiResponse } from "@/types/auth";
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -26,7 +28,7 @@ export default function LoginPage() {
       setIsLoading(true);
       setErrorMessage("");
 
-      const data = await login({
+      const data = await simpleLogin({
         nickname: nickname.trim(),
         password,
       });
@@ -37,7 +39,19 @@ export default function LoginPage() {
     } catch (error) {
       console.error("로그인 실패", error);
 
-      setErrorMessage("닉네임 또는 비밀번호를 확인해주세요.");
+      if (isAxiosError<ApiResponse<unknown>>(error)) {
+        setErrorMessage(
+          !error.response || error.response.status >= 500
+            ? "로그인에 실패했습니다. 잠시 후 다시 시도해주세요."
+            : error.response.data?.message || "닉네임 또는 비밀번호를 확인해주세요.",
+        );
+      } else {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "로그인에 실패했습니다. 잠시 후 다시 시도해주세요.",
+        );
+      }
     } finally {
       setIsLoading(false);
     }
@@ -134,6 +148,9 @@ export default function LoginPage() {
         >
           {isLoading ? "로그인 중..." : "로그인 하기"}
         </button>
+        <p className="mt-3 text-xs leading-relaxed text-[#555555]">
+          처음 방문하셨다면 원하는 닉네임과 비밀번호를 입력해주세요. 계정이 자동으로 생성됩니다.
+        </p>
       </form>
     </main>
   );
