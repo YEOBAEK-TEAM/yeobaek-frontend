@@ -1,7 +1,9 @@
 import { EllipsisVertical } from "lucide-react";
 
+import PasswordUnseenIcon from "@/assets/icons/BookReview/passwordUnseenIcon.svg";
 import BookCover from "@/components/common/bookCover/BookCover";
 import LikeButton from "@/components/library/report/LikeButton";
+import { REPORT_EDITOR } from "@/constants/library/report";
 
 import type { MyReportView } from "@/types/library/report";
 
@@ -29,8 +31,19 @@ export default function ReportListItem({
         <BookCover src={report.coverUrl} className="h-19 w-13 shrink-0 rounded-sm bg-[#EFEDE7]" />
 
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[17px] font-bold text-[#4F4D4E]">
-            {report.bookTitle}
+          <span className="flex items-center gap-1.5">
+            <span className="min-w-0 truncate text-[17px] font-bold text-[#4F4D4E]">
+              {report.bookTitle}
+            </span>
+
+            {/* 나만 보기는 리티 학습과 다른 관점 보기에서 빠짐 */}
+            {report.isPrivate && (
+              <img
+                src={PasswordUnseenIcon}
+                alt={REPORT_EDITOR.privateBadgeAlt}
+                className="h-4 w-4 shrink-0"
+              />
+            )}
           </span>
           <span className="mt-0.5 block truncate text-[15px] text-[#8F8F8F]">
             {report.reportTitle}

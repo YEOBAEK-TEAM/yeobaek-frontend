@@ -18,6 +18,7 @@ type BookReviewBase = {
 // 좋아요한 독후감이 앞, 그다음 최근 수정·작성순
 export type BookReviewListItemResponse = BookReviewBase & {
   coverImageUrl: string | null;
+  visibility: BookReviewVisibility | null;
   isLiked: boolean;
   likedAt: string | null;
 };
@@ -93,6 +94,7 @@ export type MyReportView = {
   dateLabel: string;
   updatedAt: string;
   isLiked: boolean;
+  isPrivate: boolean;
 };
 
 export type UnlockedBookView = {

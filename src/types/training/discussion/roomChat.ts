@@ -9,6 +9,8 @@ export type ChatMessageResponse = {
   roomId: number;
   roomTitle: string;
   userId: number;
+  // 이 방에서의 멤버 ID, 퇴출 요청에 사용
+  memberId: number;
   nickname: string;
   profileImageUrl: string | null;
   content: string;
@@ -50,6 +52,8 @@ export type RoomMessageResponse = RoomMessageBase &
     | {
         type: "chat";
         senderId: number;
+        // 서버가 내려준 메시지에만 있고 내가 보낸 임시 메시지에는 없음
+        senderMemberId?: number;
         senderNickname: string;
         senderProfileImageUrl: string | null;
         senderIsHost: boolean;
@@ -57,7 +61,8 @@ export type RoomMessageResponse = RoomMessageBase &
       }
     | {
         type: "memberJoined" | "memberLeft" | "memberKicked";
-        memberId: number;
+        // 안내 대상이 되는 사람의 유저 ID
+        userId: number;
         nickname: string;
       }
     | { type: "roomDeleted" }
