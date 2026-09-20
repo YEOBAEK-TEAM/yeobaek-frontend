@@ -105,7 +105,7 @@ export default function BookDetailPage() {
         <h2 className="text-lg font-bold">줄거리</h2>
 
         <p className="mt-4 whitespace-pre-line text-base leading-relaxed text-[#666666]">
-          {book.description ?? "아직 등록된 줄거리가 없습니다."}
+          {book.description?.trim() || "줄거리가 제공되지 않는 책입니다."}
         </p>
       </section>
 
