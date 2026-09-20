@@ -26,7 +26,7 @@ const toNoticeText = (
     case "memberJoined":
       return getMemberJoinedNotice(
         message.nickname,
-        message.memberId === myUserId && !session.isHost,
+        message.userId === myUserId && !session.isHost,
       );
     case "memberLeft":
       return getMemberLeftNotice(message.nickname);
@@ -61,13 +61,13 @@ export const toRoomChatRows = (messages: RoomTimelineMessage[], context: RowCont
       rows.push({
         kind: "member",
         id: message.messageId,
-        memberId: message.senderId,
+        memberId: message.senderMemberId ?? 0,
         nickname: message.senderNickname,
         label: `${message.senderNickname}${message.senderIsHost ? HOST_NAME_SUFFIX : ""}`,
         imageUrl: message.senderProfileImageUrl,
         text: message.text,
         showProfile: previousSenderId !== message.senderId,
-        canKick: session.isHost && !message.senderIsHost,
+        canKick: session.isHost && !message.senderIsHost && message.senderMemberId !== undefined,
       });
       previousSenderId = message.senderId;
     }
