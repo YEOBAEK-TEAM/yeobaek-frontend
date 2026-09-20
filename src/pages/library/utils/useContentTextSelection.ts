@@ -20,7 +20,9 @@ export function useContentTextSelection(
     x: number;
     y: number;
     moved: boolean;
-    sentence: HTMLElement;
+    sentence: HTMLElement | null;
+    time: number;
+    dismissSelection: boolean;
   } | null>(null);
   const lastTap = useRef<{ time: number; x: number; y: number; sentence: HTMLElement } | null>(
     null,
@@ -48,43 +50,52 @@ export function useContentTextSelection(
     [onSwipeDisabledChange],
   );
 
+  const close = useCallback(
+    (root = articleRef.current) => {
+      window.clearTimeout(clickTimer.current);
+      window.clearTimeout(touchTimer.current);
+      window.clearTimeout(selectionTimer.current);
+      frozen.current = false;
+      nativeEnabled.current = false;
+      press.current = null;
+      lastTap.current = null;
+      setNativeSelection(false);
+      setSelection(null);
+      setWordSelection(null);
+      setCommentSelection(null);
+      const native = window.getSelection();
+      if (
+        native &&
+        root &&
+        ((native.anchorNode && root.contains(native.anchorNode)) ||
+          (native.focusNode && root.contains(native.focusNode)) ||
+          Array.from({ length: native.rangeCount }, (_, index) => native.getRangeAt(index)).some(
+            (range) => range.intersectsNode(root),
+          ))
+      )
+        native.removeAllRanges();
+      root?.removeAttribute("data-native-selection");
+      onSwipeDisabledChange(false);
+    },
+    [onSwipeDisabledChange],
+  );
+
   const capture = useCallback(() => {
     if (!active || !nativeEnabled.current || frozen.current || !articleRef.current || press.current)
       return;
     const native = window.getSelection();
     const range = native?.rangeCount ? native.getRangeAt(0) : null;
-    if (!range || native?.isCollapsed) {
-      nativeEnabled.current = false;
-      setNativeSelection(false);
-      setSelection(null);
-      onSwipeDisabledChange(false);
+    if (!range || native?.isCollapsed || !range.intersectsNode(articleRef.current)) {
+      close();
       return;
     }
-    const next = range && getContentTextSelection(articleRef.current, range);
+    const next = getContentTextSelection(articleRef.current, range);
     setSelection((previous) =>
       previous?.text === next?.text && previous?.sentenceId === next?.sentenceId ? previous : next,
     );
     // Cross-sentence ranges cannot be saved, but remain in native selection mode.
     onSwipeDisabledChange(true);
-  }, [active, onSwipeDisabledChange]);
-
-  const close = useCallback(() => {
-    window.clearTimeout(clickTimer.current);
-    window.clearTimeout(touchTimer.current);
-    window.clearTimeout(selectionTimer.current);
-    frozen.current = false;
-    nativeEnabled.current = false;
-    press.current = null;
-    lastTap.current = null;
-    setNativeSelection(false);
-    setSelection(null);
-    setWordSelection(null);
-    setCommentSelection(null);
-    const native = window.getSelection();
-    if (native?.anchorNode && articleRef.current?.contains(native.anchorNode))
-      native.removeAllRanges();
-    onSwipeDisabledChange(false);
-  }, [onSwipeDisabledChange]);
+  }, [active, close, onSwipeDisabledChange]);
 
   useEffect(() => {
     if (!active) return;
@@ -101,11 +112,24 @@ export function useContentTextSelection(
       if (!current || current.id !== event.pointerId) return;
       press.current = null;
       window.clearTimeout(touchTimer.current);
+      if (
+        current.dismissSelection &&
+        !current.moved &&
+        Math.hypot(event.clientX - current.x, event.clientY - current.y) <= 5 &&
+        performance.now() - current.time < 400
+      ) {
+        close();
+        return;
+      }
       if (nativeEnabled.current) {
         capture();
         return;
       }
-      if (current.moved || Math.hypot(event.clientX - current.x, event.clientY - current.y) > 5) {
+      if (
+        !current.sentence ||
+        current.moved ||
+        Math.hypot(event.clientX - current.x, event.clientY - current.y) > 5
+      ) {
         lastTap.current = null;
         return;
       }
@@ -123,15 +147,16 @@ export function useContentTextSelection(
           articleRef.current && contentWordRange(articleRef.current, event.clientX, event.clientY);
         if (range) selectRange(range);
       } else {
+        const sentence = current.sentence;
         lastTap.current = {
           time: now,
           x: event.clientX,
           y: event.clientY,
-          sentence: current.sentence,
+          sentence,
         };
         clickTimer.current = window.setTimeout(() => {
           const range = document.createRange();
-          range.selectNodeContents(current.sentence);
+          range.selectNodeContents(sentence);
           selectRange(range);
         }, 320);
       }
@@ -156,12 +181,7 @@ export function useContentTextSelection(
       document.removeEventListener("pointerup", release);
       document.removeEventListener("pointercancel", cancel);
       document.removeEventListener("keydown", escape);
-      window.clearTimeout(clickTimer.current);
-      window.clearTimeout(touchTimer.current);
-      window.clearTimeout(selectionTimer.current);
-      const native = window.getSelection();
-      if (native?.anchorNode && root?.contains(native.anchorNode)) native.removeAllRanges();
-      onSwipeDisabledChange(false);
+      close(root);
     };
   }, [active, capture, close, selectRange, onSwipeDisabledChange]);
 
@@ -172,7 +192,10 @@ export function useContentTextSelection(
     wordSelection,
     commentSelection,
     nativeSelection,
-    close,
+    close: () => close(),
+    freezeSelection: () => {
+      frozen.current = true;
+    },
     openComment: () => {
       if (!selection) return;
       frozen.current = true;
@@ -187,22 +210,41 @@ export function useContentTextSelection(
     },
     onPointerDown: (event: PointerEvent<HTMLElement>) => {
       if (!active || !event.isPrimary || event.button !== 0) return;
+      if (
+        (event.target as Element).closest(
+          "button, input, a, textarea, .book-reader__selection, .book-reader__saved-interaction",
+        )
+      )
+        return;
       const sentence = sentenceElement(event.currentTarget, event.target as Node);
-      if (!sentence) return;
+      if (!sentence && !nativeEnabled.current) return;
       window.clearTimeout(clickTimer.current);
       window.clearTimeout(touchTimer.current);
-      frozen.current = false;
-      setWordSelection(null);
-      setCommentSelection(null);
       const { pointerId: id, clientX: x, clientY: y } = event;
-      press.current = { id, x, y, moved: false, sentence };
+      press.current = {
+        id,
+        x,
+        y,
+        moved: false,
+        sentence,
+        time: performance.now(),
+        dismissSelection: nativeEnabled.current && event.pointerType !== "mouse",
+      };
       if (nativeEnabled.current) {
+        if (event.pointerType === "mouse") {
+          frozen.current = false;
+          setWordSelection(null);
+          setCommentSelection(null);
+        }
         // Start a fresh range rather than HTML drag-and-drop of selected text.
         // Touch handles and Shift+click keep their native selection anchor.
         if (event.pointerType === "mouse" && !event.shiftKey)
           window.getSelection()?.removeAllRanges();
         return;
       }
+      frozen.current = false;
+      setWordSelection(null);
+      setCommentSelection(null);
       // Default presses belong to the deck. Only a stationary touch enables handles.
       if (event.pointerType !== "mouse")
         touchTimer.current = window.setTimeout(() => {
