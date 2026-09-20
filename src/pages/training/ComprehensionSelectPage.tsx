@@ -21,6 +21,7 @@ import {
 import { TRAINING_PATH } from "@/constants/training/trainingPrograms";
 import { useInfiniteSentinel } from "@/hooks/training/discussion/useInfiniteSentinel";
 import { useComprehensionRoom } from "@/hooks/training/useOngoingTraining";
+import { useOngoingTrainingGuard } from "@/hooks/training/useOngoingTrainingGuard";
 import { useBookmarks, useCreateUnderstandRoom } from "@/hooks/training/useComprehensionQueries";
 import { myProfile } from "@/mocks/my";
 import { useAuthStore } from "@/stores/auth";
@@ -47,18 +48,12 @@ export default function ComprehensionSelectPage() {
 
   const createRoom = useCreateUnderstandRoom();
 
-  // 훈련은 한 번에 하나만 진행, 이미 있으면 그 방으로 안내
-  const { data: latestRoom } = useComprehensionRoom();
-
-  const ongoingRoom = latestRoom?.status === "in-progress" ? latestRoom : null;
-
-  // 같은 책갈피 범위면 이어가기, 다른 범위면 차단
-  const [ongoingAction, setOngoingAction] = useState<"continue" | "blocked" | null>(null);
-
-  const goOngoingRoom = () =>
-    navigate(`${TRAINING_PATH.comprehensionChat}?understandRoomId=${ongoingRoom?.roomId}`, {
-      replace: true,
-    });
+  // 훈련은 한 번에 하나만 진행, 같은 책갈피 범위면 이어가기 다른 범위면 차단
+  const guard = useOngoingTrainingGuard({
+    roomQuery: useComprehensionRoom(),
+    chatPath: TRAINING_PATH.comprehensionChat,
+    roomIdKey: "understandRoomId",
+  });
 
   const sentinelRef = useInfiniteSentinel({
     hasNextPage,
@@ -77,12 +72,15 @@ export default function ComprehensionSelectPage() {
     const selected = bookmarks.find((bookmark) => bookmark.key === selectedKey);
     if (!selected || createRoom.isPending) return;
 
-    if (ongoingRoom) {
-      setOngoingAction(ongoingRoom.targetKey === selected.key ? "continue" : "blocked");
-      return;
-    }
+    if (guard.blockBeforeStart(selected.key)) return;
 
     createRoom.mutate(selected.targetIds, {
+      onError: (error) => {
+        // 안내로 처리했으면 실패 문구는 감춤
+        void guard.resolveConflict(error, selected.key).then((resolved) => {
+          if (resolved) createRoom.reset();
+        });
+      },
       onSuccess: (room) => {
         const store = useComprehensionChatStore.getState();
         store.reset();
@@ -151,17 +149,14 @@ export default function ComprehensionSelectPage() {
 
       {createRoom.isPending && <AnalyzingOverlay text={getAnalyzingPagesText(nickname)} />}
 
-      {ongoingAction === "continue" && (
-        <ConfirmModal onConfirm={goOngoingRoom} onClose={() => setOngoingAction(null)}>
+      {guard.action === "continue" && (
+        <ConfirmModal onConfirm={guard.openConflictRoom} onClose={guard.closeAction}>
           {ONGOING_TRAINING_CONFIRM_TEXT}
         </ConfirmModal>
       )}
 
-      {ongoingAction === "blocked" && (
-        <NoticeModal
-          message={ONGOING_TRAINING_BLOCKED_TEXT}
-          onClose={() => setOngoingAction(null)}
-        />
+      {guard.action === "blocked" && (
+        <NoticeModal message={ONGOING_TRAINING_BLOCKED_TEXT} onClose={guard.closeAction} />
       )}
     </main>
   );

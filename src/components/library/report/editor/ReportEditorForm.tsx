@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import Header from "@/components/common/header/Header";
 import CommonModal from "@/components/common/modal/CommonModal";
 import ReportDateField from "@/components/library/report/editor/ReportDateField";
+import ReportVisibilityToggle from "@/components/library/report/editor/ReportVisibilityToggle";
 import {
   LIBRARY_REPORT_TAB_STATE,
   MODAL_ANSWER,
@@ -16,8 +17,14 @@ import { useBackGuard } from "@/hooks/common/useBackGuard";
 import { useSaveReport } from "@/hooks/library/report/useReportEditor";
 import { useToastStore } from "@/stores/common/toast";
 import { getApiErrorMessage } from "@/utils/common/getApiErrorMessage";
+import { todayReportDate } from "@/utils/library/report/toReportView";
 
-import type { BookReviewStatus, ReportEditorView, ReportFormValues } from "@/types/library/report";
+import type {
+  BookReviewStatus,
+  BookReviewVisibility,
+  ReportEditorView,
+  ReportFormValues,
+} from "@/types/library/report";
 
 type ReportEditorFormProps = {
   editor: ReportEditorView;
@@ -40,6 +47,7 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
   const [values, setValues] = useState<ReportFormValues>({
     title: editor.title,
     content: editor.content,
+    visibility: editor.visibility,
   });
 
   // 마지막으로 저장된 값, 비교해서 수정 여부 판단
@@ -54,7 +62,10 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
   // 임시저장과 제출이 같은 요청이라 진행 중인 쪽 버튼에만 로딩 표시
   const pendingStatus = saveReport.isPending ? saveReport.variables.status : null;
 
-  const isDirty = values.title !== savedValues.title || values.content !== savedValues.content;
+  const isDirty =
+    values.title !== savedValues.title ||
+    values.content !== savedValues.content ||
+    values.visibility !== savedValues.visibility;
 
   // 제목이나 본문 중 한 글자라도 있어야 임시저장, 둘 다 있어야 제출
   const hasAnyContent = values.title.trim().length > 0 || values.content.trim().length > 0;
@@ -74,14 +85,27 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, [isDirty]);
 
-  const updateValue = (key: keyof ReportFormValues, value: string) =>
-    setValues((current) => ({ ...current, [key]: value }));
+  const updateValue = <Key extends keyof ReportFormValues>(
+    key: Key,
+    value: ReportFormValues[Key],
+  ) => setValues((current) => ({ ...current, [key]: value }));
+
+  // 아이콘만으로는 뜻이 드러나지 않아 바꿀 때 안내
+  const changeVisibility = (visibility: BookReviewVisibility) => {
+    updateValue("visibility", visibility);
+    showToast(
+      visibility === "PUBLIC" ? REPORT_EDITOR.publicToast : REPORT_EDITOR.privateToast,
+      "plain",
+    );
+  };
 
   const leave = () => (location.key === "default" ? navigate("/library") : navigate(-1));
 
+  // 임시저장이든 제출이든 누른 날이 작성일로 기록됨
   const toRequest = (status: BookReviewStatus) => ({
     ...values,
     status,
+    reportDate: todayReportDate(),
     reviewId: reportId,
     bookId: editor.bookId,
   });
@@ -125,7 +149,11 @@ export default function ReportEditorForm({ editor }: ReportEditorFormProps) {
 
   return (
     <main className="flex min-h-dvh flex-col">
-      <Header title={`${editor.bookTitle}${REPORT_EDITOR.titleSuffix}`} onBack={handleBack} />
+      <Header
+        title={`${editor.bookTitle}${REPORT_EDITOR.titleSuffix}`}
+        onBack={handleBack}
+        rightSlot={<ReportVisibilityToggle value={values.visibility} onChange={changeVisibility} />}
+      />
 
       <div className="flex flex-1 flex-col px-5.5 pb-4">
         <label htmlFor={`${fieldId}-title`} className={`${LABEL_CLASS} mt-2`}>

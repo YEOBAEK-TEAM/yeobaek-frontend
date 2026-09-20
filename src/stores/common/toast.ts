@@ -1,6 +1,7 @@
 import { create } from "zustand";
 
-export type ToastTone = "success" | "error";
+// plain은 아이콘 없이 문구만 보여줄 때
+export type ToastTone = "success" | "error" | "plain";
 
 type ToastState = {
   toast: { id: number; message: string; tone: ToastTone } | null;

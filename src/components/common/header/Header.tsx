@@ -4,12 +4,16 @@ import BellIcon from "@/assets/icons/BellIcon.png";
 import SearchIcon from "@/assets/icons/SearchIcon.png";
 import BMDOHYEON from "@/assets/fonts/BMDOHYEON.ttf";
 
+import type { ReactNode } from "react";
+
 type HeaderProps = {
   title: string;
   action?: "bell" | "search" | "write";
   onActionClick?: () => void;
   className?: string;
   onBack?: () => void;
+  // 뒤로가기 헤더의 오른쪽에 둘 버튼
+  rightSlot?: ReactNode;
 };
 
 export default function Header({
@@ -18,6 +22,7 @@ export default function Header({
   onActionClick,
   className = "h-17 py-10 px-5",
   onBack,
+  rightSlot,
 }: HeaderProps) {
   if (onBack) {
     return (
@@ -40,6 +45,8 @@ export default function Header({
           </svg>
         </button>
         <h1 className="text-xl font-bold">{title}</h1>
+
+        {rightSlot && <div className="absolute right-3">{rightSlot}</div>}
       </header>
     );
   }

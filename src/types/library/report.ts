@@ -1,11 +1,16 @@
 export type BookReviewStatus = "DRAFT" | "PUBLISHED";
 
+// PUBLIC이면 리티가 학습해 다른 사람의 다른 관점 보기에 요약이 노출됨
+export type BookReviewVisibility = "PUBLIC" | "PRIVATE";
+
 type BookReviewBase = {
   reviewId: number;
   bookId: number;
   bookTitle: string;
   title: string | null;
   status: BookReviewStatus;
+  // 사용자가 달력에서 고른 날짜, 시간 없이 날짜만
+  reportDate: string | null;
   writtenAt: string;
   updatedAt: string;
 };
@@ -27,6 +32,7 @@ export type BookReviewListResponse = {
 
 export type BookReviewDetailResponse = BookReviewBase & {
   content: string | null;
+  visibility: BookReviewVisibility | null;
 };
 
 // 작성 중 독후감이 있으면 그 독후감, 없으면 가장 최근 독후감
@@ -55,6 +61,8 @@ export type SaveBookReviewBody = {
   title: string;
   content: string;
   status: BookReviewStatus;
+  reportDate: string;
+  visibility: BookReviewVisibility;
 };
 
 export type CreateBookReviewRequest = SaveBookReviewBody & {
@@ -103,6 +111,7 @@ export type ReportEditorView = {
   content: string;
   status: BookReviewStatus | null;
   dateLabel: string;
+  visibility: BookReviewVisibility;
 };
 
-export type ReportFormValues = Pick<ReportEditorView, "title" | "content">;
+export type ReportFormValues = Pick<ReportEditorView, "title" | "content" | "visibility">;
