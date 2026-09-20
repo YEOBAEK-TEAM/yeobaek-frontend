@@ -90,6 +90,10 @@ export const REPORT_EDITOR = {
   submittedToast: "독후감 작성 완료",
   exitMessage: "임시저장하고 나가시겠습니까?",
   loadErrorText: "독후감을 불러오지 못했어요",
+  publicAriaLabel: "공개 상태, 눌러서 나만 보기로 바꾸기",
+  privateAriaLabel: "나만 보기 상태, 눌러서 공개로 바꾸기",
+  publicToast: "공개로 바꿨어요\n다른 관점 보기에 요약이 보여요",
+  privateToast: "나만 보기로 바꿨어요\n다른 분들에게 보이지 않아요",
   bookNotFoundText: "독후감을 쓸 수 있는 책을 찾지 못했어요",
 };
 
