@@ -14,6 +14,9 @@ import type {
 
 const toQuote = (title: string | null) => (title ? `“${title}”` : REPORT_UNTITLED);
 
+// 저장하는 날이 작성일이 되므로 기기 시간대 기준 오늘 날짜
+export const todayReportDate = () => new Date().toLocaleDateString("sv-SE");
+
 // 작성 중이면 완독일, 작성 완료면 작성완료 표시
 export const toLatestReportView = (
   response: LatestBookReviewResponse | null,
@@ -37,7 +40,8 @@ export const toMyReportView = (response: BookReviewListItemResponse): MyReportVi
   bookTitle: response.bookTitle,
   coverUrl: response.coverImageUrl ?? "",
   reportTitle: response.title ?? REPORT_UNTITLED,
-  dateLabel: formatReportDate(response.updatedAt),
+  // 마지막으로 저장한 날, 날짜만 내려오지 않는 예전 독후감은 수정 시각으로
+  dateLabel: formatReportDate(response.reportDate ?? response.updatedAt),
   updatedAt: response.updatedAt,
   isLiked: response.isLiked,
 });
@@ -61,7 +65,9 @@ export const toReportEditorView = (response: BookReviewDetailResponse): ReportEd
   title: response.title ?? "",
   content: response.content ?? "",
   status: response.status,
-  dateLabel: formatReportDate(response.writtenAt),
+  // 수정해서 저장하면 그날로 다시 기록됨
+  dateLabel: formatReportDate(todayReportDate()),
+  visibility: response.visibility ?? "PUBLIC",
 });
 
 export const toNewReportEditorView = (bookId: number, bookTitle: string): ReportEditorView => ({
@@ -71,7 +77,8 @@ export const toNewReportEditorView = (bookId: number, bookTitle: string): Report
   title: "",
   content: "",
   status: null,
-  dateLabel: formatReportDate(new Date().toLocaleDateString("sv-SE")),
+  dateLabel: formatReportDate(todayReportDate()),
+  visibility: "PUBLIC",
 });
 
 // 배너 날짜는 목록의 수정 시각, 목록에 없으면 완독일
