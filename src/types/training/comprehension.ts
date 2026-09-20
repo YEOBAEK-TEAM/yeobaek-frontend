@@ -93,6 +93,7 @@ export type UnderstandRoomListItemResponse = {
   author: string | null;
   bookImageUrl: string | null;
   status: UnderstandRoomStatus;
+  createdAt: string;
 };
 
 export type UnderstandRoomListResponse = {
