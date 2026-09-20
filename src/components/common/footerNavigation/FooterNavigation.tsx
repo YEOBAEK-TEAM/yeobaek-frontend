@@ -1,29 +1,92 @@
 import { NavLink } from "react-router-dom";
 
+import BMDOHYEON from "@/assets/fonts/BMDOHYEON.ttf";
+
+import collectionActiveIcon from "@/assets/icons/footer/collectionActiveIcon.png";
+import collectionIcon from "@/assets/icons/footer/collectionIcon.png";
+import homeActiveIcon from "@/assets/icons/footer/homeActiveIcon.png";
+import homeIcon from "@/assets/icons/footer/homeIcon.png";
+import libraryActiveIcon from "@/assets/icons/footer/libraryActiveIcon.png";
+import libraryIcon from "@/assets/icons/footer/libraryIcon.png";
+import myActiveIcon from "@/assets/icons/footer/myActiveIcon.png";
+import myIcon from "@/assets/icons/footer/myIcon.png";
+import trainingActiveIcon from "@/assets/icons/footer/trainingActiveIcon.png";
+import trainingIcon from "@/assets/icons/footer/trainingIcon.png";
+
 const navigationItems = [
-  { path: "/vocabulary", label: "단어장" },
-  { path: "/training", label: "훈련" },
-  { path: "/", label: "HOME" },
-  { path: "/library", label: "서재" },
-  { path: "/my", label: "MY" },
+  {
+    path: "/vocabulary",
+    label: "수집",
+    icon: collectionIcon,
+    activeIcon: collectionActiveIcon,
+  },
+  {
+    path: "/training",
+    label: "훈련",
+    icon: trainingIcon,
+    activeIcon: trainingActiveIcon,
+  },
+  {
+    path: "/home",
+    label: "HOME",
+    icon: homeIcon,
+    activeIcon: homeActiveIcon,
+  },
+  {
+    path: "/library",
+    label: "서재",
+    icon: libraryIcon,
+    activeIcon: libraryActiveIcon,
+  },
+  {
+    path: "/my",
+    label: "MY",
+    icon: myIcon,
+    activeIcon: myActiveIcon,
+  },
 ];
 
 export default function FooterNavigation() {
   return (
-    <nav className="fixed bottom-0 left-1/2 flex w-full max-w-97.5 -translate-x-1/2 justify-around border-t bg-white">
-      {navigationItems.map((item) => (
-        <NavLink
-          key={item.path}
-          to={item.path}
-          className={({ isActive }) =>
-            `flex flex-1 justify-center py-4 text-sm ${
-              isActive ? "font-bold text-black" : "text-gray-400"
-            }`
+    <>
+      <style>
+        {`
+          @font-face {
+            font-family: "BMDOHYEON";
+            src: url("${BMDOHYEON}") format("truetype");
+            font-weight: 400;
+            font-style: normal;
           }
-        >
-          {item.label}
-        </NavLink>
-      ))}
-    </nav>
+        `}
+      </style>
+
+      <nav className="fixed bottom-0 left-1/2 z-50 flex h-22 w-full max-w-97.5 -translate-x-1/2 bg-[#F7F6F1]">
+        {navigationItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.path === "/home"}
+            className="flex flex-1 flex-col items-center justify-center gap-1"
+          >
+            {({ isActive }) => (
+              <>
+                <img
+                  src={isActive ? item.activeIcon : item.icon}
+                  alt={item.label}
+                  className="h-9 w-9 object-contain"
+                />
+
+                <span
+                  className={`text-sm ${isActive ? "text-[#4F4D4E]" : "text-[#D7D4C7]"}`}
+                  style={{ fontFamily: "BMDOHYEON" }}
+                >
+                  {item.label}
+                </span>
+              </>
+            )}
+          </NavLink>
+        ))}
+      </nav>
+    </>
   );
 }

@@ -1,0 +1,776 @@
+.reader-settings__slider {
+  appearance: none;
+  height: 4px;
+  border-radius: 0;
+  cursor: pointer;
+}
+.reader-settings__slider::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #595854;
+}
+.reader-settings__slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: #595854;
+}
+.book-reader {
+  position: fixed;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 390px;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: max(20px, env(safe-area-inset-top)) 20px 0;
+  overflow: hidden;
+  background: var(--reader-background, #f7f6f1);
+  color: var(--reader-foreground, #595854);
+}
+.book-reader button,
+.book-reader input,
+.book-reader textarea {
+  font: inherit;
+}
+.book-reader button {
+  cursor: pointer;
+}
+.book-reader button:disabled {
+  cursor: default;
+  opacity: 0.35;
+}
+.book-reader button:focus-visible,
+.book-reader a:focus-visible,
+.book-reader input:focus-visible {
+  outline: 2px solid #595854;
+  outline-offset: 4px;
+}
+.book-reader__header {
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 64px;
+  margin-bottom: 13px;
+}
+.book-reader__header h1 {
+  font-size: 17px;
+  font-weight: 400;
+}
+.book-reader__back {
+  position: absolute;
+  left: -7px;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+}
+.book-reader__text-container {
+  position: relative;
+  height: 100%;
+}
+.book-reader__body {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+}
+.book-reader__document {
+  height: 100%;
+}
+.book-reader__viewport {
+  width: calc(100% + 40px);
+  margin-inline: -20px;
+  height: 100%;
+  overflow: hidden;
+  touch-action: pan-y pinch-zoom;
+  cursor: grab;
+}
+.book-reader__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+.book-reader__slide {
+  flex: 0 0 100%;
+  min-width: 0;
+  height: 100%;
+  padding: 0 20px 4px 20px;
+  overflow: hidden;
+}
+.book-reader__slide[inert] {
+  user-select: none;
+}
+.book-reader__viewport.is-dragging {
+  cursor: grabbing;
+}
+.book-reader__viewport.is-dragging .book-reader__text {
+  user-select: none;
+}
+.book-reader__measure {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: auto;
+  visibility: hidden;
+  pointer-events: none;
+  contain: layout style;
+}
+.book-reader__text {
+  display: flow-root;
+  font-family: var(--reader-font-family, "Batang", "바탕", "Noto Serif CJK KR", Georgia, serif);
+  font-size: var(--reader-font-size, 16px);
+  line-height: var(--reader-line-height, 1.95);
+  font-weight: 400;
+  overflow-wrap: anywhere;
+  user-select: text;
+  cursor: text;
+}
+.book-reader__text p {
+  margin: 0;
+}
+@media (pointer: fine) {
+  .book-reader__viewport .book-reader__text {
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: grab;
+  }
+  .book-reader__viewport.is-selection-mode .book-reader__text {
+    -webkit-user-select: text;
+    user-select: text;
+    cursor: text;
+  }
+  .book-reader__viewport.is-dragging .book-reader__text {
+    -webkit-user-select: none;
+    user-select: none;
+    cursor: grabbing;
+  }
+}
+.book-reader__text p + p {
+  margin-top: 0.45em;
+}
+.book-reader__viewport .book-reader__text[data-page-id],
+.book-reader__viewport.is-selection-mode .book-reader__text[data-page-id] {
+  touch-action: pan-y pinch-zoom;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: grab;
+}
+.book-reader__viewport .book-reader__text[data-page-id][data-native-selection="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+  cursor: text;
+}
+.book-reader__text ::selection {
+  background: #d1d1d1;
+  color: #595854;
+}
+.book-reader__text mark {
+  --reader-mark-padding: 5px;
+  color: #595854;
+  padding: var(--reader-mark-padding) 0;
+  box-decoration-break: clone;
+}
+.book-reader__selection-edge {
+  position: relative;
+  display: inline;
+  pointer-events: none;
+  user-select: none;
+}
+.book-reader__selection-edge::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: calc(-1 * var(--reader-mark-padding));
+  bottom: calc(-1 * var(--reader-mark-padding));
+  width: 2px;
+  background: #9e9e9e;
+}
+.book-reader__selection-edge::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9e9e9e;
+}
+.book-reader__selection-edge--start::after {
+  top: calc(-1 * var(--reader-mark-padding) - 4px);
+}
+.book-reader__selection-edge--end::after {
+  bottom: calc(-1 * var(--reader-mark-padding) - 4px);
+}
+.book-reader__footer {
+  color: #f7f6f1;
+  position: relative;
+  flex-shrink: 0;
+  margin-inline: -20px;
+  z-index: 20;
+  width: calc(100% + 40px);
+  max-width: 390px;
+  padding: 9px 16px calc(5px + env(safe-area-inset-bottom));
+  background: #4f4d4e;
+  font:
+    14px system-ui,
+    sans-serif;
+}
+.book-reader__progress {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 25px;
+}
+.book-reader__progress span {
+  flex: 0 0 8ch;
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.book-reader__progress-bar {
+  appearance: none;
+  height: 3px;
+  min-width: 0;
+  flex: 1;
+  cursor: pointer;
+  border-radius: 0;
+}
+.book-reader__progress-bar::-webkit-slider-thumb {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #b7bd9e;
+}
+.book-reader__progress-bar::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 0;
+  border-radius: 50%;
+  background: #b7bd9e;
+}
+.book-reader__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.book-reader__actions button {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 40px;
+  min-width: 44px;
+}
+.book-reader__actions .book-reader__bookmark {
+  margin-left: auto;
+  justify-content: flex-end;
+}
+.book-reader__selection {
+  color: #595854;
+  position: absolute;
+  left: 0;
+  z-index: 10;
+  max-width: 100%;
+  width: 100%;
+  background: #f7f6f1;
+  overflow-y: auto;
+  font:
+    13px system-ui,
+    sans-serif;
+}
+.book-reader__selection-actions {
+  display: flex;
+  gap: 7px;
+  padding: 4px 0;
+}
+.book-reader__text[data-page-id] .book-reader__selection:not(.book-reader__collected) {
+  background: transparent;
+}
+.book-reader__text-container.has-inline-menu {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: none;
+}
+.book-reader__selection--inline {
+  position: static;
+  overflow: visible;
+  margin: 8px 0 18px;
+  user-select: none;
+  cursor: default;
+}
+.book-reader__collected {
+  width: max-content;
+  max-width: calc(100% - 8px);
+  transform: translateX(-50%);
+
+  border: 1px solid rgb(255 255 255 / 0.3);
+  border-radius: 999px;
+
+  /* 80% fill with a subtle diagonal glass reflection. */
+  background-color: rgb(79 77 78 / 0.8);
+  background-image: linear-gradient(
+    135deg,
+    rgb(255 255 255 / 0.14),
+    rgb(255 255 255 / 0.02) 45%,
+    transparent 60%,
+    rgb(255 255 255 / 0.06)
+  );
+  color: #fff;
+
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+
+  box-shadow:
+    0 4px 12px rgb(0 0 0 / 0.18),
+    inset 0 1px 1px rgb(255 255 255 / 0.32),
+    inset 0 -1px 1px rgb(0 0 0 / 0.16);
+
+  overflow: hidden;
+  user-select: none;
+}
+
+/* 기존 강한 gradient 제거 */
+.book-reader__collected::before {
+  display: none;
+}
+
+.book-reader__collected-actions {
+  display: flex;
+  align-items: center;
+  padding: 7px 7px;
+}
+
+.book-reader__collected-actions button {
+  position: relative;
+
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 999px;
+
+  background: transparent;
+  color: #fff;
+
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1;
+
+  white-space: nowrap;
+}
+
+/* 버튼 사이 세로선 */
+.book-reader__collected-actions button + button {
+  margin-left: 6px;
+}
+
+.book-reader__collected-actions button + button::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  width: 1px;
+  height: 26px;
+  background: rgb(255 255 255 / 0.85);
+  transform: translate(-50%, -50%);
+}
+
+/* 현재 선택된 버튼 */
+.book-reader__collected-actions button.is-active {
+  background: rgb(255 255 255 / 0.38);
+  color: #fff;
+  font-weight: 600;
+
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.25),
+    0 1px 1px rgb(0 0 0 / 0.06);
+}
+.book-reader__collected .book-reader__palette {
+  padding: 10px 14px 14px;
+}
+.book-reader__selection-actions button {
+  min-height: 36px;
+  padding: 5px 13px;
+  border: 1px solid #595854;
+  background: transparent;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.book-reader__selection-actions button.is-active {
+  background: #595854;
+  color: #f7f6f1;
+}
+.book-reader__palette {
+  display: flex;
+  gap: 9px;
+  padding: 14px 5px;
+}
+.book-reader__palette button {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1px solid #ffffff70;
+}
+.book-reader__palette button:hover {
+  outline: 1px solid #595854;
+  outline-offset: 3px;
+}
+.book-reader__palette button[aria-pressed="true"] {
+  outline: 2px solid #595854;
+  outline-offset: 3px;
+}
+.book-reader__word {
+  position: relative;
+  cursor: pointer;
+}
+.book-reader__saved-dot {
+  position: absolute;
+  inset-inline-end: -3px;
+  top: -2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #e43c35;
+  pointer-events: none;
+}
+.book-reader__selection-close {
+  float: right;
+  width: 24px;
+  height: 28px;
+  font-size: 18px;
+  color: #888680;
+}
+.book-reader__word-card {
+  position: relative;
+  clear: both;
+  margin-top: 12px;
+  padding: 18px 16px;
+  background: #fff;
+  border: 1px solid #e7e6dd;
+  box-shadow: 0 3px 4px #0003;
+  color: #595854;
+  font:
+    12px/1.65 system-ui,
+    sans-serif;
+  overflow-wrap: anywhere;
+}
+.book-reader__word-heading {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.book-reader__word-heading h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.book-reader__meaning-number {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: #51451e;
+  color: #fff;
+  font-size: 13px;
+}
+.book-reader__part-of-speech {
+  color: #9c9b94;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.book-reader__meaning-badge {
+  flex-shrink: 0;
+  margin-left: auto;
+  padding: 3px 8px;
+  border-radius: 12px;
+  background: #eee7da;
+  color: #514b3f;
+  font-size: 10px;
+  font-weight: 600;
+}
+.book-reader__text .book-reader__current-meaning {
+  margin: 9px 0 18px 30px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.book-reader__word-details {
+  border-top: 1px solid #deddd6;
+}
+.book-reader__word-hint {
+  margin-top: 10px;
+  color: #85847c;
+  font-size: 11px;
+}
+.book-reader__meanings-toggle {
+  width: 100%;
+  min-height: 42px;
+  color: #92918b;
+  font-size: 12px;
+}
+.book-reader__meanings-toggle span {
+  margin-left: 4px;
+}
+.book-reader__other-meanings {
+  margin: 4px 0 16px;
+  padding: 0;
+  list-style: none;
+  color: #85847c;
+}
+.book-reader__other-meanings li {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin: 3px 0;
+}
+.book-reader__other-meanings .book-reader__meaning-number {
+  width: 18px;
+  height: 18px;
+  background: #aaa793;
+  font-size: 11px;
+}
+.book-reader__other-meanings small {
+  margin-left: 4px;
+  color: #9c9b94;
+  font-size: 10px;
+}
+.book-reader__word-examples {
+  margin: 12px 0 18px;
+  padding-left: 17px;
+  list-style: disc;
+}
+.book-reader__word-examples li {
+  margin: 5px 0;
+}
+.book-reader__word-examples li::marker {
+  color: #51451e;
+}
+.book-reader__word-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+  margin-top: 8px;
+}
+.book-reader__word-buttons button {
+  flex: 1;
+  min-height: 32px;
+  border: 1px solid #b7af9a;
+  background: #fff;
+  color: #655a3c;
+  font-size: 11px;
+}
+.book-reader__word-buttons button:only-child {
+  flex: 0 1 calc(50% - 7px);
+}
+.book-reader__word-buttons button.is-active {
+  border-color: #51451e;
+  background: #51451e;
+  color: #fff;
+}
+.book-reader__word-card.is-saved > :not(.book-reader__word-saved-toast) {
+  opacity: 0.5;
+}
+.book-reader__word-card.is-saved button:disabled {
+  opacity: 1;
+}
+.book-reader__word-saved-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 44px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: max-content;
+  max-width: calc(100% - 24px);
+  padding: 12px 17px;
+  border-radius: 12px;
+  background: #60605f;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  pointer-events: none;
+}
+.book-reader__inline-comment {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  border: 1px solid #888680;
+  border-radius: 4px;
+  padding: 5px 8px;
+}
+.book-reader__inline-comment > svg {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+.book-reader__inline-comment input {
+  flex: 1;
+  min-width: 0;
+  width: 0;
+  border: 0;
+  background: transparent;
+  outline: none;
+}
+.book-reader__inline-comment input::placeholder {
+  color: #b4b4b4;
+}
+.book-reader__inline-comment:focus-within {
+  border-color: #595854;
+}
+.book-reader__inline-comment input:focus-visible {
+  outline: none;
+}
+.book-reader__viewport .book-reader__text[data-comment-editing] [data-fragment-id] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+.book-reader__inline-comment button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: #7e856b;
+  color: #fff;
+}
+.book-reader__inline-comment button:disabled {
+  background: #b8be9f;
+  color: #737861;
+  opacity: 1;
+}
+.book-reader__message {
+  padding: 28px 0;
+  font:
+    15px/1.8 system-ui,
+    sans-serif;
+}
+.book-reader__notice {
+  position: fixed;
+  bottom: calc(96px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  width: max-content;
+  max-width: calc(100% - 40px);
+  background: #595854;
+  color: #fff;
+  border-radius: 4px;
+  padding: 10px 14px;
+  font:
+    13px/1.6 system-ui,
+    sans-serif;
+}
+.book-reader__notice--comment {
+  top: 50%;
+  bottom: auto;
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-radius: 12px;
+  background: #60605fe6;
+}
+.book-reader__sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: #0004;
+}
+.book-reader__sheet {
+  width: 100%;
+  max-width: 390px;
+  max-height: 80dvh;
+  overflow: auto;
+  background: #f7f6f1;
+  padding: 22px 20px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 16px 16px 0 0;
+  font:
+    14px/1.7 system-ui,
+    sans-serif;
+}
+.book-reader__sheet-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.book-reader__sheet-heading h2 {
+  font-size: 17px;
+  font-weight: 600;
+}
+.book-reader__sheet-heading button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.book-reader__storage-note {
+  font-size: 12px;
+  color: #77766e;
+  margin: 5px 0 20px;
+}
+.book-reader__comments > div {
+  padding: 12px 0;
+  border-bottom: 1px solid #deded4;
+}
+.book-reader__comments p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.book-reader__sheet blockquote {
+  border-left: 3px solid #b8be9f;
+  padding-left: 10px;
+  margin: 12px 0;
+  max-height: 120px;
+  overflow: auto;
+  overflow-wrap: anywhere;
+}
+.book-reader__sheet textarea {
+  width: 100%;
+  min-height: 100px;
+  resize: vertical;
+  padding: 12px;
+  border: 1px solid #c7c7ba;
+  border-radius: 4px;
+  margin-top: 16px;
+}
+.book-reader__submit {
+  width: 100%;
+  min-height: 44px;
+  background: #b8be9f;
+  margin-top: 8px;
+  border-radius: 4px;
+}
+
+/* Saved vocabulary UI uses the existing collected-menu and meaning-card styles. */
+.book-reader__saved-menu {
+  transform: none;
+}
+.book-reader__saved-interaction {
+  user-select: none;
+}
+.book-reader__saved-meaning .book-reader__word-heading {
+  margin-bottom: 12px;
+}
+.book-reader__saved-meaning .book-reader__meaning-concealed {
+  filter: blur(4px);
+  user-select: none;
+}
+.book-reader__reveal-hint {
+  display: block;
+  margin: 10px 0 0 auto;
+  color: #aaa;
+  font-size: 12px;
+}

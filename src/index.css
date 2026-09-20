@@ -1,15 +1,38 @@
 @import "tailwindcss";
 
 @font-face {
-  font-family: "BMDOHYEON";
-  src: url("./assets/fonts/BMDOHYEON.ttf") format("truetype");
+  font-family: "NanumMyeongjo";
+  src: url("./assets/fonts/NanumMyeongjo.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 
+@font-face {
+  font-family: "NanumMyeongjo";
+  src: url("./assets/fonts/NanumMyeongjoExtraBold.woff2") format("woff2");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Pretendard Variable";
+  src: url("./assets/fonts/PretendardVariable.woff2") format("woff2");
+  font-weight: 45 920;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
-  font-family: "BMDOHYEON", sans-serif;
+  font-family:
+    "Pretendard Variable",
+    Pretendard,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -30,5 +53,25 @@ body,
 
 body {
   min-width: 320px;
-  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+@keyframes progress-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes progress-grow {
+    from {
+      transform: scaleX(1);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
 }
