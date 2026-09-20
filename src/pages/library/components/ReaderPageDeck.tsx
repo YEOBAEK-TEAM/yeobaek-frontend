@@ -85,15 +85,21 @@ export default function ReaderPageDeck<T>({
     const dx = event.clientX - current.x;
     const dy = event.clientY - current.y;
     if (!current.dragging) {
-      // Leave stationary/long presses and vertical gestures to native selection.
+      // Leave stationary long presses to native selection, but keep moving fingers.
       if (
-        (event.pointerType !== "mouse" && performance.now() - current.time >= 400) ||
-        Math.abs(dy) > Math.abs(dx) + 8
+        event.pointerType !== "mouse" &&
+        Math.hypot(dx, dy) < 10 &&
+        performance.now() - current.time >= 400
       ) {
         gesture.current = null;
         return;
       }
-      if (Math.abs(dx) < 10 || Math.abs(dx) < Math.abs(dy) * 1.3) return;
+      // Give up only on clearly vertical gestures.
+      if (Math.abs(dy) > Math.abs(dx) * 1.5 + 12) {
+        gesture.current = null;
+        return;
+      }
+      if (Math.abs(dx) < 8 || Math.abs(dx) < Math.abs(dy)) return;
       current.dragging = true;
       event.currentTarget.setPointerCapture(event.pointerId);
     }
@@ -110,8 +116,10 @@ export default function ReaderPageDeck<T>({
       return;
     }
     const dx = event.clientX - current.x;
-    const threshold = 90;
-    let direction = !blocked() && Math.abs(dx) >= threshold ? (dx < 0 ? 1 : -1) : 0;
+    const distance = Math.abs(dx);
+    // A quick flick turns the page even when it does not travel far.
+    const passed = distance >= 90 || (performance.now() - current.time < 300 && distance >= 36);
+    let direction = !blocked() && passed ? (dx < 0 ? 1 : -1) : 0;
     if ((direction < 0 && !hasPrevious) || (direction > 0 && !hasNext)) direction = 0;
     settle(direction, current.width);
     if (event.currentTarget.hasPointerCapture(event.pointerId))

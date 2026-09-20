@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import Header from "@/components/common/header/Header";
@@ -9,35 +9,14 @@ import VocabularyToast from "@/components/vocabulary/VocabularyToast";
 import { useDeleteVocabulary } from "@/hooks/useDeleteVocabulary";
 import { useDeleteSentence } from "@/hooks/useDeleteSentence";
 import { useSentenceList } from "@/hooks/useSentenceList";
-import { useVocabularyList } from "@/hooks/useVocabularyList";
+import { useSavedVocabularyWords } from "@/hooks/useSavedVocabularyWords";
 
 import { useAuthStore } from "@/stores/auth";
 import { useVocabularyStore } from "@/stores/vocabulary";
+import { CHOSEONG_LIST, getChoseong } from "@/utils/common/getChoseong";
 
 import type { WordListItem } from "@/types/vocabulary";
 import type { SentenceListItem } from "@/types/sentence";
-
-const initialList = [
-  "ㄱ",
-  "ㄲ",
-  "ㄴ",
-  "ㄷ",
-  "ㄸ",
-  "ㄹ",
-  "ㅁ",
-  "ㅂ",
-  "ㅃ",
-  "ㅅ",
-  "ㅆ",
-  "ㅇ",
-  "ㅈ",
-  "ㅉ",
-  "ㅊ",
-  "ㅋ",
-  "ㅌ",
-  "ㅍ",
-  "ㅎ",
-];
 
 export default function VocabularyPage() {
   const navigate = useNavigate();
@@ -49,9 +28,6 @@ export default function VocabularyPage() {
   const [menuId, setMenuId] = useState<number | null>(null);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [toast, setToast] = useState(false);
-
-  // 무한 스크롤 감지 요소
-  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   // 단어 삭제 API
   const { mutateAsync: deleteVocabulary } = useDeleteVocabulary();
@@ -75,18 +51,13 @@ export default function VocabularyPage() {
     collectedAt: item.createdAt,
   }));
 
-  // 단어 탭일 때만 단어장 목록 API 호출
-  const {
-    data: vocabularyData,
-    isPending,
-    isError,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useVocabularyList(activeInitial, activeTab === "word");
+  // 초성 목록을 만들려면 전체가 있어야 해 단어도 모두 불러온 뒤 화면에서 거름
+  const wordQuery = useSavedVocabularyWords(activeTab === "word");
 
-  // 여러 페이지의 단어 데이터를 하나의 배열로 합치기
-  const vocabularyItems = vocabularyData?.pages.flatMap((page) => page.items) ?? [];
+  const isError = wordQuery.isError;
+  const isPending = !wordQuery.ready && !wordQuery.isError;
+
+  const vocabularyItems = wordQuery.items;
 
   // API 응답을 목록 UI용 데이터로 변환
   const words: WordListItem[] = vocabularyItems.map((item) => ({
@@ -98,43 +69,30 @@ export default function VocabularyPage() {
     collectedAt: item.createdAt,
   }));
 
-  // 단어 / 문장 API 데이터를 목록에 표시
+  // 수집한 것들의 초성만 필터에 노출
+  const collected = new Set(
+    (activeTab === "word"
+      ? words.map((word) => word.word)
+      : sentences.map((item) => item.content)
+    ).map(getChoseong),
+  );
+
+  const availableInitials = CHOSEONG_LIST.filter((initial) => collected.has(initial));
+
+  // 고른 초성에 수집한 게 없으면 첫 초성을 보여줌
+  const currentInitial = availableInitials.includes(activeInitial)
+    ? activeInitial
+    : (availableInitials[0] ?? activeInitial);
+
+  // 단어 / 문장 API 데이터를 초성으로 걸러 표시
   const items =
     activeTab === "word"
-      ? words
-      : [...sentences].sort((a, b) => Date.parse(b.collectedAt) - Date.parse(a.collectedAt));
+      ? words.filter((word) => getChoseong(word.word) === currentInitial)
+      : [...sentences]
+          .filter((sentence) => getChoseong(sentence.content) === currentInitial)
+          .sort((a, b) => Date.parse(b.collectedAt) - Date.parse(a.collectedAt));
 
-  // 전체 개수
-  const totalCount =
-    activeTab === "word" ? (vocabularyData?.pages[0]?.totalCount ?? 0) : sentences.length;
-
-  // 목록 마지막이 화면에 들어오면 다음 페이지 요청
-  useEffect(() => {
-    const target = loadMoreRef.current;
-
-    if (!target || activeTab !== "word" || !hasNextPage) {
-      return;
-    }
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-
-        if (entry.isIntersecting && hasNextPage && !isFetchingNextPage) {
-          void fetchNextPage();
-        }
-      },
-      {
-        rootMargin: "100px",
-      },
-    );
-
-    observer.observe(target);
-
-    return () => {
-      observer.disconnect();
-    };
-  }, [activeTab, fetchNextPage, hasNextPage, isFetchingNextPage]);
+  const totalCount = items.length;
 
   // 단어 / 문장 삭제
   const handleDelete = async () => {
@@ -187,7 +145,7 @@ export default function VocabularyPage() {
             {/* 목록 상단 */}
             <div className="flex h-12 items-center justify-between border-b border-[#DDD7D1] px-5 text-sm font-semibold">
               <span className="text-[#9D938D]">
-                {activeInitial} · {totalCount}개
+                {currentInitial} · {totalCount}개
               </span>
 
               <span className="text-[#727272]">최근순</span>
@@ -253,23 +211,15 @@ export default function VocabularyPage() {
                   수집한 문장이 없습니다.
                 </p>
               )}
-
-            {/* 무한 스크롤 감지 영역 */}
-            {activeTab === "word" && <div ref={loadMoreRef} className="h-1" />}
-
-            {/* 다음 페이지 로딩 */}
-            {activeTab === "word" && isFetchingNextPage && (
-              <p className="py-4 text-center text-xs text-[#9D938D]">더 불러오는 중입니다.</p>
-            )}
           </div>
 
           {/* 초성 필터 */}
           <aside aria-label="초성 필터" className="border-l border-[#E4E0DB] py-2">
-            {initialList.map((initial) => (
+            {availableInitials.map((initial) => (
               <button
                 type="button"
                 key={initial}
-                aria-pressed={activeInitial === initial}
+                aria-pressed={currentInitial === initial}
                 onClick={() => {
                   setInitial(initial);
                   setMenuId(null);
@@ -278,7 +228,7 @@ export default function VocabularyPage() {
               >
                 <span
                   className={`flex h-6.5 w-5 items-center justify-center text-xs ${
-                    activeInitial === initial ? "bg-[#B7BD9F]" : ""
+                    currentInitial === initial ? "bg-[#B7BD9F]" : ""
                   }`}
                 >
                   {initial}
